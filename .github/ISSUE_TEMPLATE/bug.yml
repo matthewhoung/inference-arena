@@ -1,0 +1,60 @@
+name: "Bug Report"
+description: "Report a bug or unexpected behavior"
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Bug Report
+        Describe the bug you encountered.
+
+  - type: input
+    id: component
+    attributes:
+      label: "Component"
+      description: "Which component is affected?"
+      placeholder: "monolithic / microservices / triton / infrastructure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "Description"
+      description: "What happened?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Expected Behavior"
+      description: "What should have happened?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: "Steps to Reproduce"
+      description: "How can we reproduce this?"
+      value: |
+        1. Run `docker compose up`
+        2. Send request with `curl ...`
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Logs / Error Messages"
+      description: "Paste any relevant logs"
+      render: shell
+
+  - type: input
+    id: environment
+    attributes:
+      label: "Environment"
+      description: "OS, Docker version, Python version"
+      placeholder: "WSL2 Ubuntu 22.04, Docker 24.0.7, Python 3.11.14"

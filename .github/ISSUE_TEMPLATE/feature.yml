@@ -1,0 +1,55 @@
+name: "Feature"
+description: "New feature or enhancement"
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Feature Request
+        Describe the feature you want to implement.
+
+  - type: input
+    id: milestone
+    attributes:
+      label: "Milestone"
+      description: "Which milestone does this belong to?"
+      placeholder: "M1: Foundation"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "Description"
+      description: "What does this feature do?"
+      placeholder: "Implement the shared preprocessing module..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: "Acceptance Criteria"
+      description: "How do we know when this is done?"
+      value: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+        - [ ] Tests pass
+    validations:
+      required: true
+
+  - type: textarea
+    id: files
+    attributes:
+      label: "Files to Create/Modify"
+      description: "List the files involved"
+      placeholder: |
+        - common/preprocessing.py
+        - tests/test_preprocessing.py
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: "Dependencies"
+      description: "What issues must be completed first?"
+      placeholder: "Depends on #1"

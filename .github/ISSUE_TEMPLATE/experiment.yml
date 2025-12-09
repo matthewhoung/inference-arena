@@ -1,0 +1,88 @@
+name: "Experiment"
+description: "Track an experiment execution"
+labels: ["experiments", "execution"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Experiment Execution
+        Document an experiment run for reproducibility.
+
+  - type: dropdown
+    id: architecture
+    attributes:
+      label: "Architecture"
+      description: "Which architecture is being tested?"
+      options:
+        - Monolithic
+        - Microservices
+        - Triton
+    validations:
+      required: true
+
+  - type: input
+    id: load_level
+    attributes:
+      label: "Load Level"
+      description: "Concurrent users"
+      placeholder: "1 / 5 / 10 / 25 / 50 / 75 / 100"
+    validations:
+      required: true
+
+  - type: input
+    id: run_number
+    attributes:
+      label: "Run Number"
+      description: "Which repetition?"
+      placeholder: "1 / 2 / 3"
+    validations:
+      required: true
+
+  - type: input
+    id: date
+    attributes:
+      label: "Execution Date"
+      description: "When was this run?"
+      placeholder: "yyyy-mm-dd"
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: "Configuration"
+      description: "Key configuration parameters"
+      value: |
+        - Warmup: 60s
+        - Measurement: 180s
+        - Cooldown: 30s
+        - Container resources: 2 vCPU, 4GB
+
+  - type: textarea
+    id: results
+    attributes:
+      label: "Results Summary"
+      description: "Key metrics from this run"
+      value: |
+        | Metric | Value |
+        |--------|-------|
+        | P50 Latency | ms |
+        | P99 Latency | ms |
+        | Throughput | RPS |
+        | Error Rate | % |
+        | Avg CPU | % |
+        | Peak Memory | MB |
+
+  - type: input
+    id: results_file
+    attributes:
+      label: "Results File"
+      description: "Path to CSV output"
+      placeholder: "results/raw/monolithic_10users_run1.csv"
+
+  - type: textarea
+    id: observations
+    attributes:
+      label: "Observations"
+      description: "Any anomalies or notes?"
+      placeholder: "Observed thermal throttling at minute 2..."

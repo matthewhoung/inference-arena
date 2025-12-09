@@ -1,0 +1,151 @@
+[project]
+name = "inference-arena"
+version = "0.1.0"
+description = "A Comparative Study of ML Model Serving Architectures: Monolithic vs Microservices vs NVIDIA Triton"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [
+    { name = "Matthew Hong" }
+]
+keywords = [
+    "machine-learning",
+    "inference",
+    "microservices",
+    "triton",
+    "mlops",
+    "benchmarking"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    # ==========================================================================
+    # Core ML Inference
+    # ==========================================================================
+    "onnxruntime>=1.17.0",          # ONNX model inference (CPU)
+    "numpy>=1.24.0,<2.0.0",         # Array operations (ONNX Runtime compatibility)
+    
+    # ==========================================================================
+    # Web Framework
+    # ==========================================================================
+    "fastapi>=0.109.0",             # HTTP API framework
+    "uvicorn[standard]>=0.27.0",    # ASGI server
+    "python-multipart>=0.0.6",      # File upload support
+    
+    # ==========================================================================
+    # gRPC (Microservices communication)
+    # ==========================================================================
+    "grpcio>=1.60.0",               # gRPC runtime
+    "grpcio-tools>=1.60.0",         # protoc compiler
+    "protobuf>=4.25.0",             # Protocol buffers
+    
+    # ==========================================================================
+    # Image Processing
+    # ==========================================================================
+    "pillow>=10.2.0",               # Image decoding/resizing
+    "opencv-python-headless>=4.9.0",# Alternative image processing (headless for server)
+    
+    # ==========================================================================
+    # S3/MinIO Client
+    # ==========================================================================
+    "boto3>=1.34.0",                # S3-compatible client for MinIO
+    
+    # ==========================================================================
+    # Triton Client
+    # ==========================================================================
+    "tritonclient[grpc]>=2.42.0",   # Triton Inference Server gRPC client
+    
+    # ==========================================================================
+    # Load Testing
+    # ==========================================================================
+    "locust>=2.23.0",               # Load testing framework
+    
+    # ==========================================================================
+    # Metrics & Monitoring
+    # ==========================================================================
+    "prometheus-client>=0.19.0",    # Prometheus metrics (optional in-app)
+    "requests>=2.31.0",             # HTTP client for Prometheus queries
+    
+    # ==========================================================================
+    # Data Analysis
+    # ==========================================================================
+    "pandas>=2.2.0",                # Data manipulation
+    "matplotlib>=3.8.0",            # Visualization
+    "seaborn>=0.13.0",              # Statistical visualization
+]
+
+[project.optional-dependencies]
+# Dataset curation (requires PyTorch for YOLOv5)
+dataset = [
+    "torch>=2.2.0",
+    "torchvision>=0.17.0",
+]
+
+# Development tools
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "ruff>=0.2.0",
+    "mypy>=1.8.0",
+    "pre-commit>=3.6.0",
+]
+
+# Jupyter for analysis
+notebook = [
+    "jupyter>=1.0.0",
+    "ipykernel>=6.29.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/matthewhoung/inference-arena"
+Repository = "https://github.com/matthewhoung/inference-arena"
+Documentation = "https://github.com/matthewhoung/inference-arena#readme"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["common"]
+
+# =============================================================================
+# Tool Configuration
+# =============================================================================
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "UP",     # pyupgrade
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["common"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
