@@ -46,7 +46,9 @@ data/thesis_test_set/*.jpg
 
 # Models (exported ONNX files)
 models/*.onnx
+models/*.onnx.data
 models/checksums.txt
+models/*.pt
 
 # Keep download script
 !models/download_models.py
