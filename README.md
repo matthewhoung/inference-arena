@@ -73,42 +73,6 @@ A two-stage computer vision pipeline with controlled fan-out behavior:
 
 ---
 
-## Repository Structure
-
-```
-inference-arena/
-├── common/                     # Shared controlled variables
-│   ├── preprocessing.py        # Identical preprocessing across all architectures
-│   └── proto/
-│       └── inference.proto     # gRPC service definition
-│
-├── models/                     # ONNX models (downloaded, not committed)
-│   └── download_models.py
-│
-├── data/                       # Test dataset
-│   ├── curate_dataset.py       # Fan-out controlled dataset generator
-│   └── thesis_test_set/        # 100 curated COCO images
-│
-├── architectures/
-│   ├── monolithic/             # Architecture A
-│   ├── microservices/          # Architecture B
-│   └── triton/                 # Architecture C
-│
-├── infrastructure/             # MinIO, Prometheus, cAdvisor
-│   └── docker-compose.infra.yml
-│
-├── experiments/                # Load testing & data collection
-│   ├── locustfile.py
-│   └── run_matrix.py
-│
-├── analysis/                   # Results processing
-│   └── analyze_results.ipynb
-│
-└── results/raw/                # Experiment outputs (not committed)
-```
-
----
-
 ## Controlled Variables
 
 All architectures share these identical configurations to isolate architectural overhead:
@@ -121,6 +85,19 @@ All architectures share these identical configurations to isolate architectural 
 | Container Resources | 2 vCPU, 4GB per container | Fair compute allocation |
 | ONNX Threading | `intra_op=2`, `inter_op=1` | Optimal for 2 vCPU |
 | Test Dataset | 100 COCO images (3-5 detections each) | Controlled fan-out |
+
+## Test Coverage
+
+| Module | Coverage |
+|--------|----------|
+| `transforms.py` | 88% |
+| `yolo_preprocess.py` | 96% |
+| `mobilenet_preprocess.py` | 95% |
+| **Total** | **93%** |
+
+```bash
+# Run tests with coverage
+pytest tests/ --cov=src/shared/processing --cov-report=term-missing
 
 ---
 
@@ -146,8 +123,6 @@ source .venv/bin/activate
 # Install dependencies
 uv sync
 
-# Initialize project structure
-python scripts/init_project.py
 ```
 
 ### Download Models

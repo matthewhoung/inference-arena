@@ -1,151 +1,209 @@
+# ============================================================================
+# Inference Arena - Project Configuration
+# ============================================================================
+# Master's Thesis: Characterizing ML Serving Architectures in CPU-Constrained
+# Environments: An Empirical Comparison of Custom and Managed Inference
+#
+# Author: Matthew Hong
+# ============================================================================
+
 [project]
 name = "inference-arena"
 version = "0.1.0"
-description = "A Comparative Study of ML Model Serving Architectures: Monolithic vs Microservices vs NVIDIA Triton"
+description = "ML Serving Architecture Comparison for Master's Thesis"
 readme = "README.md"
 license = { text = "MIT" }
+authors = [{ name = "Matthew Hong" }]
 requires-python = ">=3.11"
-authors = [
-    { name = "Matthew Hong" }
-]
-keywords = [
-    "machine-learning",
-    "inference",
-    "microservices",
-    "triton",
-    "mlops",
-    "benchmarking"
-]
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.11",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
-]
 
+# Core dependencies for shared module
 dependencies = [
-    # ==========================================================================
-    # Core ML Inference
-    # ==========================================================================
-    "onnxruntime>=1.17.0",          # ONNX model inference (CPU)
-    "numpy>=1.24.0,<2.0.0",         # Array operations (ONNX Runtime compatibility)
-    
-    # ==========================================================================
-    # Web Framework
-    # ==========================================================================
-    "fastapi>=0.109.0",             # HTTP API framework
-    "uvicorn[standard]>=0.27.0",    # ASGI server
-    "python-multipart>=0.0.6",      # File upload support
-    
-    # ==========================================================================
-    # gRPC (Microservices communication)
-    # ==========================================================================
-    "grpcio>=1.60.0",               # gRPC runtime
-    "grpcio-tools>=1.60.0",         # protoc compiler
-    "protobuf>=4.25.0",             # Protocol buffers
-    
-    # ==========================================================================
-    # Image Processing
-    # ==========================================================================
-    "pillow>=10.2.0",               # Image decoding/resizing
-    "opencv-python-headless>=4.9.0",# Alternative image processing (headless for server)
-    
-    # ==========================================================================
-    # S3/MinIO Client
-    # ==========================================================================
-    "boto3>=1.34.0",                # S3-compatible client for MinIO
-    
-    # ==========================================================================
-    # Triton Client
-    # ==========================================================================
-    "tritonclient[grpc]>=2.42.0",   # Triton Inference Server gRPC client
-    
-    # ==========================================================================
-    # Load Testing
-    # ==========================================================================
-    "locust>=2.23.0",               # Load testing framework
-    
-    # ==========================================================================
-    # Metrics & Monitoring
-    # ==========================================================================
-    "prometheus-client>=0.19.0",    # Prometheus metrics (optional in-app)
-    "requests>=2.31.0",             # HTTP client for Prometheus queries
-    
-    # ==========================================================================
-    # Data Analysis
-    # ==========================================================================
-    "pandas>=2.2.0",                # Data manipulation
-    "matplotlib>=3.8.0",            # Visualization
-    "seaborn>=0.13.0",              # Statistical visualization
+    # Image processing
+    "opencv-python>=4.8.0",
+    "numpy>=1.24.0",
 ]
 
 [project.optional-dependencies]
-# Dataset curation (requires PyTorch for YOLOv5)
-dataset = [
-    "torch>=2.2.0",
-    "torchvision>=0.17.0",
+# Model export and inference
+model = [
+    "onnx>=1.15.0",
+    "onnxruntime>=1.18.0",
+    "torch>=2.1.0",
+    "torchvision>=0.16.0",
+    "ultralytics>=8.1.0",
 ]
 
-# Development tools
+# Data processing
+data = [
+    "requests>=2.31.0",
+    "tqdm>=4.66.0",
+]
+
+# gRPC for microservices
+grpc = [
+    "grpcio>=1.60.0",
+    "grpcio-tools>=1.60.0",
+    "protobuf>=4.25.0",
+]
+
+# API framework
+api = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "python-multipart>=0.0.6",
+    "httpx>=0.26.0",
+]
+
+# Infrastructure
+infra = [
+    "minio>=7.2.0",
+    "prometheus-client>=0.19.0",
+]
+
+# Load testing
+loadtest = [
+    "locust>=2.20.0",
+]
+
+# Development and testing
 dev = [
-    "pytest>=8.0.0",
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
     "pytest-asyncio>=0.23.0",
-    "ruff>=0.2.0",
+    "black>=24.1.0",
+    "ruff>=0.1.0",
     "mypy>=1.8.0",
-    "pre-commit>=3.6.0",
 ]
 
-# Jupyter for analysis
-notebook = [
+# Analysis and visualization
+analysis = [
+    "pandas>=2.1.0",
+    "matplotlib>=3.8.0",
+    "seaborn>=0.13.0",
+    "scipy>=1.11.0",
     "jupyter>=1.0.0",
-    "ipykernel>=6.29.0",
+]
+
+# All dependencies
+all = [
+    "inference-arena[model,data,grpc,api,infra,loadtest,dev,analysis]",
 ]
 
 [project.urls]
-Homepage = "https://github.com/matthewhoung/inference-arena"
 Repository = "https://github.com/matthewhoung/inference-arena"
-Documentation = "https://github.com/matthewhoung/inference-arena#readme"
+
+# ============================================================================
+# Build System
+# ============================================================================
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["common"]
+packages = ["src/shared"]
 
-# =============================================================================
+# ============================================================================
 # Tool Configuration
-# =============================================================================
+# ============================================================================
 
-[tool.ruff]
-target-version = "py311"
+# pytest configuration
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests requiring external services",
+]
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit = ["*/tests/*", "*/__init__.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]
+
+# Black configuration
+[tool.black]
 line-length = 100
+target-version = ["py311"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+    | \.venv
+    | build
+    | dist
+    | __pycache__
+    | \.mypy_cache
+)/
+'''
+
+# Ruff configuration
+[tool.ruff]
+line-length = 100
+target-version = "py311"
 
 [tool.ruff.lint]
 select = [
     "E",      # pycodestyle errors
     "W",      # pycodestyle warnings
-    "F",      # Pyflakes
+    "F",      # pyflakes
     "I",      # isort
     "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
     "UP",     # pyupgrade
+    "D",      # pydocstyle
 ]
 ignore = [
-    "E501",   # line too long (handled by formatter)
+    "E501",   # line too long (handled by black)
+    "B008",   # do not perform function calls in argument defaults
+    "D100",   # missing docstring in public module
+    "D104",   # missing docstring in public package
 ]
 
-[tool.ruff.lint.isort]
-known-first-party = ["common"]
+[tool.ruff.lint.pydocstyle]
+convention = "google"
 
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D"]  # No docstrings required in tests
+"__init__.py" = ["F401"]  # Unused imports OK in __init__
+
+# MyPy configuration
 [tool.mypy]
 python_version = "3.11"
 warn_return_any = true
 warn_unused_ignores = true
 disallow_untyped_defs = true
+strict_optional = true
+exclude = [
+    "venv",
+    ".venv",
+    "build",
+    "dist",
+]
 
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_functions = ["test_*"]
+[[tool.mypy.overrides]]
+module = [
+    "cv2.*",
+    "onnx.*",
+    "onnxruntime.*",
+    "minio.*",
+    "grpc.*",
+    "locust.*",
+    "ultralytics.*",
+]
+ignore_missing_imports = true

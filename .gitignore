@@ -1,6 +1,4 @@
-# -----------------------------------------------------------------------------
 # Python
-# -----------------------------------------------------------------------------
 __pycache__/
 *.py[cod]
 *$py.class
@@ -22,91 +20,67 @@ wheels/
 .installed.cfg
 *.egg
 
-# -----------------------------------------------------------------------------
-# Virtual Environments
-# -----------------------------------------------------------------------------
+# Virtual environments
 .venv/
 venv/
 ENV/
 env/
 
-# -----------------------------------------------------------------------------
-# IDE / Editor
-# -----------------------------------------------------------------------------
-.vscode/
+# IDE
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
-.project
-.pydevproject
-.settings/
 
-# -----------------------------------------------------------------------------
-# Jupyter Notebooks
-# -----------------------------------------------------------------------------
-.ipynb_checkpoints/
-*.ipynb_checkpoints
-
-# -----------------------------------------------------------------------------
-# Testing
-# -----------------------------------------------------------------------------
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-.nox/
-
-# -----------------------------------------------------------------------------
-# Type Checking
-# -----------------------------------------------------------------------------
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# -----------------------------------------------------------------------------
-# Project Specific - Models (downloaded, not committed)
-# -----------------------------------------------------------------------------
-models/*.onnx
-models/*.pt
-models/*.pth
-
-# -----------------------------------------------------------------------------
-# Project Specific - Data (large files, not committed)
-# -----------------------------------------------------------------------------
-data/thesis_test_set/*.jpg
-data/thesis_test_set/*.jpeg
-data/thesis_test_set/*.png
-data/coco/
-
-# -----------------------------------------------------------------------------
-# Project Specific - Experiment Results (generated, archived separately)
-# -----------------------------------------------------------------------------
-results/raw/*.csv
-results/raw/*.json
-
-# -----------------------------------------------------------------------------
-# Project Specific - gRPC Generated Code
-# -----------------------------------------------------------------------------
-common/proto/*_pb2.py
-common/proto/*_pb2_grpc.py
-common/proto/*_pb2.pyi
-
-# -----------------------------------------------------------------------------
-# Docker
-# -----------------------------------------------------------------------------
-*.log
-
-# -----------------------------------------------------------------------------
-# OS Files
-# -----------------------------------------------------------------------------
+# OS
 .DS_Store
 Thumbs.db
 
-# -----------------------------------------------------------------------------
-# Secrets (never commit)
-# -----------------------------------------------------------------------------
-.env
-.env.local
-*.pem
-*.key
+# Downloaded data (large files)
+data/coco/
+data/thesis_test_set/*.jpg
+
+# Keep manifest
+!data/thesis_test_set/manifest.json
+
+# Models (exported ONNX files)
+models/*.onnx
+models/checksums.txt
+
+# Keep download script
+!models/download_models.py
+
+# Experiment results (generated)
+results/raw/
+results/processed/
+
+# Local Triton model repository (models copied here for local testing)
+architectures/triton/model_repository/*/1/model.onnx
+
+# Docker volumes (if using bind mounts)
+.docker-data/
+
+# Logs
+logs/
+*.log
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# pytest
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
