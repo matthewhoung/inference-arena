@@ -1,0 +1,617 @@
+{
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": {
+                    "type": "grafana",
+                    "uid": "-- Grafana --"
+                },
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
+    },
+    "description": "Container resource metrics for ML serving architecture experiments",
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 1,
+    "id": null,
+    "links": [],
+    "liveNow": false,
+    "panels": [
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 0
+            },
+            "id": 1,
+            "panels": [],
+            "title": "Overview",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "description": "CPU utilization percentage per container",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisBorderShow": false,
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "CPU %",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 10,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "insertNulls": false,
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "never",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "max": 200,
+                    "min": 0,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 80
+                            },
+                            {
+                                "color": "red",
+                                "value": 95
+                            }
+                        ]
+                    },
+                    "unit": "percent"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 1
+            },
+            "id": 2,
+            "options": {
+                "legend": {
+                    "calcs": [
+                        "mean",
+                        "max"
+                    ],
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "editorMode": "code",
+                    "expr": "sum(rate(container_cpu_usage_seconds_total{name=~\"inference-arena-.*\"}[30s])) by (name) * 100",
+                    "legendFormat": "{{name}}",
+                    "range": true,
+                    "refId": "A"
+                }
+            ],
+            "title": "CPU Utilization by Container",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "description": "Memory usage in megabytes per container",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisBorderShow": false,
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "Memory (MB)",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 10,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "insertNulls": false,
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "never",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "min": 0,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 3072
+                            },
+                            {
+                                "color": "red",
+                                "value": 3840
+                            }
+                        ]
+                    },
+                    "unit": "decmbytes"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 1
+            },
+            "id": 3,
+            "options": {
+                "legend": {
+                    "calcs": [
+                        "mean",
+                        "max"
+                    ],
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "editorMode": "code",
+                    "expr": "container_memory_usage_bytes{name=~\"inference-arena-.*\"} / 1024 / 1024",
+                    "legendFormat": "{{name}}",
+                    "range": true,
+                    "refId": "A"
+                }
+            ],
+            "title": "Memory Usage by Container",
+            "type": "timeseries"
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 9
+            },
+            "id": 4,
+            "panels": [],
+            "title": "Network I/O",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "description": "Network receive rate in KB/s per container",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisBorderShow": false,
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "KB/s",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 10,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "insertNulls": false,
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "never",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "min": 0,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "KBs"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 7,
+                "w": 12,
+                "x": 0,
+                "y": 10
+            },
+            "id": 5,
+            "options": {
+                "legend": {
+                    "calcs": [
+                        "mean",
+                        "max"
+                    ],
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "editorMode": "code",
+                    "expr": "sum(rate(container_network_receive_bytes_total{name=~\"inference-arena-.*\"}[30s])) by (name) / 1024",
+                    "legendFormat": "{{name}}",
+                    "range": true,
+                    "refId": "A"
+                }
+            ],
+            "title": "Network Receive Rate",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "description": "Network transmit rate in KB/s per container",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisBorderShow": false,
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "KB/s",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 10,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "insertNulls": false,
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "never",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "min": 0,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "KBs"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 7,
+                "w": 12,
+                "x": 12,
+                "y": 10
+            },
+            "id": 6,
+            "options": {
+                "legend": {
+                    "calcs": [
+                        "mean",
+                        "max"
+                    ],
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "editorMode": "code",
+                    "expr": "sum(rate(container_network_transmit_bytes_total{name=~\"inference-arena-.*\"}[30s])) by (name) / 1024",
+                    "legendFormat": "{{name}}",
+                    "range": true,
+                    "refId": "A"
+                }
+            ],
+            "title": "Network Transmit Rate",
+            "type": "timeseries"
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 17
+            },
+            "id": 7,
+            "panels": [],
+            "title": "Infrastructure Services",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "description": "Current status of infrastructure services",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [
+                        {
+                            "options": {
+                                "0": {
+                                    "color": "red",
+                                    "index": 1,
+                                    "text": "DOWN"
+                                },
+                                "1": {
+                                    "color": "green",
+                                    "index": 0,
+                                    "text": "UP"
+                                }
+                            },
+                            "type": "value"
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": null
+                            },
+                            {
+                                "color": "green",
+                                "value": 1
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 24,
+                "x": 0,
+                "y": 18
+            },
+            "id": 8,
+            "options": {
+                "colorMode": "background",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "horizontal",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "pluginVersion": "10.2.2",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "editorMode": "code",
+                    "expr": "up{job=\"cadvisor\"}",
+                    "legendFormat": "cAdvisor",
+                    "range": true,
+                    "refId": "A"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "editorMode": "code",
+                    "expr": "up{job=\"prometheus\"}",
+                    "legendFormat": "Prometheus",
+                    "range": true,
+                    "refId": "B"
+                }
+            ],
+            "title": "Service Status",
+            "type": "stat"
+        }
+    ],
+    "refresh": "5s",
+    "schemaVersion": 38,
+    "tags": [
+        "inference-arena",
+        "infrastructure",
+        "thesis"
+    ],
+    "templating": {
+        "list": [
+            {
+                "current": {
+                    "selected": false,
+                    "text": "Prometheus",
+                    "value": "prometheus"
+                },
+                "hide": 0,
+                "includeAll": false,
+                "label": "Datasource",
+                "multi": false,
+                "name": "datasource",
+                "options": [],
+                "query": "prometheus",
+                "queryValue": "",
+                "refresh": 1,
+                "regex": "",
+                "skipUrlSync": false,
+                "type": "datasource"
+            }
+        ]
+    },
+    "time": {
+        "from": "now-15m",
+        "to": "now"
+    },
+    "timepicker": {
+        "refresh_intervals": [
+            "5s",
+            "10s",
+            "30s",
+            "1m",
+            "5m"
+        ],
+        "time_options": [
+            "5m",
+            "15m",
+            "1h",
+            "3h",
+            "6h",
+            "12h",
+            "24h"
+        ]
+    },
+    "timezone": "browser",
+    "title": "Inference Arena - Infrastructure",
+    "uid": "inference-arena-infra",
+    "version": 1,
+    "weekStart": ""
+}

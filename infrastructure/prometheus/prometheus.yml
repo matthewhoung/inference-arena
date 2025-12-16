@@ -1,0 +1,98 @@
+# =============================================================================
+# Prometheus Configuration - Inference Arena
+# =============================================================================
+#
+# Scrape configuration for container metrics collection.
+# 
+# Scrape Interval: 1 second
+#   - Required for accurate latency analysis during 180-second measurement phases
+#   - Aligns with methodology specification (Ch3 §3.4.5 Table 3.4)
+#
+# Targets:
+#   - cAdvisor: Container CPU, memory, network metrics
+#
+# Author: Matthew Hong
+# =============================================================================
+
+global:
+  # 1-second scrape interval for fine-grained metrics
+  # Required for accurate P99 latency correlation with resource usage
+  scrape_interval: 1s
+  
+  # Evaluation interval for alerting rules (if any)
+  evaluation_interval: 1s
+  
+  # Attach these labels to any time series or alerts
+  external_labels:
+    project: 'inference-arena'
+    environment: 'thesis-experiment'
+
+# =============================================================================
+# Scrape Configurations
+# =============================================================================
+
+scrape_configs:
+  # ---------------------------------------------------------------------------
+  # Prometheus Self-Monitoring
+  # ---------------------------------------------------------------------------
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    # Less frequent scrape for self-monitoring (reduce overhead)
+    scrape_interval: 15s
+
+  # ---------------------------------------------------------------------------
+  # cAdvisor - Container Metrics
+  # ---------------------------------------------------------------------------
+  # Collects metrics from all Docker containers including:
+  #   - container_cpu_usage_seconds_total
+  #   - container_memory_usage_bytes
+  #   - container_network_receive_bytes_total
+  #   - container_network_transmit_bytes_total
+  #
+  # Key queries for thesis analysis:
+  #   CPU%: rate(container_cpu_usage_seconds_total{name=~".*"}[1m]) * 100
+  #   Memory MB: container_memory_usage_bytes{name=~".*"} / 1024 / 1024
+  # ---------------------------------------------------------------------------
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    # 1-second interval for precise resource tracking during experiments
+    scrape_interval: 1s
+    # Timeout must be <= scrape_interval
+    scrape_timeout: 1s
+    # Metrics path for cAdvisor
+    metrics_path: /metrics
+    # Relabel to clean up container names
+    metric_relabel_configs:
+      # Keep only inference-arena containers and system metrics
+      - source_labels: [name]
+        regex: 'inference-arena-.*|^$'
+        action: keep
+      # Drop high-cardinality metrics we don't need
+      - source_labels: [__name__]
+        regex: 'container_tasks_state|container_memory_failures_total'
+        action: drop
+
+  # ---------------------------------------------------------------------------
+  # Architecture Services (Dynamic Discovery)
+  # ---------------------------------------------------------------------------
+  # When architecture containers are running, they can expose custom metrics
+  # on /metrics endpoint. This job discovers them via Docker labels.
+  #
+  # To enable: Add label 'prometheus.scrape=true' to architecture containers
+  # ---------------------------------------------------------------------------
+  # NOTE: Uncomment when architecture containers expose custom metrics
+  # - job_name: 'architecture-services'
+  #   docker_sd_configs:
+  #     - host: unix:///var/run/docker.sock
+  #       refresh_interval: 5s
+  #   relabel_configs:
+  #     - source_labels: [__meta_docker_container_label_prometheus_scrape]
+  #       regex: 'true'
+  #       action: keep
+  #     - source_labels: [__meta_docker_container_name]
+  #       target_label: container
+  #     - source_labels: [__meta_docker_container_label_prometheus_port]
+  #       target_label: __address__
+  #       replacement: '${1}'

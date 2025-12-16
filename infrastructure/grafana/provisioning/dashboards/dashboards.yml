@@ -1,0 +1,22 @@
+# =============================================================================
+# Grafana Dashboard Provisioning - Inference Arena
+# =============================================================================
+#
+# Auto-loads dashboards from the dashboards directory on Grafana startup.
+#
+# Author: Matthew Hong
+# =============================================================================
+
+apiVersion: 1
+
+providers:
+  - name: 'Inference Arena Dashboards'
+    orgId: 1
+    folder: ''
+    folderUid: ''
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
