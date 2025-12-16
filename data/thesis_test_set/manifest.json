@@ -1,0 +1,427 @@
+{
+  "version": "1.0",
+  "created": "2025-12-15T09:55:37.587312+00:00",
+  "source": "COCO val2017",
+  "config": {
+    "target_count": 100,
+    "min_detections": 3,
+    "max_detections": 5,
+    "confidence_threshold": 0.5,
+    "iou_threshold": 0.45,
+    "random_seed": 42
+  },
+  "statistics": {
+    "total_images": 100,
+    "mean_detections": 4.0,
+    "std_detections": 0.71,
+    "min_detections": 3,
+    "max_detections": 5
+  },
+  "distribution": {
+    "3": 25,
+    "4": 50,
+    "5": 25
+  },
+  "images": [
+    {
+      "filename": "000000554328.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000250137.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000041990.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000273198.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000076547.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000300276.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000241326.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000290081.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000265518.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000532761.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000445722.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000171611.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000235857.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000395180.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000093154.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000232649.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000171788.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000038678.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000172330.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000224200.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000419974.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000058350.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000315187.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000305317.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000409630.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000436883.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000417632.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000526706.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000218997.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000501005.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000015660.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000132796.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000414133.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000326082.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000140076.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000126107.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000093437.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000382111.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000111207.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000189820.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000230983.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000417249.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000456496.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000190236.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000189775.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000406417.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000441247.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000462576.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000166287.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000082821.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000159399.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000309467.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000488592.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000447088.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000560474.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000193162.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000286553.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000395343.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000562207.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000248616.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000057027.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000168337.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000504415.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000065350.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000216296.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000037777.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000461009.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000476787.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000263594.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000044699.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000440475.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000458255.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000254516.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000311303.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000322895.jpg",
+      "detections": 4
+    },
+    {
+      "filename": "000000283070.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000206135.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000391290.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000193926.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000465585.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000374982.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000377239.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000001532.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000409542.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000156643.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000531707.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000025393.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000490936.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000154705.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000381639.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000331817.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000187144.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000046872.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000269632.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000021839.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000146825.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000202339.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000285894.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000300039.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000047828.jpg",
+      "detections": 5
+    }
+  ]
+}
