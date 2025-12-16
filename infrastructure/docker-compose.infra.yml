@@ -1,0 +1,174 @@
+# =============================================================================
+# Inference Arena - Infrastructure Services
+# =============================================================================
+#
+# This compose file provides shared infrastructure for all architectures:
+# - MinIO: S3-compatible model storage
+# - cAdvisor: Container metrics exporter
+# - Prometheus: Time-series metrics database
+# - Grafana: Metrics visualization dashboard
+#
+# Network Topology:
+#   - infra-network: Internal metrics aggregation (Prometheus ↔ Grafana)
+#   - backend-network: Shared with architecture containers (MinIO, cAdvisor)
+#
+# Usage:
+#   docker compose -f infrastructure/docker-compose.infra.yml up -d
+#
+# Author: Matthew Hong
+# Specification Reference: Ch3 Methodology §3.4.5
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # MinIO - S3-Compatible Object Storage
+  # ===========================================================================
+  # Provides model storage for all architectures. Triton loads models directly
+  # via s3://minio:9000/models. Custom architectures download at startup.
+  #
+  # Ports:
+  #   - 9000: S3 API
+  #   - 9001: Web Console
+  # ===========================================================================
+  minio:
+    image: minio/minio:RELEASE.2024-01-18T22-51-28Z
+    container_name: inference-arena-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio-data:/data
+    networks:
+      - backend-network
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  # ===========================================================================
+  # cAdvisor - Container Metrics Exporter
+  # ===========================================================================
+  # Collects CPU, memory, and network metrics from all Docker containers.
+  # Prometheus scrapes these metrics at 1-second intervals.
+  #
+  # Note: Requires privileged access to read container stats from host.
+  # ===========================================================================
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: inference-arena-cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - backend-network
+    privileged: true
+    devices:
+      - /dev/kmsg
+    restart: unless-stopped
+
+  # ===========================================================================
+  # Prometheus - Time-Series Database
+  # ===========================================================================
+  # Stores container metrics at 1-second scrape intervals for latency analysis.
+  # Configured to scrape cAdvisor metrics.
+  #
+  # Retention: 15 days (sufficient for experiment runs)
+  # ===========================================================================
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: inference-arena-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    networks:
+      - infra-network
+      - backend-network
+    depends_on:
+      cadvisor:
+        condition: service_started
+    restart: unless-stopped
+
+  # ===========================================================================
+  # Grafana - Metrics Visualization
+  # ===========================================================================
+  # Pre-provisioned with Prometheus datasource and infrastructure dashboard.
+  # Dashboard shows CPU utilization, memory usage, and network I/O per container.
+  #
+  # Default credentials: admin / admin
+  # ===========================================================================
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: inference-arena-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/infrastructure.json
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/provisioning/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    networks:
+      - infra-network
+    depends_on:
+      prometheus:
+        condition: service_started
+    restart: unless-stopped
+
+# =============================================================================
+# Networks
+# =============================================================================
+# Two-network topology isolates metrics infrastructure from experiment traffic.
+#
+# - infra-network: Prometheus ↔ Grafana (internal aggregation)
+# - backend-network: MinIO + cAdvisor + Architecture containers
+#
+# Architecture compose files should attach to backend-network:
+#   networks:
+#     default:
+#       name: inference-arena-backend
+#       external: true
+# =============================================================================
+networks:
+  infra-network:
+    name: inference-arena-infra
+    driver: bridge
+  backend-network:
+    name: inference-arena-backend
+    driver: bridge
+
+# =============================================================================
+# Volumes
+# =============================================================================
+# Named volumes for data persistence across container restarts.
+# =============================================================================
+volumes:
+  minio-data:
+    name: inference-arena-minio-data
+  prometheus-data:
+    name: inference-arena-prometheus-data
+  grafana-data:
+    name: inference-arena-grafana-data
