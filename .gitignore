@@ -44,6 +44,12 @@ data/thesis_test_set/*.jpg
 # Keep manifest
 !data/thesis_test_set/manifest.json
 
+# Generated proto files
+src/shared/proto/inference_pb2.py
+src/shared/proto/inference_pb2_grpc.py
+src/shared/proto/*_pb2.py
+src/shared/proto/*_pb2_grpc.py
+
 # Models (exported ONNX files)
 models/*.onnx
 models/*.onnx.data

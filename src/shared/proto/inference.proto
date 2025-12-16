@@ -1,0 +1,152 @@
+// =============================================================================
+// Inference Arena - gRPC Service Definitions
+// =============================================================================
+// 
+// This proto file defines the gRPC interface for inter-service communication
+// in the microservices architecture.
+//
+// Service Flow:
+//   Client → Detection Service → Classification Service → Response
+//
+// Usage:
+//   Generate Python files: python scripts/generate_proto.py
+//
+// Author: Matthew Hong
+// Specification Reference: Foundation Specification §6 gRPC Interface
+// =============================================================================
+
+syntax = "proto3";
+
+package inference;
+
+option java_multiple_files = true;
+option java_package = "com.inference.arena";
+
+// =============================================================================
+// Common Types
+// =============================================================================
+
+// BoundingBox represents a detection from YOLO
+message BoundingBox {
+    float x1 = 1;           // Top-left x coordinate (original image space)
+    float y1 = 2;           // Top-left y coordinate
+    float x2 = 3;           // Bottom-right x coordinate
+    float y2 = 4;           // Bottom-right y coordinate
+    float confidence = 5;   // Detection confidence [0, 1]
+    int32 class_id = 6;     // YOLO class ID (0-79 for COCO)
+}
+
+// ClassificationResult represents a classification from MobileNet
+message ClassificationResult {
+    int32 class_id = 1;         // ImageNet class ID (0-999)
+    string class_name = 2;      // Human-readable class name
+    float confidence = 3;       // Classification confidence [0, 1]
+}
+
+// Timing information for latency analysis
+message TimingInfo {
+    double preprocessing_ms = 1;    // Preprocessing latency
+    double inference_ms = 2;        // Model inference latency
+    double postprocessing_ms = 3;   // Postprocessing latency
+    double total_ms = 4;            // Total service latency
+}
+
+// =============================================================================
+// Classification Service
+// =============================================================================
+
+// ClassificationRequest - sent from Detection to Classification service
+message ClassificationRequest {
+    // Request identification
+    string request_id = 1;          // Unique request ID for tracing
+    
+    // Image data (one of the following)
+    bytes image_crop = 2;           // JPEG/PNG encoded crop bytes
+    
+    // Source detection context (optional, for debugging)
+    BoundingBox source_box = 3;     // Original detection that produced this crop
+}
+
+// ClassificationResponse - returned from Classification service
+message ClassificationResponse {
+    string request_id = 1;                  // Echo back request ID
+    ClassificationResult result = 2;        // Top-1 classification
+    repeated ClassificationResult top_k = 3; // Top-K results (optional)
+    TimingInfo timing = 4;                  // Latency breakdown
+    string error = 5;                       // Error message if failed
+}
+
+// Batch versions for potential future optimization
+message BatchClassificationRequest {
+    repeated ClassificationRequest requests = 1;
+}
+
+message BatchClassificationResponse {
+    repeated ClassificationResponse responses = 1;
+    TimingInfo batch_timing = 2;            // Aggregate timing
+}
+
+// ClassificationService - classify image crops
+service ClassificationService {
+    // Classify a single image crop
+    rpc Classify(ClassificationRequest) returns (ClassificationResponse);
+    
+    // Classify multiple crops in a batch
+    rpc ClassifyBatch(BatchClassificationRequest) returns (BatchClassificationResponse);
+}
+
+// =============================================================================
+// Full Pipeline Service (Optional - for unified interface)
+// =============================================================================
+
+// InferenceRequest - full pipeline request (detect + classify)
+message InferenceRequest {
+    string request_id = 1;          // Unique request ID
+    bytes image = 2;                // Full image (JPEG/PNG encoded)
+    
+    // Configuration
+    float detection_threshold = 3;  // Min confidence for detections (default: 0.5)
+    int32 max_detections = 4;       // Max detections to process (default: 10)
+    int32 top_k = 5;                // Top-K classifications per detection (default: 1)
+}
+
+// DetectionWithClassification - paired detection and classification
+message DetectionWithClassification {
+    BoundingBox detection = 1;              // YOLO detection
+    ClassificationResult classification = 2; // MobileNet classification
+}
+
+// InferenceResponse - full pipeline response
+message InferenceResponse {
+    string request_id = 1;
+    repeated DetectionWithClassification results = 2;
+    TimingInfo timing = 3;
+    string error = 4;
+}
+
+// InferenceService - full detection + classification pipeline
+service InferenceService {
+    // Run full pipeline on an image
+    rpc Infer(InferenceRequest) returns (InferenceResponse);
+}
+
+// =============================================================================
+// Health Check (standard gRPC health protocol)
+// =============================================================================
+
+message HealthCheckRequest {
+    string service = 1;             // Service name (empty = overall health)
+}
+
+message HealthCheckResponse {
+    enum ServingStatus {
+        UNKNOWN = 0;
+        SERVING = 1;
+        NOT_SERVING = 2;
+    }
+    ServingStatus status = 1;
+}
+
+service Health {
+    rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
+}

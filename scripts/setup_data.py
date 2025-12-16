@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Setup Data Script - Download COCO and curate thesis dataset.
 
