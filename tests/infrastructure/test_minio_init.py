@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any, Dict
 from unittest.mock import MagicMock, patch, PropertyMock
 import tempfile
+import importlib
 
 import sys
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -141,20 +142,40 @@ class TestTritonConfigGeneration:
 class TestMinIORegistryMocked:
     """Test MinIO registry with mocked client."""
 
-    @pytest.fixture
+    @pytest.fixture(autouse=True)
     def mock_minio_client(self):
-        """Create mock MinIO client."""
-        with patch("infrastructure.minio.init_models.Minio") as MockMinio:
+        """Create mock MinIO client.
+
+        Note: autouse=True ensures the mock is applied before any test imports.
+        We patch at the source (minio.Minio) rather than the usage site because
+        init_models.py conditionally imports Minio in a try-except block.
+        """
+        # Create a mock module if minio isn't installed
+        import sys
+        try:
+            import minio
+            patch_target = "minio.Minio"
+        except ImportError:
+            mock_minio_module = MagicMock()
+            sys.modules['minio'] = mock_minio_module
+            sys.modules['minio.error'] = MagicMock()
+            patch_target = "minio.Minio"
+
+        with patch(patch_target) as MockMinio, \
+             patch("infrastructure.minio.init_models.MINIO_AVAILABLE", True):
             client = MagicMock()
             MockMinio.return_value = client
-            
+
             # Default behaviors
             client.list_buckets.return_value = []
             client.bucket_exists.return_value = False
             client.make_bucket.return_value = None
             client.fput_object.return_value = None
             client.put_object.return_value = None
-            
+
+            if 'infrastructure.minio.init_models' in sys.modules:
+                importlib.reload(sys.modules['infrastructure.minio.init_models'])
+
             yield client
 
     @pytest.fixture

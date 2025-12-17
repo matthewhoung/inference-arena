@@ -34,9 +34,21 @@ import yaml
 # Constants
 # =============================================================================
 
-# Find experiment.yaml relative to this file
-# Structure: src/shared/config.py -> ../../experiment.yaml
-_CONFIG_PATH = Path(__file__).parent.parent.parent / "experiment.yaml"
+_POSSIBLE_PATHS = [
+    Path(__file__).parent.parent.parent / "experiment.yaml",
+    Path.cwd() / "experiment.yaml",
+]
+
+# Find first existing path
+_CONFIG_PATH = None
+for path in _POSSIBLE_PATHS:
+    if path.exists():
+        _CONFIG_PATH = path
+        break
+
+# If not found, default to first option for better error messages
+if _CONFIG_PATH is None:
+    _CONFIG_PATH = _POSSIBLE_PATHS[0]
 
 
 # =============================================================================

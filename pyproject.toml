@@ -110,6 +110,10 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/shared"]
 
+[tool.hatch.build.targets.wheel.hooks.custom]
+[tool.hatch.build.targets.editable]
+dev-mode-dirs = ["src"]
+
 # ============================================================================
 # Tool Configuration
 # ============================================================================
