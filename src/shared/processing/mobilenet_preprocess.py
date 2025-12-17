@@ -21,15 +21,18 @@ from typing import Tuple
 import cv2
 import numpy as np
 
+from shared.config import get_controlled_variable
 from shared.processing.transforms import imagenet_normalize, IMAGENET_MEAN, IMAGENET_STD
 
 
 # =============================================================================
-# Constants
+# Constants (Loaded from experiment.yaml)
 # =============================================================================
 
-MOBILENET_INPUT_SIZE: int = 224
-"""Standard MobileNetV2 input dimension (square)."""
+# Load preprocessing parameters from centralized config (experiment.yaml)
+_mobilenet_config = get_controlled_variable("preprocessing", "mobilenet")
+MOBILENET_INPUT_SIZE: int = _mobilenet_config["target_size"]
+"""Standard MobileNetV2 input dimension (square) from experiment.yaml."""
 
 
 # =============================================================================

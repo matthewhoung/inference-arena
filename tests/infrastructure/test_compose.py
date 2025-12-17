@@ -21,6 +21,15 @@ from typing import Any, Dict
 import pytest
 import yaml
 
+from shared.config import get_infrastructure_config, get_controlled_variables
+
+
+# Load infrastructure config for port assertions
+_infra_config = get_infrastructure_config()
+_minio_api_port = _infra_config["minio"]["external_endpoint"].split(":")[-1]  # Extract port from "localhost:9000"
+_monitoring_config = get_controlled_variables("monitoring")
+_cadvisor_port = str(_monitoring_config["cadvisor"]["port"])
+
 
 # =============================================================================
 # Fixtures
@@ -160,11 +169,13 @@ class TestMinIOService:
         assert "latest" not in minio["image"].lower()
 
     def test_minio_ports(self, compose_config: Dict[str, Any]) -> None:
-        """MinIO should expose API (9000) and console (9001) ports."""
+        """MinIO should expose API and console ports."""
         minio = compose_config["services"]["minio"]
         ports = minio.get("ports", [])
         port_mappings = [str(p) for p in ports]
-        assert any("9000" in p for p in port_mappings), "MinIO API port 9000 not exposed"
+        # Use port from config for API port
+        assert any(_minio_api_port in p for p in port_mappings), f"MinIO API port {_minio_api_port} not exposed"
+        # MinIO console port (9001) - TODO: Add to experiment.yaml infrastructure config
         assert any("9001" in p for p in port_mappings), "MinIO console port 9001 not exposed"
 
     def test_minio_healthcheck(self, compose_config: Dict[str, Any]) -> None:
@@ -210,11 +221,12 @@ class TestCAdvisorService:
         assert "latest" not in cadvisor["image"].lower()
 
     def test_cadvisor_port(self, compose_config: Dict[str, Any]) -> None:
-        """cAdvisor should expose port 8080."""
+        """cAdvisor should expose configured port."""
         cadvisor = compose_config["services"]["cadvisor"]
         ports = cadvisor.get("ports", [])
         port_mappings = [str(p) for p in ports]
-        assert any("8080" in p for p in port_mappings), "cAdvisor port 8080 not exposed"
+        # Use port from config (experiment.yaml)
+        assert any(_cadvisor_port in p for p in port_mappings), f"cAdvisor port {_cadvisor_port} not exposed"
 
     def test_cadvisor_required_volumes(self, compose_config: Dict[str, Any]) -> None:
         """cAdvisor should have required host volume mounts."""
@@ -251,6 +263,7 @@ class TestPrometheusService:
         prometheus = compose_config["services"]["prometheus"]
         ports = prometheus.get("ports", [])
         port_mappings = [str(p) for p in ports]
+        # TODO: Add prometheus.port to experiment.yaml infrastructure config
         assert any("9090" in p for p in port_mappings), "Prometheus port 9090 not exposed"
 
     def test_prometheus_config_mount(self, compose_config: Dict[str, Any]) -> None:
@@ -289,6 +302,7 @@ class TestGrafanaService:
         grafana = compose_config["services"]["grafana"]
         ports = grafana.get("ports", [])
         port_mappings = [str(p) for p in ports]
+        # TODO: Add grafana.port to experiment.yaml infrastructure config
         assert any("3000" in p for p in port_mappings), "Grafana port 3000 not exposed"
 
     def test_grafana_provisioning_mounts(self, compose_config: Dict[str, Any]) -> None:

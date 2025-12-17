@@ -22,18 +22,21 @@ from typing import Tuple
 
 import numpy as np
 
+from shared.config import get_controlled_variable
 from shared.processing.transforms import letterbox, scale_boxes
 
 
 # =============================================================================
-# Constants
+# Constants (Loaded from experiment.yaml)
 # =============================================================================
 
-YOLO_INPUT_SIZE: int = 640
-"""Standard YOLOv5 input dimension (square)."""
+# Load preprocessing parameters from centralized config (experiment.yaml)
+_yolo_config = get_controlled_variable("preprocessing", "yolo")
+YOLO_INPUT_SIZE: int = _yolo_config["target_size"]
+"""Standard YOLOv5 input dimension (square) from experiment.yaml."""
 
-YOLO_NORMALIZATION_SCALE: float = 255.0
-"""YOLOv5 expects pixels normalized to [0, 1]."""
+YOLO_NORMALIZATION_SCALE: float = _yolo_config["normalization_scale"]
+"""YOLOv5 expects pixels normalized to [0, 1] from experiment.yaml."""
 
 
 # =============================================================================

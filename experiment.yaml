@@ -1,0 +1,394 @@
+# =============================================================================
+# Inference Arena - Experiment Specification
+# =============================================================================
+#
+# SINGLE SOURCE OF TRUTH for all experimental parameters.
+#
+# This file is:
+#   - Pre-registered: Hypotheses defined BEFORE experiments run
+#   - Git-tracked: Commit history proves when hypotheses were defined
+#   - Machine-readable: Code imports parameters from this file
+#   - Immutable: Changes require changelog entry with justification
+#
+# Usage:
+#   from shared.config import get_config, get_controlled_variable
+#   config = get_config()
+#   threads = get_controlled_variable("onnx_runtime", "intra_op_num_threads")
+#
+# Verification:
+#   git log --follow experiment.yaml  # View modification history
+#
+# Author: Matthew Hong
+# Thesis: Characterizing ML Serving Architectures in CPU-Constrained Environments
+# =============================================================================
+
+metadata:
+  title: "Characterizing ML Serving Architectures in CPU-Constrained Environments"
+  subtitle: "An Empirical Comparison of Custom and Managed Inference Frameworks"
+  author: "Matthew Hong"
+  institution: "National Chung Hsing University"
+  degree: "Master's Program in Artificial Intelligence and Data Science"
+  created_at: "2025-12-17"
+  spec_version: "1.0.0"
+
+# =============================================================================
+# Research Questions
+# =============================================================================
+research_questions:
+  RQ1:
+    title: "Performance"
+    question: "How do latency (P50, P99) and throughput differ across Monolithic, Microservices, and Triton architectures under varying load?"
+    metrics:
+      - p50_latency_ms
+      - p99_latency_ms
+      - throughput_rps
+      - error_rate_percent
+      
+  RQ2:
+    title: "Resource Efficiency"
+    question: "What is the resource consumption and cost-per-request for each architecture?"
+    metrics:
+      - cpu_utilization_percent
+      - memory_usage_mb
+      - cost_per_1000_requests_usd
+      
+  RQ3:
+    title: "Operational Complexity"
+    question: "What is the deployment complexity (configuration LOC, deployment time) for each architecture?"
+    metrics:
+      - application_code_loc
+      - configuration_loc
+      - deployment_time_seconds
+      
+  RQ4:
+    title: "Decision Framework"
+    question: "Under what conditions (load, latency requirements, resource constraints) is each architecture optimal?"
+    metrics:
+      - crossover_points
+      - decision_matrix
+
+# =============================================================================
+# Hypotheses (Pre-registered)
+# =============================================================================
+# These hypotheses are defined BEFORE running experiments.
+# Git commit history serves as proof of pre-registration.
+# =============================================================================
+hypotheses:
+  # ---------------------------------------------------------------------------
+  # Performance Hypotheses (RQ1)
+  # ---------------------------------------------------------------------------
+  H1a:
+    category: "performance"
+    statement: "Monolithic architecture exhibits lowest P50 and P99 latency at low concurrency (≤10 users)"
+    rationale: "Absence of network overhead between pipeline stages; in-memory function calls"
+    testable_prediction: "monolithic.p99 < microservices.p99 AND monolithic.p99 < triton.p99"
+    conditions:
+      concurrent_users: "≤10"
+    null_hypothesis: "No significant difference in P99 latency across architectures at low concurrency"
+    
+  H1b:
+    category: "performance"
+    statement: "Microservices P99 latency is competitive with monolithic despite network overhead"
+    rationale: "asyncio.gather enables parallel classification calls that mask gRPC latency during fan-out"
+    testable_prediction: "(microservices.p99 - monolithic.p99) / monolithic.p99 < 0.20"
+    conditions:
+      concurrent_users: "≤10"
+    tolerance: 0.20  # 20% overhead acceptable
+    
+  H1c:
+    category: "performance"
+    statement: "Triton shows lower latency variance (P99-P50 gap) than custom implementations at high concurrency"
+    rationale: "Triton's optimized C++ request scheduler handles queuing more efficiently"
+    testable_prediction: "(triton.p99 - triton.p50) < (microservices.p99 - microservices.p50)"
+    conditions:
+      concurrent_users: "≥50"
+      
+  H1d:
+    category: "performance"
+    statement: "All architectures reach saturation (P99 > 500ms) before 100 concurrent users"
+    rationale: "CPU inference bottleneck with 2 vCPU allocation per container"
+    testable_prediction: "all(arch.p99 > 500) for arch in [monolithic, microservices, triton]"
+    conditions:
+      concurrent_users: "<100"
+    saturation_threshold_ms: 500
+
+  # ---------------------------------------------------------------------------
+  # Resource Efficiency Hypotheses (RQ2)
+  # ---------------------------------------------------------------------------
+  H2a:
+    category: "resource_efficiency"
+    statement: "Monolithic has lowest total resource consumption at all load levels"
+    rationale: "Single-container deployment uses half the resources of distributed architectures"
+    testable_prediction: "monolithic.total_vcpu = 2 < microservices.total_vcpu = 4"
+    
+  H2b:
+    category: "resource_efficiency"
+    statement: "Microservices demonstrates lower resource utilization efficiency than monolithic"
+    rationale: "Network serialization overhead reduces effective throughput per CPU-second"
+    testable_prediction: "microservices.requests_per_cpu_second < monolithic.requests_per_cpu_second"
+    metric: "requests_per_cpu_second"
+    
+  H2c:
+    category: "resource_efficiency"
+    statement: "Triton shows higher baseline memory usage than custom implementations"
+    rationale: "Triton server runtime overhead (model management, scheduler, gRPC server)"
+    testable_prediction: "triton.baseline_memory_mb > monolithic.baseline_memory_mb"
+    
+  H2d:
+    category: "resource_efficiency"
+    statement: "CPU utilization efficiency converges at high load due to fixed overhead amortization"
+    rationale: "Per-request overhead becomes negligible as throughput increases"
+    testable_prediction: "variance(efficiency) across all architectures decreases as concurrent_users increases"
+    conditions:
+      concurrent_users: "≥50"
+
+  # ---------------------------------------------------------------------------
+  # Operational Complexity Hypotheses (RQ3)
+  # ---------------------------------------------------------------------------
+  H3a:
+    category: "operational_complexity"
+    statement: "Triton requires fewest lines of application code"
+    rationale: "Model serving logic is declarative (config.pbtxt) rather than imperative (Python)"
+    testable_prediction: "triton.application_code_loc < monolithic.application_code_loc"
+    
+  H3b:
+    category: "operational_complexity"
+    statement: "Microservices requires most total configuration"
+    rationale: "Multiple Docker Compose files, proto definitions, service configurations"
+    testable_prediction: "microservices.total_config_loc > max(monolithic, triton)"
+    
+  H3c:
+    category: "operational_complexity"
+    statement: "Monolithic has shortest deployment time"
+    rationale: "Single container with no inter-service dependencies or health check waits"
+    testable_prediction: "monolithic.deployment_time < min(microservices, triton)"
+
+# =============================================================================
+# Independent Variables
+# =============================================================================
+independent_variables:
+  architecture:
+    type: categorical
+    levels:
+      - monolithic
+      - microservices
+      - triton
+    description: "ML serving architecture pattern under evaluation"
+    
+  concurrent_users:
+    type: ordinal
+    levels: [1, 5, 10, 25, 50, 75, 100]
+    description: "Number of simultaneous Locust users"
+
+# =============================================================================
+# Controlled Variables
+# =============================================================================
+# CRITICAL: These values MUST NOT change during experiments.
+# All code should import these values rather than hardcoding.
+# =============================================================================
+controlled_variables:
+  # ---------------------------------------------------------------------------
+  # ML Models
+  # ---------------------------------------------------------------------------
+  models:
+    yolov5n:
+      name: "yolov5n"
+      task: "object_detection"
+      format: "onnx"
+      opset_version: 17
+      input:
+        name: "images"
+        shape: [1, 3, 640, 640]
+        dtype: "float32"
+        normalization: "divide_by_255"
+      output:
+        name: "output0"
+        shape: [1, 84, 8400]
+        dtype: "float32"
+      source: "ultralytics/yolov5"
+      confidence_threshold: 0.5
+      iou_threshold: 0.45
+      
+    mobilenetv2:
+      name: "mobilenetv2"
+      task: "image_classification"
+      format: "onnx"
+      opset_version: 17
+      input:
+        name: "input"
+        shape: [1, 3, 224, 224]
+        dtype: "float32"
+        normalization: "imagenet"
+      output:
+        name: "output"
+        shape: [1, 1000]
+        dtype: "float32"
+      source: "torchvision.models.mobilenet_v2"
+      weights: "IMAGENET1K_V1"
+
+  # ---------------------------------------------------------------------------
+  # Preprocessing
+  # ---------------------------------------------------------------------------
+  preprocessing:
+    module: "shared.processing"
+    
+    yolo:
+      method: "letterbox"
+      target_size: 640
+      normalization_scale: 255.0
+      output_range: [0.0, 1.0]
+      
+    mobilenet:
+      method: "resize_and_normalize"
+      target_size: 224
+      mean: [0.485, 0.456, 0.406]
+      std: [0.229, 0.224, 0.225]
+
+  # ---------------------------------------------------------------------------
+  # Container Resources
+  # ---------------------------------------------------------------------------
+  resources:
+    vcpu_per_container: 2
+    memory_gb_per_container: 4
+    memory_mb_per_container: 4096
+    
+    # Architecture-specific totals
+    monolithic:
+      containers: 1
+      total_vcpu: 2
+      total_memory_gb: 4
+    microservices:
+      containers: 2
+      total_vcpu: 4
+      total_memory_gb: 8
+    triton:
+      containers: 2
+      total_vcpu: 4
+      total_memory_gb: 8
+
+  # ---------------------------------------------------------------------------
+  # ONNX Runtime Configuration
+  # ---------------------------------------------------------------------------
+  onnx_runtime:
+    intra_op_num_threads: 2
+    inter_op_num_threads: 1
+    graph_optimization_level: "ORT_ENABLE_ALL"
+    execution_mode: "ORT_SEQUENTIAL"
+    enable_cpu_mem_arena: true
+
+  # ---------------------------------------------------------------------------
+  # Dataset
+  # ---------------------------------------------------------------------------
+  dataset:
+    source: "COCO val2017"
+    source_url: "http://images.cocodataset.org/zips/val2017.zip"
+    total_images: 5000
+    sample_size: 100
+    detection_range:
+      min: 3
+      max: 5
+    target_distribution:
+      mean: 4.0
+      std: 0.71
+    random_seed: 42
+    output_dir: "data/thesis_test_set"
+    manifest_file: "manifest.json"
+
+  # ---------------------------------------------------------------------------
+  # Load Testing Protocol
+  # ---------------------------------------------------------------------------
+  load_testing:
+    tool: "locust"
+    
+    phases:
+      warmup:
+        duration_seconds: 60
+        purpose: "Prime JIT, ONNX optimizations, CPU caches"
+      measurement:
+        duration_seconds: 180
+        purpose: "Collect performance metrics under steady state"
+      cooldown:
+        duration_seconds: 30
+        purpose: "System reset, garbage collection"
+        
+    runs_per_configuration: 3
+    
+    # Derived: total experiment time per configuration
+    # = (60 + 180 + 30) * 3 = 810 seconds = 13.5 minutes
+    # Total experiment matrix: 3 archs × 7 loads × 13.5 min = 283.5 minutes ≈ 4.7 hours
+
+  # ---------------------------------------------------------------------------
+  # Monitoring
+  # ---------------------------------------------------------------------------
+  monitoring:
+    prometheus:
+      scrape_interval: "1s"
+      retention_days: 15
+    cadvisor:
+      port: 8080
+    metrics:
+      - container_cpu_usage_seconds_total
+      - container_memory_usage_bytes
+      - container_network_receive_bytes_total
+      - container_network_transmit_bytes_total
+
+# =============================================================================
+# Infrastructure Configuration
+# =============================================================================
+infrastructure:
+  orchestration: "docker-compose"
+  
+  minio:
+    endpoint: "minio:9000"
+    external_endpoint: "localhost:9000"
+    bucket: "models"
+    access_key: "minioadmin"
+    secret_key: "minioadmin"
+    secure: false
+    
+  networks:
+    backend: "inference-arena-backend"
+    infra: "inference-arena-infra"
+    
+  images:
+    minio: "minio/minio:RELEASE.2024-01-18T22-51-28Z"
+    cadvisor: "gcr.io/cadvisor/cadvisor:v0.49.1"
+    prometheus: "prom/prometheus:v2.48.0"
+    grafana: "grafana/grafana:10.2.2"
+    triton: "nvcr.io/nvidia/tritonserver:24.08-py3"
+
+# =============================================================================
+# Triton Configuration
+# =============================================================================
+triton:
+  model_repository: "s3://minio:9000/models"
+  
+  instance_group:
+    count: 1
+    kind: "KIND_CPU"
+    
+  # Threading matches onnx_runtime settings
+  parameters:
+    intra_op_thread_count: "2"
+    inter_op_thread_count: "1"
+
+# =============================================================================
+# Changelog
+# =============================================================================
+# REQUIRED: Document any changes after initial pre-registration.
+# Each entry must include date, change description, and justification.
+# =============================================================================
+changelog:
+  - date: "2025-12-17"
+    version: "1.0.0"
+    change: "Initial pre-registration of hypotheses and controlled variables"
+    justification: "N/A - initial commit"
+    author: "Matthew Hong"
+    
+  # Template for future changes:
+  # - date: "YYYY-MM-DD"
+  #   version: "1.x.x"
+  #   change: "Description of what changed"
+  #   justification: "Why this change was necessary"
+  #   author: "Name"
+  #   approved_by: "Supervisor name (if applicable)"

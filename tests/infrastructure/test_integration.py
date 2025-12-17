@@ -28,21 +28,28 @@ from typing import Generator
 import pytest
 import requests
 
+from shared.config import get_infrastructure_config, get_controlled_variables
+
 
 # =============================================================================
-# Constants
+# Constants (Loaded from experiment.yaml where available)
 # =============================================================================
 
 COMPOSE_FILE = "infrastructure/docker-compose.infra.yml"
 STARTUP_TIMEOUT = 60  # seconds
 HEALTH_CHECK_INTERVAL = 2  # seconds
 
-# Service URLs (localhost ports from docker-compose)
-MINIO_API_URL = "http://localhost:9000"
-MINIO_CONSOLE_URL = "http://localhost:9001"
-CADVISOR_URL = "http://localhost:8080"
-PROMETHEUS_URL = "http://localhost:9090"
-GRAFANA_URL = "http://localhost:3000"
+# Service URLs derived from experiment.yaml infrastructure config
+_infra_config = get_infrastructure_config()
+_minio_endpoint = _infra_config["minio"]["external_endpoint"]
+_monitoring_config = get_controlled_variables("monitoring")
+_cadvisor_port = _monitoring_config["cadvisor"]["port"]
+
+MINIO_API_URL = f"http://{_minio_endpoint}"
+MINIO_CONSOLE_URL = "http://localhost:9001"  # MinIO console port (not in config yet)
+CADVISOR_URL = f"http://localhost:{_cadvisor_port}"
+PROMETHEUS_URL = "http://localhost:9090"  # Prometheus port (not in config yet)
+GRAFANA_URL = "http://localhost:3000"  # Grafana port (not in config yet)
 
 
 # =============================================================================
@@ -219,14 +226,15 @@ class TestMinIOOperations:
             from minio import Minio
         except ImportError:
             pytest.skip("minio package not installed")
-        
+
+        # Use config values for MinIO connection
         client = Minio(
-            "localhost:9000",
-            access_key="minioadmin",
-            secret_key="minioadmin",
-            secure=False
+            _minio_endpoint,
+            access_key=_infra_config["minio"]["access_key"],
+            secret_key=_infra_config["minio"]["secret_key"],
+            secure=_infra_config["minio"]["secure"]
         )
-        
+
         buckets = client.list_buckets()
         assert isinstance(buckets, list)
 
@@ -236,22 +244,23 @@ class TestMinIOOperations:
             from minio import Minio
         except ImportError:
             pytest.skip("minio package not installed")
-        
+
+        # Use config values for MinIO connection
         client = Minio(
-            "localhost:9000",
-            access_key="minioadmin",
-            secret_key="minioadmin",
-            secure=False
+            _minio_endpoint,
+            access_key=_infra_config["minio"]["access_key"],
+            secret_key=_infra_config["minio"]["secret_key"],
+            secure=_infra_config["minio"]["secure"]
         )
-        
+
         bucket_name = "test-bucket"
-        
+
         # Create bucket
         if not client.bucket_exists(bucket_name):
             client.make_bucket(bucket_name)
-        
+
         assert client.bucket_exists(bucket_name)
-        
+
         # Cleanup
         client.remove_bucket(bucket_name)
 
