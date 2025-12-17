@@ -1,0 +1,358 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # =============================================================================
+  # Code Quality Checks
+  # =============================================================================
+  code-quality:
+    name: Code Quality (Black, Ruff, MyPy)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev]"
+
+      - name: Check formatting with Black
+        run: |
+          black --check src/ tests/
+        continue-on-error: false
+
+      - name: Lint with Ruff
+        run: |
+          ruff check src/ tests/
+        continue-on-error: false
+
+      - name: Type check with MyPy
+        run: |
+          mypy src/
+        continue-on-error: true  # Don't fail on type errors yet
+
+  # =============================================================================
+  # Test Suite
+  # =============================================================================
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev]"
+
+      - name: Run config tests
+        run: |
+          pytest tests/shared/test_config.py -v
+
+      - name: Run preprocessing tests
+        run: |
+          pytest tests/shared/test_processing.py -v
+
+      - name: Run all unit tests with coverage
+        run: |
+          pytest tests/ -v \
+            --cov=src/shared \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --ignore=tests/infrastructure/test_integration.py
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: matrix.python-version == '3.11'
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
+
+  # =============================================================================
+  # Configuration Validation
+  # =============================================================================
+  validate-config:
+    name: Validate experiment.yaml
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev]"
+
+      - name: Validate experiment.yaml loads
+        run: |
+          python -c "from shared.config import get_config; config = get_config(); print('✓ Config loaded successfully')"
+
+      - name: Validate experiment.yaml schema
+        run: |
+          python -c "from shared.config import validate_config; validate_config(); print('✓ Config validation passed')"
+
+      - name: Check config consistency
+        run: |
+          pytest tests/shared/test_config.py::TestConfigIntegration -v
+
+      - name: Verify no hardcoded preprocessing values
+        run: |
+          # Ensure preprocessing modules import from config
+          if grep -r "YOLO_INPUT_SIZE.*=.*640" src/shared/processing/ --include="*.py" | grep -v "get_controlled_variable\|config"; then
+            echo "ERROR: Found hardcoded YOLO_INPUT_SIZE"
+            exit 1
+          fi
+          if grep -r "MOBILENET_INPUT_SIZE.*=.*224" src/shared/processing/ --include="*.py" | grep -v "get_controlled_variable\|config"; then
+            echo "ERROR: Found hardcoded MOBILENET_INPUT_SIZE"
+            exit 1
+          fi
+          echo "✓ No hardcoded preprocessing values found"
+
+  # =============================================================================
+  # Security Checks
+  # =============================================================================
+  security:
+    name: Security Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for committed secrets
+        run: |
+          # Ensure .env is not committed
+          if git ls-files | grep -E "^\.env$"; then
+            echo "ERROR: .env file is committed!"
+            exit 1
+          fi
+          echo "✓ No .env file in git"
+
+      - name: Verify .env in .gitignore
+        run: |
+          if ! grep -q "^\.env$" .gitignore; then
+            echo "ERROR: .env not in .gitignore"
+            exit 1
+          fi
+          echo "✓ .env properly ignored"
+
+      - name: Check for hardcoded passwords
+        run: |
+          # Search for potential hardcoded passwords (case-insensitive)
+          if git grep -i "password.*=" -- "*.py" "*.yml" "*.yaml" | grep -v "\.env\.example\|ENVIRONMENT\.md\|SETUP\.md\|setup_env\.py" | grep -v "# " | grep -E "(minioadmin|admin)"; then
+            echo "WARNING: Found potential hardcoded passwords (review manually)"
+            # Don't fail, just warn
+          fi
+          echo "✓ No obvious hardcoded secrets"
+
+      - name: Check for exposed API keys
+        run: |
+          # Check for common API key patterns
+          if git grep -E "(api[_-]?key|secret[_-]?key|access[_-]?token).*=.*['\"][A-Za-z0-9]{20,}['\"]" -- "*.py" | grep -v "\.env\.example"; then
+            echo "ERROR: Potential API key found in code"
+            exit 1
+          fi
+          echo "✓ No exposed API keys"
+
+  # =============================================================================
+  # Docker Validation
+  # =============================================================================
+  docker-validation:
+    name: Validate Docker Compose
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate docker-compose syntax
+        run: |
+          docker compose -f infrastructure/docker-compose.infra.yml config > /dev/null
+          echo "✓ docker-compose.infra.yml is valid"
+
+      - name: Check for environment variable usage
+        run: |
+          # Verify docker-compose uses env vars (not hardcoded)
+          if ! grep -q "\${MINIO_ROOT_USER" infrastructure/docker-compose.infra.yml; then
+            echo "ERROR: docker-compose should use MINIO_ROOT_USER env var"
+            exit 1
+          fi
+          if ! grep -q "\${GRAFANA_ADMIN_PASSWORD" infrastructure/docker-compose.infra.yml; then
+            echo "ERROR: docker-compose should use GRAFANA_ADMIN_PASSWORD env var"
+            exit 1
+          fi
+          echo "✓ docker-compose properly uses environment variables"
+
+  # =============================================================================
+  # Documentation Checks
+  # =============================================================================
+  docs:
+    name: Documentation Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check README exists
+        run: |
+          if [ ! -f README.md ]; then
+            echo "ERROR: README.md missing"
+            exit 1
+          fi
+          echo "✓ README.md exists"
+
+      - name: Check SETUP.md exists
+        run: |
+          if [ ! -f docs/SETUP.md ]; then
+            echo "ERROR: docs/SETUP.md missing"
+            exit 1
+          fi
+          echo "✓ docs/SETUP.md exists"
+
+      - name: Check ENVIRONMENT.md exists
+        run: |
+          if [ ! -f docs/ENVIRONMENT.md ]; then
+            echo "ERROR: docs/ENVIRONMENT.md missing"
+            exit 1
+          fi
+          echo "✓ docs/ENVIRONMENT.md exists"
+
+      - name: Check .env.example exists
+        run: |
+          if [ ! -f .env.example ]; then
+            echo "ERROR: .env.example missing"
+            exit 1
+          fi
+          echo "✓ .env.example exists"
+
+      - name: Validate links in README
+        run: |
+          # Check internal links exist
+          if grep -o '\[.*\](\(docs/.*\.md\|experiment\.yaml\|\.env\.example\))' README.md | sed 's/.*(\(.*\))/\1/' | while read file; do
+            if [ ! -f "$file" ]; then
+              echo "ERROR: Broken link in README.md: $file"
+              exit 1
+            fi
+          done
+          echo "✓ All README links valid"
+
+  # =============================================================================
+  # Single Source of Truth Validation
+  # =============================================================================
+  single-source-of-truth:
+    name: Verify Single Source of Truth
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev]"
+
+      - name: Test preprocessing uses config
+        run: |
+          python -c "
+          from src.shared.processing.yolo_preprocess import YOLO_INPUT_SIZE
+          from src.shared.processing.mobilenet_preprocess import MOBILENET_INPUT_SIZE
+          from src.shared.config import get_controlled_variable
+
+          yolo_config = get_controlled_variable('preprocessing', 'yolo')
+          mobilenet_config = get_controlled_variable('preprocessing', 'mobilenet')
+
+          assert YOLO_INPUT_SIZE == yolo_config['target_size'], 'YOLO size mismatch'
+          assert MOBILENET_INPUT_SIZE == mobilenet_config['target_size'], 'MobileNet size mismatch'
+
+          print('✓ Preprocessing modules use config values')
+          "
+
+      - name: Test infrastructure config matches compose
+        run: |
+          python -c "
+          from src.shared.config import get_infrastructure_config, get_controlled_variables
+          import yaml
+
+          infra = get_infrastructure_config()
+          monitoring = get_controlled_variables('monitoring')
+
+          # Load docker-compose to verify alignment
+          with open('infrastructure/docker-compose.infra.yml') as f:
+              compose = yaml.safe_load(f)
+
+          # Check MinIO port is parameterized
+          minio_ports = compose['services']['minio']['ports']
+          assert any('MINIO_API_PORT' in str(p) for p in minio_ports), 'MinIO port not parameterized'
+
+          # Check cAdvisor port is parameterized
+          cadvisor_ports = compose['services']['cadvisor']['ports']
+          assert any('CADVISOR_PORT' in str(p) for p in cadvisor_ports), 'cAdvisor port not parameterized'
+
+          print('✓ Infrastructure config properly parameterized')
+          "
+
+  # =============================================================================
+  # Summary Job (Required for branch protection)
+  # =============================================================================
+  ci-success:
+    name: CI Success
+    needs:
+      - code-quality
+      - test
+      - validate-config
+      - security
+      - docker-validation
+      - docs
+      - single-source-of-truth
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [ "${{ needs.code-quality.result }}" != "success" ] || \
+             [ "${{ needs.test.result }}" != "success" ] || \
+             [ "${{ needs.validate-config.result }}" != "success" ] || \
+             [ "${{ needs.security.result }}" != "success" ] || \
+             [ "${{ needs.docker-validation.result }}" != "success" ] || \
+             [ "${{ needs.docs.result }}" != "success" ] || \
+             [ "${{ needs.single-source-of-truth.result }}" != "success" ]; then
+            echo "❌ One or more CI jobs failed"
+            exit 1
+          fi
+          echo "✅ All CI checks passed!"

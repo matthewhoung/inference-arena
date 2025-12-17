@@ -12,6 +12,10 @@
 #   - infra-network: Internal metrics aggregation (Prometheus ↔ Grafana)
 #   - backend-network: Shared with architecture containers (MinIO, cAdvisor)
 #
+# Configuration:
+#   Copy .env.example to .env and customize as needed.
+#   All sensitive values (passwords, ports) can be configured via .env
+#
 # Usage:
 #   docker compose -f infrastructure/docker-compose.infra.yml up -d
 #
@@ -35,11 +39,11 @@ services:
     container_name: inference-arena-minio
     command: server /data --console-address ":9001"
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     volumes:
       - minio-data:/data
     networks:
@@ -64,7 +68,7 @@ services:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
     container_name: inference-arena-cadvisor
     ports:
-      - "8080:8080"
+      - "${CADVISOR_PORT:-8080}:8080"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -90,14 +94,14 @@ services:
     image: prom/prometheus:v2.48.0
     container_name: inference-arena-prometheus
     ports:
-      - "9090:9090"
+      - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.retention.time=${PROMETHEUS_RETENTION_DAYS:-15d}'
       - '--web.enable-lifecycle'
       - '--web.enable-admin-api'
     networks:
@@ -120,10 +124,10 @@ services:
     image: grafana/grafana:10.2.2
     container_name: inference-arena-grafana
     ports:
-      - "3000:3000"
+      - "${GRAFANA_PORT:-3000}:3000"
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/infrastructure.json
     volumes:

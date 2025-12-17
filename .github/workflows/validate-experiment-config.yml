@@ -1,0 +1,277 @@
+name: Validate Experiment Config
+
+# This workflow runs whenever experiment.yaml is modified
+# Ensures the single source of truth remains valid
+
+on:
+  pull_request:
+    paths:
+      - 'experiment.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'experiment.yaml'
+
+jobs:
+  validate:
+    name: Validate experiment.yaml Changes
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need previous commit to show diff
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev]"
+
+      - name: Show experiment.yaml changes
+        run: |
+          echo "📝 Changes to experiment.yaml:"
+          git diff HEAD~1 HEAD -- experiment.yaml || echo "New file"
+
+      - name: Validate YAML syntax
+        run: |
+          python -c "
+          import yaml
+          with open('experiment.yaml') as f:
+              config = yaml.safe_load(f)
+          print('✓ YAML syntax valid')
+          "
+
+      - name: Validate config structure
+        run: |
+          python -c "
+          from shared.config import get_config, validate_config
+
+          # Load config
+          config = get_config()
+          print('✓ Config loads successfully')
+
+          # Run validation
+          validate_config()
+          print('✓ Config structure valid')
+          "
+
+      - name: Check required sections
+        run: |
+          python -c "
+          from shared.config import get_config
+
+          config = get_config()
+
+          required_sections = [
+              'metadata',
+              'controlled_variables',
+              'models',
+              'hypotheses',
+              'infrastructure',
+              'load_testing'
+          ]
+
+          for section in required_sections:
+              assert section in config, f'Missing required section: {section}'
+              print(f'✓ Section present: {section}')
+          "
+
+      - name: Validate model configurations
+        run: |
+          python -c "
+          from shared.config import get_model_config, get_model_names
+
+          models = get_model_names()
+          print(f'Models defined: {models}')
+
+          for model_name in models:
+              config = get_model_config(model_name)
+
+              # Check required fields
+              assert 'opset_version' in config, f'{model_name}: missing opset_version'
+              assert 'input' in config, f'{model_name}: missing input config'
+              assert 'output' in config, f'{model_name}: missing output config'
+
+              # Check input shape is 4D (batch, channels, height, width)
+              input_shape = config['input']['shape']
+              assert len(input_shape) == 4, f'{model_name}: input shape must be 4D'
+
+              print(f'✓ {model_name} config valid')
+          "
+
+      - name: Validate preprocessing parameters
+        run: |
+          python -c "
+          from shared.config import get_controlled_variable
+
+          # Check YOLO preprocessing
+          yolo = get_controlled_variable('preprocessing', 'yolo')
+          assert 'target_size' in yolo, 'YOLO missing target_size'
+          assert 'normalization_scale' in yolo, 'YOLO missing normalization_scale'
+          print(f'✓ YOLO preprocessing config valid')
+
+          # Check MobileNet preprocessing
+          mobilenet = get_controlled_variable('preprocessing', 'mobilenet')
+          assert 'target_size' in mobilenet, 'MobileNet missing target_size'
+          assert 'mean' in mobilenet, 'MobileNet missing mean'
+          assert 'std' in mobilenet, 'MobileNet missing std'
+          print(f'✓ MobileNet preprocessing config valid')
+          "
+
+      - name: Validate hypotheses
+        run: |
+          python -c "
+          from shared.config import get_config
+
+          config = get_config()
+          hypotheses = config['hypotheses']
+
+          # Check each hypothesis has required fields
+          for h_id, h_config in hypotheses.items():
+              assert 'category' in h_config, f'{h_id}: missing category'
+              assert 'null_hypothesis' in h_config, f'{h_id}: missing null_hypothesis'
+              assert 'alternative_hypothesis' in h_config, f'{h_id}: missing alternative_hypothesis'
+              assert 'prediction' in h_config, f'{h_id}: missing prediction'
+
+              print(f'✓ Hypothesis {h_id} valid')
+          "
+
+      - name: Validate infrastructure config
+        run: |
+          python -c "
+          from shared.config import get_infrastructure_config, get_minio_config, get_triton_config
+
+          # Check MinIO config
+          minio = get_minio_config()
+          assert 'external_endpoint' in minio, 'MinIO missing external_endpoint'
+          assert 'bucket' in minio, 'MinIO missing bucket'
+          print('✓ MinIO config valid')
+
+          # Check Triton config
+          triton = get_triton_config()
+          assert 'model_repository' in triton, 'Triton missing model_repository'
+          print('✓ Triton config valid')
+          "
+
+      - name: Validate threading configuration
+        run: |
+          python -c "
+          from shared.config import get_controlled_variable, get_triton_config
+
+          # Get ONNX runtime threading
+          onnx_runtime = get_controlled_variable('onnx_runtime')
+          onnx_intra = onnx_runtime['intra_op_num_threads']
+          onnx_inter = onnx_runtime['inter_op_num_threads']
+
+          # Get Triton threading
+          triton = get_triton_config()
+          triton_params = triton['parameters']
+          triton_intra = int(triton_params['intra_op_thread_count'])
+          triton_inter = int(triton_params['inter_op_thread_count'])
+
+          # Verify they match
+          assert onnx_intra == triton_intra, f'Intra-op threads mismatch: ONNX={onnx_intra}, Triton={triton_intra}'
+          assert onnx_inter == triton_inter, f'Inter-op threads mismatch: ONNX={onnx_inter}, Triton={triton_inter}'
+
+          print(f'✓ Threading config consistent (intra={onnx_intra}, inter={onnx_inter})')
+          "
+
+      - name: Check changelog entry
+        if: github.event_name == 'pull_request'
+        run: |
+          python -c "
+          from shared.config import get_config
+          from datetime import datetime
+
+          config = get_config()
+          changelog = config.get('changelog', [])
+
+          if not changelog:
+              print('⚠️  WARNING: No changelog entries found')
+              print('   Consider documenting this change in experiment.yaml')
+              exit(0)
+
+          # Check if latest entry is recent (within last day for PR)
+          latest = changelog[0]
+          print(f'Latest changelog entry:')
+          print(f'  Date: {latest.get(\"date\")}')
+          print(f'  Change: {latest.get(\"change\")}')
+          print(f'  Rationale: {latest.get(\"rationale\")}')
+          "
+
+      - name: Run all config tests
+        run: |
+          pytest tests/shared/test_config.py -v
+
+      - name: Check for downstream impacts
+        run: |
+          echo "✓ Validation complete!"
+          echo ""
+          echo "⚠️  REMINDER: experiment.yaml changes may require:"
+          echo "  - Updating preprocessing modules if sizes changed"
+          echo "  - Re-running experiments if controlled variables changed"
+          echo "  - Updating thesis documentation if hypotheses changed"
+          echo "  - Rebuilding Docker images if model configs changed"
+
+  notify:
+    name: Config Change Summary
+    needs: validate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Post PR comment with summary
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const diff = require('child_process')
+              .execSync('git diff HEAD~1 HEAD -- experiment.yaml')
+              .toString();
+
+            if (!diff) {
+              console.log('No changes to experiment.yaml');
+              return;
+            }
+
+            const comment = `## 🔬 Experiment Configuration Changed
+
+            The single source of truth (\`experiment.yaml\`) has been modified.
+
+            <details>
+            <summary>View changes</summary>
+
+            \`\`\`diff
+            ${diff}
+            \`\`\`
+            </details>
+
+            ### ✅ Validation Status
+            All experiment.yaml validations passed!
+
+            ### 📝 Reminder
+            - [ ] Updated changelog in experiment.yaml with rationale
+            - [ ] Verified controlled variables are correct
+            - [ ] Checked if preprocessing modules need updates
+            - [ ] Confirmed hypotheses are pre-registered (before data collection)
+            - [ ] Documented changes in thesis methodology section
+
+            ---
+            *This is an automated check to ensure reproducibility.*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

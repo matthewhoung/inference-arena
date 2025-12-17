@@ -24,15 +24,18 @@ from typing import Tuple
 import cv2
 import numpy as np
 
+from shared.config import get_controlled_variable
+
 
 # =============================================================================
-# Constants
+# Constants (Loaded from experiment.yaml)
 # =============================================================================
 
-# ImageNet normalization constants
+# ImageNet normalization constants from experiment.yaml
 # Reference: https://pytorch.org/vision/stable/models.html
-IMAGENET_MEAN: np.ndarray = np.array([0.485, 0.456, 0.406], dtype=np.float32)
-IMAGENET_STD: np.ndarray = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+_mobilenet_config = get_controlled_variable("preprocessing", "mobilenet")
+IMAGENET_MEAN: np.ndarray = np.array(_mobilenet_config["mean"], dtype=np.float32)
+IMAGENET_STD: np.ndarray = np.array(_mobilenet_config["std"], dtype=np.float32)
 
 # Default letterbox padding color (gray, matches Ultralytics default)
 LETTERBOX_COLOR: Tuple[int, int, int] = (114, 114, 114)
