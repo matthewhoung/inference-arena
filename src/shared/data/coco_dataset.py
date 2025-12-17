@@ -1,5 +1,4 @@
-"""
-COCO Dataset Utilities
+"""COCO Dataset Utilities.
 
 This module provides utilities for downloading and loading COCO val2017 images.
 
@@ -19,8 +18,8 @@ Specification Reference: Foundation Specification §5.1
 import logging
 import urllib.request
 import zipfile
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator, Optional
 
 import cv2
 import numpy as np
@@ -47,16 +46,14 @@ COCO_ZIP_SIZE_MB: float = 778.0
 # =============================================================================
 
 class DownloadProgressBar:
-    """
-    Progress bar callback for urllib downloads.
-    
+    """Progress bar callback for urllib downloads.
+
     Displays download progress to console with percentage and MB transferred.
     """
 
     def __init__(self, total_size_mb: float) -> None:
-        """
-        Initialize progress bar.
-        
+        """Initialize progress bar.
+
         Args:
             total_size_mb: Expected total size in megabytes
         """
@@ -70,9 +67,8 @@ class DownloadProgressBar:
         block_size: int,
         total_size: int,
     ) -> None:
-        """
-        Update progress bar.
-        
+        """Update progress bar.
+
         Args:
             block_num: Current block number
             block_size: Size of each block in bytes
@@ -99,23 +95,21 @@ class DownloadProgressBar:
             )
             self.last_percent = percent
 
-
 # =============================================================================
 # State Detection
 # =============================================================================
 
 def is_coco_downloaded(data_dir: Path) -> tuple[bool, str]:
-    """
-    Check if COCO val2017 is already downloaded.
-    
+    """Check if COCO val2017 is already downloaded.
+
     Args:
         data_dir: Base data directory (parent of coco/val2017/)
-    
+
     Returns:
         Tuple of (is_ready, message)
         - is_ready: True if dataset is complete
         - message: Description of current state
-    
+
     Example:
         >>> ready, msg = is_coco_downloaded(Path("data/"))
         >>> ready
@@ -145,23 +139,22 @@ def download_coco_val2017(
     force: bool = False,
     cleanup_zip: bool = True,
 ) -> Path:
-    """
-    Download and extract COCO val2017 dataset.
-    
+    """Download and extract COCO val2017 dataset.
+
     Downloads the dataset from the official COCO website and extracts
     to data_dir/coco/val2017/. Idempotent: skips if already downloaded.
-    
+
     Args:
         data_dir: Base data directory
         force: Re-download even if exists
         cleanup_zip: Delete zip file after extraction
-    
+
     Returns:
         Path to extracted images directory
-    
+
     Raises:
         RuntimeError: If download or extraction fails
-    
+
     Example:
         >>> images_dir = download_coco_val2017(Path("data/"))
         >>> images_dir
@@ -227,20 +220,19 @@ def download_coco_val2017(
 # =============================================================================
 
 def load_coco_image(image_path: Path) -> np.ndarray:
-    """
-    Load a COCO image as RGB numpy array.
-    
+    """Load a COCO image as RGB numpy array.
+
     Uses OpenCV for efficient JPEG decoding with BGR to RGB conversion.
-    
+
     Args:
         image_path: Path to image file
-    
+
     Returns:
         RGB uint8 array with shape [H, W, 3]
-    
+
     Raises:
         ValueError: If image cannot be loaded
-    
+
     Example:
         >>> image = load_coco_image(Path("data/coco/val2017/000000001234.jpg"))
         >>> image.shape
@@ -257,18 +249,17 @@ def load_coco_image(image_path: Path) -> np.ndarray:
 
 
 def get_coco_image_paths(data_dir: Path) -> list[Path]:
-    """
-    Get sorted list of all COCO val2017 image paths.
-    
+    """Get sorted list of all COCO val2017 image paths.
+
     Args:
         data_dir: Base data directory
-    
+
     Returns:
         List of Path objects for each image, sorted by filename
-    
+
     Raises:
         FileNotFoundError: If COCO directory not found
-    
+
     Example:
         >>> paths = get_coco_image_paths(Path("data/"))
         >>> len(paths)
@@ -289,20 +280,19 @@ def get_coco_image_paths(data_dir: Path) -> list[Path]:
 
 def iter_coco_images(
     data_dir: Path,
-    limit: Optional[int] = None,
+    limit: int | None = None,
 ) -> Iterator[tuple[Path, np.ndarray]]:
-    """
-    Iterate over COCO images, yielding path and loaded image.
-    
+    """Iterate over COCO images, yielding path and loaded image.
+
     Useful for processing all images without loading entire dataset into memory.
-    
+
     Args:
         data_dir: Base data directory
         limit: Maximum number of images to yield (None for all)
-    
+
     Yields:
         Tuple of (image_path, image_array)
-    
+
     Example:
         >>> for path, image in iter_coco_images(Path("data/"), limit=10):
         ...     print(f"{path.name}: {image.shape}")

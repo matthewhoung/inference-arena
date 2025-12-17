@@ -110,7 +110,6 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/shared"]
 
-[tool.hatch.build.targets.wheel.hooks.custom]
 [tool.hatch.build.targets.editable]
 dev-mode-dirs = ["src"]
 
@@ -190,8 +189,10 @@ ignore = [
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["D"]  # No docstrings required in tests
+"tests/*" = ["D", "E402"]  # No docstrings required in tests, allow sys.path manipulation
 "__init__.py" = ["F401"]  # Unused imports OK in __init__
+"src/shared/proto/*" = ["D", "F"]  # Ignore all errors in auto-generated proto files
+"src/shared/model/registry.py" = ["F821"]  # Allow ort type hints (optional dependency)
 
 # MyPy configuration
 [tool.mypy]

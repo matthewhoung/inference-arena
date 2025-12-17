@@ -22,14 +22,13 @@ Author: Matthew Hong
 import json
 import subprocess
 import time
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
 import pytest
 import requests
 
-from shared.config import get_infrastructure_config, get_controlled_variables
-
+from shared.config import get_controlled_variables, get_infrastructure_config
 
 # =============================================================================
 # Constants (Loaded from experiment.yaml where available)
@@ -101,7 +100,7 @@ def infrastructure_services(
 ) -> Generator[None, None, None]:
     """
     Start infrastructure services for testing.
-    
+
     This fixture:
     1. Starts all infrastructure services
     2. Waits for health checks
@@ -110,20 +109,20 @@ def infrastructure_services(
     """
     if not is_docker_available():
         pytest.skip("Docker not available")
-    
+
     if not is_compose_available():
         pytest.skip("Docker Compose not available")
-    
+
     if not compose_file_path.exists():
         pytest.skip(f"Compose file not found: {compose_file_path}")
-    
+
     # Start services
     start_cmd = [
         "docker", "compose",
         "-f", str(compose_file_path),
         "up", "-d", "--wait"
     ]
-    
+
     try:
         subprocess.run(
             start_cmd,
@@ -136,19 +135,19 @@ def infrastructure_services(
         pytest.fail(f"Failed to start services: {e.stderr.decode()}")
     except subprocess.TimeoutExpired:
         pytest.fail("Timeout waiting for services to start")
-    
+
     # Wait for services to be ready
     _wait_for_services()
-    
+
     yield
-    
+
     # Teardown
     stop_cmd = [
         "docker", "compose",
         "-f", str(compose_file_path),
         "down", "-v"
     ]
-    
+
     subprocess.run(
         stop_cmd,
         cwd=project_root,
@@ -165,9 +164,9 @@ def _wait_for_services() -> None:
         ("Prometheus", f"{PROMETHEUS_URL}/-/healthy"),
         ("Grafana", f"{GRAFANA_URL}/api/health"),
     ]
-    
+
     deadline = time.time() + STARTUP_TIMEOUT
-    
+
     for name, url in services:
         while time.time() < deadline:
             try:
@@ -273,10 +272,10 @@ class TestPrometheusMetrics:
         """Prometheus should have healthy targets."""
         response = requests.get(f"{PROMETHEUS_URL}/api/v1/targets", timeout=5)
         assert response.status_code == 200
-        
+
         data = response.json()
         assert data["status"] == "success"
-        
+
         active_targets = data["data"]["activeTargets"]
         assert len(active_targets) > 0, "No active scrape targets"
 
@@ -284,16 +283,16 @@ class TestPrometheusMetrics:
         """Prometheus should successfully scrape cAdvisor."""
         # Wait a bit for scraping to occur
         time.sleep(3)
-        
+
         response = requests.get(f"{PROMETHEUS_URL}/api/v1/targets", timeout=5)
         data = response.json()
-        
+
         cadvisor_target = None
         for target in data["data"]["activeTargets"]:
             if target.get("labels", {}).get("job") == "cadvisor":
                 cadvisor_target = target
                 break
-        
+
         assert cadvisor_target is not None, "cAdvisor target not found"
         assert cadvisor_target["health"] == "up", "cAdvisor target not healthy"
 
@@ -301,18 +300,18 @@ class TestPrometheusMetrics:
         """Prometheus should have container CPU metrics."""
         # Wait for metrics to be scraped
         time.sleep(5)
-        
+
         query = "container_cpu_usage_seconds_total"
         response = requests.get(
             f"{PROMETHEUS_URL}/api/v1/query",
             params={"query": query},
             timeout=5
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "success"
-        
+
         # Should have some results (at least for infrastructure containers)
         results = data["data"]["result"]
         assert len(results) > 0, f"No results for {query}"
@@ -329,10 +328,10 @@ class TestGrafanaProvisioning:
             auth=("admin", "admin"),
             timeout=5
         )
-        
+
         assert response.status_code == 200
         datasources = response.json()
-        
+
         prometheus_ds = next(
             (ds for ds in datasources if ds["type"] == "prometheus"),
             None
@@ -347,10 +346,10 @@ class TestGrafanaProvisioning:
             auth=("admin", "admin"),
             timeout=5
         )
-        
+
         assert response.status_code == 200
         dashboards = response.json()
-        
+
         # Should find at least one dashboard
         assert len(dashboards) > 0, "No dashboards found"
 
@@ -366,13 +365,13 @@ class TestNetworkConnectivity:
             capture_output=True,
             text=True
         )
-        
+
         assert result.returncode == 0
         network_info = json.loads(result.stdout)
-        
+
         containers = network_info[0].get("Containers", {})
         container_names = [c["Name"] for c in containers.values()]
-        
+
         assert any("minio" in name for name in container_names), \
             "MinIO not on backend network"
         assert any("cadvisor" in name for name in container_names), \
@@ -385,12 +384,12 @@ class TestNetworkConnectivity:
             capture_output=True,
             text=True
         )
-        
+
         assert result.returncode == 0
         network_info = json.loads(result.stdout)
-        
+
         containers = network_info[0].get("Containers", {})
         container_names = [c["Name"] for c in containers.values()]
-        
+
         assert any("grafana" in name for name in container_names), \
             "Grafana not on infra network"

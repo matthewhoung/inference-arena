@@ -15,35 +15,34 @@ Test Categories:
 Author: Matthew Hong
 """
 
-import pytest
-from pathlib import Path
-from typing import Any, Dict
-from unittest.mock import patch, mock_open
-
 # Import module under test
 import sys
+from pathlib import Path
+from typing import Any
+
+import pytest
+
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from shared.config import (
+    get_concurrent_user_levels,
     get_config,
-    reload_config,
     get_controlled_variable,
     get_controlled_variables,
+    get_hypotheses_by_category,
+    get_hypothesis,
+    get_infrastructure_config,
+    get_load_testing_config,
+    get_metadata,
+    get_minio_config,
     get_model_config,
     get_model_names,
-    get_hypothesis,
-    get_hypotheses_by_category,
-    get_infrastructure_config,
-    get_minio_config,
-    get_triton_config,
-    get_load_testing_config,
-    get_concurrent_user_levels,
-    get_metadata,
     get_spec_version,
+    get_triton_config,
+    reload_config,
     validate_config,
 )
-
 
 # =============================================================================
 # Fixtures
@@ -59,7 +58,7 @@ def clear_config_cache():
 
 
 @pytest.fixture
-def config() -> Dict[str, Any]:
+def config() -> dict[str, Any]:
     """Load the actual config for testing."""
     return get_config()
 
@@ -90,7 +89,7 @@ class TestConfigLoading:
         # After reload, should be new dict (though equal content)
         assert config1 == config2
 
-    def test_config_has_required_sections(self, config: Dict[str, Any]) -> None:
+    def test_config_has_required_sections(self, config: dict[str, Any]) -> None:
         """Config should have all required top-level sections."""
         required = [
             "metadata",
@@ -139,7 +138,7 @@ class TestControlledVariables:
         """Should return ONNX runtime settings."""
         intra = get_controlled_variable("onnx_runtime", "intra_op_num_threads")
         inter = get_controlled_variable("onnx_runtime", "inter_op_num_threads")
-        
+
         assert intra == 2
         assert inter == 1
 
@@ -147,7 +146,7 @@ class TestControlledVariables:
         """Should return resource allocation settings."""
         vcpu = get_controlled_variable("resources", "vcpu_per_container")
         memory = get_controlled_variable("resources", "memory_gb_per_container")
-        
+
         assert vcpu == 2
         assert memory == 4
 
@@ -155,14 +154,14 @@ class TestControlledVariables:
         """Should return dataset configuration."""
         sample_size = get_controlled_variable("dataset", "sample_size")
         target_mean = get_controlled_variable("dataset", "target_distribution")["mean"]
-        
+
         assert sample_size == 100
         assert target_mean == 4.0
 
     def test_get_controlled_variables_section(self) -> None:
         """Should return entire section."""
         onnx = get_controlled_variables("onnx_runtime")
-        
+
         assert isinstance(onnx, dict)
         assert "intra_op_num_threads" in onnx
         assert "inter_op_num_threads" in onnx
@@ -171,14 +170,14 @@ class TestControlledVariables:
         """Should raise KeyError for invalid section."""
         with pytest.raises(KeyError) as exc_info:
             get_controlled_variable("nonexistent_section", "key")
-        
+
         assert "nonexistent_section" in str(exc_info.value)
 
     def test_invalid_key_raises_keyerror(self) -> None:
         """Should raise KeyError for invalid key."""
         with pytest.raises(KeyError) as exc_info:
             get_controlled_variable("onnx_runtime", "nonexistent_key")
-        
+
         assert "nonexistent_key" in str(exc_info.value)
 
 
@@ -192,7 +191,7 @@ class TestModelConfiguration:
     def test_get_model_names(self) -> None:
         """Should return list of model names."""
         names = get_model_names()
-        
+
         assert isinstance(names, list)
         assert "yolov5n" in names
         assert "mobilenetv2" in names
@@ -200,7 +199,7 @@ class TestModelConfiguration:
     def test_get_yolov5n_config(self) -> None:
         """Should return YOLOv5n configuration."""
         yolo = get_model_config("yolov5n")
-        
+
         assert yolo["name"] == "yolov5n"
         assert yolo["format"] == "onnx"
         assert yolo["opset_version"] == 17
@@ -210,7 +209,7 @@ class TestModelConfiguration:
     def test_get_mobilenetv2_config(self) -> None:
         """Should return MobileNetV2 configuration."""
         mobilenet = get_model_config("mobilenetv2")
-        
+
         assert mobilenet["name"] == "mobilenetv2"
         assert mobilenet["format"] == "onnx"
         assert mobilenet["opset_version"] == 17
@@ -233,7 +232,7 @@ class TestHypotheses:
     def test_get_hypothesis_h1a(self) -> None:
         """Should return H1a hypothesis."""
         h1a = get_hypothesis("H1a")
-        
+
         assert isinstance(h1a, dict)
         assert "statement" in h1a
         assert "rationale" in h1a
@@ -243,19 +242,19 @@ class TestHypotheses:
     def test_get_hypotheses_by_category(self) -> None:
         """Should filter hypotheses by category."""
         performance = get_hypotheses_by_category("performance")
-        
+
         assert isinstance(performance, dict)
         assert "H1a" in performance
         assert "H1b" in performance
-        
+
         # All should be performance category
-        for h_id, h_config in performance.items():
+        for _h_id, h_config in performance.items():
             assert h_config["category"] == "performance"
 
     def test_hypothesis_categories(self) -> None:
         """Should have hypotheses in all expected categories."""
         categories = ["performance", "resource_efficiency", "operational_complexity"]
-        
+
         for category in categories:
             hypotheses = get_hypotheses_by_category(category)
             assert len(hypotheses) > 0, f"No hypotheses in category: {category}"
@@ -276,7 +275,7 @@ class TestInfrastructureConfig:
     def test_get_minio_config(self) -> None:
         """Should return MinIO configuration."""
         minio = get_minio_config()
-        
+
         assert isinstance(minio, dict)
         assert "bucket" in minio
         assert "endpoint" in minio
@@ -285,7 +284,7 @@ class TestInfrastructureConfig:
     def test_get_triton_config(self) -> None:
         """Should return Triton configuration."""
         triton = get_triton_config()
-        
+
         assert isinstance(triton, dict)
         assert "model_repository" in triton
         assert "instance_group" in triton
@@ -296,7 +295,7 @@ class TestInfrastructureConfig:
         triton = get_triton_config()
         onnx_intra = get_controlled_variable("onnx_runtime", "intra_op_num_threads")
         onnx_inter = get_controlled_variable("onnx_runtime", "inter_op_num_threads")
-        
+
         triton_params = triton["parameters"]
         assert triton_params["intra_op_thread_count"] == str(onnx_intra)
         assert triton_params["inter_op_thread_count"] == str(onnx_inter)
@@ -304,7 +303,7 @@ class TestInfrastructureConfig:
     def test_get_infrastructure_config(self) -> None:
         """Should return full infrastructure config."""
         infra = get_infrastructure_config()
-        
+
         assert "orchestration" in infra
         assert "minio" in infra
         assert "networks" in infra
@@ -320,7 +319,7 @@ class TestLoadTestingConfig:
     def test_get_load_testing_config(self) -> None:
         """Should return load testing configuration."""
         lt = get_load_testing_config()
-        
+
         assert "phases" in lt
         assert "runs_per_configuration" in lt
         assert lt["tool"] == "locust"
@@ -329,7 +328,7 @@ class TestLoadTestingConfig:
         """Should have correct phase durations."""
         lt = get_load_testing_config()
         phases = lt["phases"]
-        
+
         assert phases["warmup"]["duration_seconds"] == 60
         assert phases["measurement"]["duration_seconds"] == 180
         assert phases["cooldown"]["duration_seconds"] == 30
@@ -337,7 +336,7 @@ class TestLoadTestingConfig:
     def test_get_concurrent_user_levels(self) -> None:
         """Should return user concurrency levels."""
         levels = get_concurrent_user_levels()
-        
+
         assert isinstance(levels, list)
         assert levels == [1, 5, 10, 25, 50, 75, 100]
 
@@ -352,7 +351,7 @@ class TestValidation:
     def test_validate_config_passes(self) -> None:
         """Validation should pass for valid config."""
         errors = validate_config()
-        
+
         assert isinstance(errors, list)
         assert len(errors) == 0, f"Validation errors: {errors}"
 
@@ -360,7 +359,7 @@ class TestValidation:
         """Validation should check for required models."""
         # This tests the validation logic indirectly
         errors = validate_config()
-        
+
         # If we got here without errors, models are valid
         assert len(errors) == 0
 
@@ -377,7 +376,7 @@ class TestConfigIntegration:
         for model_name in get_model_names():
             config = get_model_config(model_name)
             input_shape = config["input"]["shape"]
-            
+
             assert len(input_shape) == 4, f"{model_name} input should be 4D"
             assert input_shape[0] == 1, f"{model_name} batch size should be 1"
             assert input_shape[1] == 3, f"{model_name} should have 3 channels"
@@ -386,7 +385,7 @@ class TestConfigIntegration:
         """Hypothesis predictions should reference valid architectures."""
         config = get_config()
         architectures = config["independent_variables"]["architecture"]["levels"]
-        
+
         for h_id, h_config in config["hypotheses"].items():
             prediction = h_config.get("testable_prediction", "")
             # At least one architecture should be mentioned
@@ -397,7 +396,7 @@ class TestConfigIntegration:
     def test_concurrent_users_are_ordered(self) -> None:
         """Concurrent user levels should be in ascending order."""
         levels = get_concurrent_user_levels()
-        
+
         assert levels == sorted(levels)
         assert levels[0] == 1  # Start at 1
         assert levels[-1] == 100  # End at 100

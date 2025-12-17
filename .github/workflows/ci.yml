@@ -257,7 +257,7 @@ jobs:
       - name: Validate links in README
         run: |
           # Check internal links exist
-          if grep -o '\[.*\](\(docs/.*\.md\|experiment\.yaml\|\.env\.example\))' README.md | sed 's/.*(\(.*\))/\1/' | while read file; do
+          for file in $(grep -o '\[.*\](\(docs/.*\.md\|experiment\.yaml\|\.env\.example\))' README.md | sed 's/.*(\(.*\))/\1/' || true); do
             if [ ! -f "$file" ]; then
               echo "ERROR: Broken link in README.md: $file"
               exit 1

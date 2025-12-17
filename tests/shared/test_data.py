@@ -19,31 +19,29 @@ Specification Reference: Foundation Specification §5
 import json
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 
 from shared.data.coco_dataset import (
+    COCO_VAL2017_COUNT,
+    COCO_VAL2017_URL,
+    get_coco_image_paths,
     is_coco_downloaded,
     load_coco_image,
-    get_coco_image_paths,
-    COCO_VAL2017_URL,
-    COCO_VAL2017_COUNT,
 )
 from shared.data.curator import (
+    DEFAULT_CONFIDENCE_THRESHOLD,
+    DEFAULT_MAX_DETECTIONS,
+    DEFAULT_MIN_DETECTIONS,
+    DEFAULT_TARGET_COUNT,
+    TARGET_MEAN_DETECTIONS,
     CurationConfig,
     CurationResult,
-    ImageRecord,
-    DatasetManifest,
     DatasetCurator,
-    DEFAULT_TARGET_COUNT,
-    DEFAULT_MIN_DETECTIONS,
-    DEFAULT_MAX_DETECTIONS,
-    DEFAULT_CONFIDENCE_THRESHOLD,
-    TARGET_MEAN_DETECTIONS,
+    DatasetManifest,
+    ImageRecord,
 )
-
 
 # =============================================================================
 # Fixtures

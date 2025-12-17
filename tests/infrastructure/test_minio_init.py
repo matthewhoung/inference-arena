@@ -12,15 +12,16 @@ Test Categories:
 Author: Matthew Hong
 """
 
-import json
-import pytest
-from pathlib import Path
-from typing import Any, Dict
-from unittest.mock import MagicMock, patch, PropertyMock
-import tempfile
 import importlib
-
+import json
 import sys
+import tempfile
+from pathlib import Path
+from typing import Any
+from unittest.mock import MagicMock, patch
+
+import pytest
+
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 sys.path.insert(0, str(PROJECT_ROOT))
@@ -36,25 +37,25 @@ class TestTritonConfigGeneration:
     def test_generate_yolov5n_config(self) -> None:
         """Should generate valid config.pbtxt for YOLOv5n."""
         from infrastructure.minio.triton_config import generate_config_pbtxt
-        
+
         config = generate_config_pbtxt("yolov5n")
-        
+
         # Check required fields
         assert 'name: "yolov5n"' in config
         assert 'platform: "onnxruntime_onnx"' in config
         assert "max_batch_size: 0" in config
-        
+
         # Check input spec
         assert 'name: "images"' in config
         assert "TYPE_FP32" in config
         assert "640" in config
-        
+
         # Check output spec
         assert 'name: "output0"' in config
-        
+
         # Check instance group
         assert "KIND_CPU" in config
-        
+
         # Check threading parameters
         assert "intra_op_thread_count" in config
         assert "inter_op_thread_count" in config
@@ -62,17 +63,17 @@ class TestTritonConfigGeneration:
     def test_generate_mobilenetv2_config(self) -> None:
         """Should generate valid config.pbtxt for MobileNetV2."""
         from infrastructure.minio.triton_config import generate_config_pbtxt
-        
+
         config = generate_config_pbtxt("mobilenetv2")
-        
+
         # Check required fields
         assert 'name: "mobilenetv2"' in config
         assert 'platform: "onnxruntime_onnx"' in config
-        
+
         # Check input spec
         assert 'name: "input"' in config
         assert "224" in config
-        
+
         # Check output spec
         assert 'name: "output"' in config
         assert "1000" in config
@@ -80,13 +81,13 @@ class TestTritonConfigGeneration:
     def test_generate_all_configs(self) -> None:
         """Should generate configs for all models."""
         from infrastructure.minio.triton_config import generate_all_configs
-        
+
         configs = generate_all_configs()
-        
+
         assert isinstance(configs, dict)
         assert "yolov5n" in configs
         assert "mobilenetv2" in configs
-        
+
         for model_name, config in configs.items():
             assert f'name: "{model_name}"' in config
 
@@ -96,41 +97,41 @@ class TestTritonConfigGeneration:
             generate_config_pbtxt,
             validate_config_pbtxt,
         )
-        
+
         config = generate_config_pbtxt("yolov5n")
         errors = validate_config_pbtxt(config)
-        
+
         assert len(errors) == 0, f"Validation errors: {errors}"
 
     def test_invalid_config_detected(self) -> None:
         """Should detect invalid config content."""
         from infrastructure.minio.triton_config import validate_config_pbtxt
-        
+
         invalid_config = "this is not a valid config"
         errors = validate_config_pbtxt(invalid_config)
-        
+
         assert len(errors) > 0
 
     def test_format_dims(self) -> None:
         """Should format dimensions correctly."""
         from infrastructure.minio.triton_config import _format_dims
-        
+
         dims = _format_dims([1, 3, 640, 640])
-        
+
         assert dims == "[ 1, 3, 640, 640 ]"
 
     def test_save_config_pbtxt(self) -> None:
         """Should save config to disk."""
         from infrastructure.minio.triton_config import save_config_pbtxt
-        
+
         with tempfile.TemporaryDirectory() as tmpdir:
             output_dir = Path(tmpdir)
             config_path = save_config_pbtxt("yolov5n", output_dir)
-            
+
             assert config_path.exists()
             assert config_path.name == "config.pbtxt"
             assert config_path.parent.name == "yolov5n"
-            
+
             content = config_path.read_text()
             assert 'name: "yolov5n"' in content
 
@@ -153,7 +154,7 @@ class TestMinIORegistryMocked:
         # Create a mock module if minio isn't installed
         import sys
         try:
-            import minio
+            import minio  # noqa: F401  # Import needed to check availability
             patch_target = "minio.Minio"
         except ImportError:
             mock_minio_module = MagicMock()
@@ -190,51 +191,51 @@ class TestMinIORegistryMocked:
     def test_registry_initialization(self, mock_minio_client) -> None:
         """Should initialize with config from experiment.yaml."""
         from infrastructure.minio.init_models import MinIOModelRegistry
-        
+
         registry = MinIOModelRegistry()
-        
+
         assert registry.bucket == "models"
         assert registry.endpoint == "localhost:9000"
 
     def test_ensure_bucket_creates_if_missing(self, mock_minio_client) -> None:
         """Should create bucket if it doesn't exist."""
         from infrastructure.minio.init_models import MinIOModelRegistry
-        
+
         mock_minio_client.bucket_exists.return_value = False
-        
+
         registry = MinIOModelRegistry()
         registry.ensure_bucket_exists()
-        
+
         mock_minio_client.make_bucket.assert_called_once_with("models")
 
     def test_ensure_bucket_skips_if_exists(self, mock_minio_client) -> None:
         """Should skip bucket creation if exists."""
         from infrastructure.minio.init_models import MinIOModelRegistry
-        
+
         mock_minio_client.bucket_exists.return_value = True
-        
+
         registry = MinIOModelRegistry()
         registry.ensure_bucket_exists()
-        
+
         mock_minio_client.make_bucket.assert_not_called()
 
     def test_compute_checksum(self, mock_minio_client, mock_model_file) -> None:
         """Should compute SHA256 checksum."""
         from infrastructure.minio.init_models import MinIOModelRegistry
-        
+
         registry = MinIOModelRegistry()
         checksum = registry._compute_checksum(mock_model_file)
-        
+
         assert isinstance(checksum, str)
         assert len(checksum) == 64  # SHA256 hex length
 
     def test_generate_metadata(self, mock_minio_client, mock_model_file) -> None:
         """Should generate valid metadata."""
         from infrastructure.minio.init_models import MinIOModelRegistry
-        
+
         registry = MinIOModelRegistry()
         metadata = registry._generate_metadata("yolov5n", mock_model_file)
-        
+
         assert metadata["model_name"] == "yolov5n"
         assert metadata["version"] == 1
         assert metadata["format"] == "onnx"
@@ -253,7 +254,7 @@ class TestMetadataStructure:
     """Test metadata.json structure and content."""
 
     @pytest.fixture
-    def sample_metadata(self) -> Dict[str, Any]:
+    def sample_metadata(self) -> dict[str, Any]:
         """Create sample metadata for testing."""
         return {
             "model_name": "yolov5n",
@@ -292,7 +293,7 @@ class TestMetadataStructure:
             "checksum_sha256",
             "uploaded_at",
         ]
-        
+
         for field in required_fields:
             assert field in sample_metadata, f"Missing field: {field}"
 
@@ -300,7 +301,7 @@ class TestMetadataStructure:
         """Metadata should be JSON serializable."""
         json_str = json.dumps(sample_metadata)
         parsed = json.loads(json_str)
-        
+
         assert parsed == sample_metadata
 
     def test_metadata_input_output_structure(self, sample_metadata) -> None:
@@ -322,14 +323,14 @@ class TestBucketStructure:
     def test_model_path_structure(self) -> None:
         """Model paths should follow Triton convention."""
         from infrastructure.minio.init_models import MODEL_VERSION
-        
+
         model_name = "yolov5n"
         expected_paths = [
             f"{model_name}/{MODEL_VERSION}/model.onnx",
             f"{model_name}/config.pbtxt",
             f"{model_name}/metadata.json",
         ]
-        
+
         for path in expected_paths:
             assert model_name in path
             assert "/" in path
@@ -337,7 +338,7 @@ class TestBucketStructure:
     def test_version_directory(self) -> None:
         """Version directory should be numeric."""
         from infrastructure.minio.init_models import MODEL_VERSION
-        
+
         assert isinstance(MODEL_VERSION, int)
         assert MODEL_VERSION >= 1
 
@@ -364,7 +365,7 @@ class TestMinIOIntegration:
     def test_bucket_operations(self, registry) -> None:
         """Should create and verify bucket."""
         registry.ensure_bucket_exists()
-        
+
         # Verify bucket exists
         assert registry.client.bucket_exists(registry.bucket)
 
@@ -372,7 +373,7 @@ class TestMinIOIntegration:
         """Should verify when no models uploaded."""
         registry.ensure_bucket_exists()
         verification = registry.verify_models()
-        
+
         assert isinstance(verification, dict)
         assert "models" in verification
         assert "all_valid" in verification

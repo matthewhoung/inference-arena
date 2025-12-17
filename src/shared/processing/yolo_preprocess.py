@@ -1,5 +1,4 @@
-"""
-YOLOv5 Preprocessing Pipeline
+"""YOLOv5 Preprocessing Pipeline.
 
 This module provides the YOLOPreprocessor class for preparing images
 for YOLOv5n object detection inference.
@@ -18,13 +17,11 @@ Specification Reference: Foundation Specification §3.2
 """
 
 from dataclasses import dataclass
-from typing import Tuple
 
 import numpy as np
 
 from shared.config import get_controlled_variable
 from shared.processing.transforms import letterbox, scale_boxes
-
 
 # =============================================================================
 # Constants (Loaded from experiment.yaml)
@@ -45,8 +42,7 @@ YOLO_NORMALIZATION_SCALE: float = _yolo_config["normalization_scale"]
 
 @dataclass
 class YOLOPreprocessResult:
-    """
-    Result container for YOLO preprocessing.
+    """Result container for YOLO preprocessing.
 
     Attributes:
         tensor: Preprocessed image tensor [1, 3, 640, 640], float32, range [0, 1]
@@ -57,12 +53,11 @@ class YOLOPreprocessResult:
 
     tensor: np.ndarray
     scale: float
-    padding: Tuple[int, int]
-    original_shape: Tuple[int, int]
+    padding: tuple[int, int]
+    original_shape: tuple[int, int]
 
     def scale_boxes_to_original(self, boxes: np.ndarray) -> np.ndarray:
-        """
-        Convert detection boxes from YOLO output space to original image coordinates.
+        """Convert detection boxes from YOLO output space to original image coordinates.
 
         Args:
             boxes: Detection boxes [N, 4+] with [x1, y1, x2, y2, ...] in 640x640 space
@@ -78,8 +73,7 @@ class YOLOPreprocessResult:
 # =============================================================================
 
 class YOLOPreprocessor:
-    """
-    Preprocessor for YOLOv5n object detection model.
+    """Preprocessor for YOLOv5n object detection model.
 
     Transforms input images into tensors suitable for ONNX Runtime inference.
     Provides consistent preprocessing across all architectures (monolithic,
@@ -106,8 +100,7 @@ class YOLOPreprocessor:
         input_size: int = YOLO_INPUT_SIZE,
         normalization_scale: float = YOLO_NORMALIZATION_SCALE,
     ) -> None:
-        """
-        Initialize YOLOPreprocessor.
+        """Initialize YOLOPreprocessor.
 
         Args:
             input_size: Target square dimension for model input (default: 640)
@@ -117,8 +110,7 @@ class YOLOPreprocessor:
         self.normalization_scale = normalization_scale
 
     def __call__(self, image: np.ndarray) -> YOLOPreprocessResult:
-        """
-        Preprocess image for YOLOv5n inference.
+        """Preprocess image for YOLOv5n inference.
 
         Args:
             image: RGB uint8 array with shape [H, W, 3]
@@ -132,8 +124,7 @@ class YOLOPreprocessor:
         return self.preprocess(image)
 
     def preprocess(self, image: np.ndarray) -> YOLOPreprocessResult:
-        """
-        Preprocess image for YOLOv5n inference.
+        """Preprocess image for YOLOv5n inference.
 
         Pipeline:
             1. Letterbox resize to 640x640
@@ -181,8 +172,7 @@ class YOLOPreprocessor:
         )
 
     def _validate_input(self, image: np.ndarray) -> None:
-        """
-        Validate input image.
+        """Validate input image.
 
         Args:
             image: Image to validate
@@ -203,9 +193,8 @@ class YOLOPreprocessor:
             raise ValueError(f"Expected uint8 dtype, got {image.dtype}")
 
     @staticmethod
-    def get_input_shape() -> Tuple[int, int, int, int]:
-        """
-        Get expected ONNX model input shape.
+    def get_input_shape() -> tuple[int, int, int, int]:
+        """Get expected ONNX model input shape.
 
         Returns:
             Tuple of (batch, channels, height, width)
@@ -214,8 +203,7 @@ class YOLOPreprocessor:
 
     @staticmethod
     def get_input_dtype() -> np.dtype:
-        """
-        Get expected ONNX model input dtype.
+        """Get expected ONNX model input dtype.
 
         Returns:
             numpy dtype (float32)

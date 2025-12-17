@@ -1,5 +1,4 @@
-"""
-Dataset Curator
+"""Dataset Curator.
 
 This module curates a thesis test dataset from COCO val2017 with
 controlled fan-out (detection count per image).
@@ -21,17 +20,15 @@ Specification Reference: Foundation Specification §5.2
 import json
 import logging
 import shutil
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timezone
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 
 from shared.data.coco_dataset import (
     get_coco_image_paths,
     load_coco_image,
-    COCO_VAL2017_COUNT,
 )
 
 logger = logging.getLogger(__name__)
@@ -69,9 +66,8 @@ TARGET_STD_DETECTIONS: float = 0.8
 
 @dataclass
 class CurationConfig:
-    """
-    Configuration for dataset curation.
-    
+    """Configuration for dataset curation.
+
     Attributes:
         target_count: Number of images to curate
         min_detections: Minimum detections per image (inclusive)
@@ -91,9 +87,8 @@ class CurationConfig:
 
 @dataclass
 class ImageRecord:
-    """
-    Record for a curated image.
-    
+    """Record for a curated image.
+
     Attributes:
         filename: Image filename (e.g., "000000001234.jpg")
         detection_count: Number of detections in image
@@ -102,14 +97,13 @@ class ImageRecord:
 
     filename: str
     detection_count: int
-    original_path: Optional[str] = None
+    original_path: str | None = None
 
 
 @dataclass
 class CurationResult:
-    """
-    Result of curation process.
-    
+    """Result of curation process.
+
     Attributes:
         images: List of curated image records
         total_scanned: Number of images scanned
@@ -129,11 +123,10 @@ class CurationResult:
 
 @dataclass
 class DatasetManifest:
-    """
-    Manifest for curated dataset.
-    
+    """Manifest for curated dataset.
+
     Contains all metadata needed for reproducibility.
-    
+
     Attributes:
         version: Manifest format version
         created: ISO timestamp of creation
@@ -164,7 +157,7 @@ class DatasetManifest:
     @classmethod
     def load(cls, path: Path) -> "DatasetManifest":
         """Load manifest from JSON file."""
-        with open(path, "r") as f:
+        with open(path) as f:
             data = json.load(f)
         return cls(**data)
 
@@ -174,9 +167,8 @@ class DatasetManifest:
 # =============================================================================
 
 class DetectionCounter:
-    """
-    Counts detections in images using YOLOv5n ONNX model.
-    
+    """Counts detections in images using YOLOv5n ONNX model.
+
     Handles YOLOv8-style output format [batch, 84, num_predictions]:
     - 84 = 4 (bbox) + 80 (class scores)
     - No separate objectness score
@@ -189,9 +181,8 @@ class DetectionCounter:
         confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
         iou_threshold: float = DEFAULT_IOU_THRESHOLD,
     ) -> None:
-        """
-        Initialize detection counter.
-        
+        """Initialize detection counter.
+
         Args:
             models_dir: Directory containing ONNX models
             confidence_threshold: Minimum confidence for valid detection
@@ -231,12 +222,11 @@ class DetectionCounter:
         logger.info(f"Loaded YOLOv5n model from {model_path}")
 
     def count_detections(self, image: np.ndarray) -> int:
-        """
-        Count detections in an image.
-        
+        """Count detections in an image.
+
         Args:
             image: RGB uint8 array with shape [H, W, 3]
-        
+
         Returns:
             Number of detections above confidence threshold after NMS
         """
@@ -255,79 +245,76 @@ class DetectionCounter:
 
         # Parse output based on shape
         detections = outputs[0]
-        
+
         # Handle YOLOv8-style output: [batch, 84, num_predictions]
         if len(detections.shape) == 3 and detections.shape[1] == 84:
             return self._parse_yolov8_output(detections)
-        
+
         # Handle YOLOv5 raw output: [batch, num_predictions, 85]
         elif len(detections.shape) == 3 and detections.shape[2] == 85:
             return self._parse_yolov5_raw_output(detections)
-        
+
         # Handle post-NMS output: [batch, num_detections, 6]
         elif len(detections.shape) == 3 and detections.shape[2] == 6:
             return self._parse_post_nms_output(detections)
-        
+
         else:
             logger.warning(f"Unknown output shape: {detections.shape}")
             return 0
 
     def _parse_yolov8_output(self, detections: np.ndarray) -> int:
-        """
-        Parse YOLOv8-style output format.
-        
+        """Parse YOLOv8-style output format.
+
         Input shape: [batch, 84, num_predictions]
         - 84 = 4 (x, y, w, h) + 80 (class scores)
         - No separate objectness score
         """
         # Remove batch dimension and transpose to [num_predictions, 84]
         detections = detections[0].T  # [8400, 84]
-        
+
         # Split into boxes and class scores
         boxes = detections[:, :4]  # [x_center, y_center, width, height]
         class_scores = detections[:, 4:]  # [80 class scores]
-        
+
         # Get confidence (max class score) and class id
         confidences = class_scores.max(axis=1)
         class_ids = class_scores.argmax(axis=1)
-        
+
         # Apply NMS
         count = self._apply_nms(boxes, confidences, class_ids)
         return count
 
     def _parse_yolov5_raw_output(self, detections: np.ndarray) -> int:
-        """
-        Parse YOLOv5 raw output format.
-        
+        """Parse YOLOv5 raw output format.
+
         Input shape: [batch, num_predictions, 85]
         - 85 = 4 (x, y, w, h) + 1 (objectness) + 80 (class scores)
         """
         detections = detections[0]  # Remove batch: [num_predictions, 85]
-        
+
         boxes = detections[:, :4]
         obj_conf = detections[:, 4]
         class_scores = detections[:, 5:]
-        
+
         # Combined confidence = objectness * class_score
         max_class_scores = class_scores.max(axis=1)
         confidences = obj_conf * max_class_scores
         class_ids = class_scores.argmax(axis=1)
-        
+
         count = self._apply_nms(boxes, confidences, class_ids)
         return count
 
     def _parse_post_nms_output(self, detections: np.ndarray) -> int:
-        """
-        Parse post-NMS output format.
-        
+        """Parse post-NMS output format.
+
         Input shape: [batch, num_detections, 6]
         - 6 = x1, y1, x2, y2, confidence, class_id
         """
         detections = detections[0]  # Remove batch
-        
+
         if len(detections) == 0:
             return 0
-        
+
         confidences = detections[:, 4]
         return int(np.sum(confidences >= self.confidence_threshold))
 
@@ -337,14 +324,13 @@ class DetectionCounter:
         scores: np.ndarray,
         class_ids: np.ndarray,
     ) -> int:
-        """
-        Apply Non-Maximum Suppression and return detection count.
-        
+        """Apply Non-Maximum Suppression and return detection count.
+
         Args:
             boxes: [N, 4] array of [x_center, y_center, width, height]
             scores: [N] array of confidence scores
             class_ids: [N] array of class IDs
-        
+
         Returns:
             Number of detections after NMS
         """
@@ -415,12 +401,11 @@ class DetectionCounter:
 # =============================================================================
 
 class DatasetCurator:
-    """
-    Curates thesis test dataset from COCO val2017.
-    
+    """Curates thesis test dataset from COCO val2017.
+
     Selects images with controlled detection counts (fan-out)
     to ensure consistent workload across experimental runs.
-    
+
     Example:
         >>> curator = DatasetCurator(
         ...     data_dir=Path("data/"),
@@ -437,11 +422,10 @@ class DatasetCurator:
         data_dir: Path,
         models_dir: Path,
         output_dir: Path,
-        config: Optional[CurationConfig] = None,
+        config: CurationConfig | None = None,
     ) -> None:
-        """
-        Initialize curator.
-        
+        """Initialize curator.
+
         Args:
             data_dir: Base data directory (contains coco/val2017/)
             models_dir: Directory containing ONNX models
@@ -460,9 +444,8 @@ class DatasetCurator:
         )
 
     def is_curated(self) -> tuple[bool, str]:
-        """
-        Check if dataset is already curated.
-        
+        """Check if dataset is already curated.
+
         Returns:
             Tuple of (is_ready, message)
         """
@@ -492,21 +475,20 @@ class DatasetCurator:
     def curate(
         self,
         force: bool = False,
-        progress_callback: Optional[callable] = None,
+        progress_callback: callable | None = None,
     ) -> CurationResult:
-        """
-        Curate thesis test dataset.
-        
+        """Curate thesis test dataset.
+
         Scans COCO images, counts detections, and selects images
         matching the configured detection range.
-        
+
         Args:
             force: Re-curate even if dataset exists
             progress_callback: Called with (current, total) for progress updates
-        
+
         Returns:
             CurationResult with selected images and statistics
-        
+
         Raises:
             FileNotFoundError: If COCO images or model not found
         """
@@ -614,9 +596,8 @@ class DatasetCurator:
         self,
         candidates: dict[int, list[ImageRecord]],
     ) -> list[ImageRecord]:
-        """
-        Sample images to achieve balanced distribution.
-        
+        """Sample images to achieve balanced distribution.
+
         Aims for approximately equal representation of each detection count
         to achieve target mean of 4.0.
         """
@@ -631,7 +612,7 @@ class DatasetCurator:
             self.config.min_detections,
             self.config.max_detections + 1,
         ))
-        num_buckets = len(detection_range)
+        len(detection_range)
 
         # Weight middle values more heavily for tighter std
         weights = []
@@ -644,7 +625,7 @@ class DatasetCurator:
         total_weight = sum(weights)
         targets = {
             d: int(remaining * w / total_weight)
-            for d, w in zip(detection_range, weights)
+            for d, w in zip(detection_range, weights, strict=False)
         }
 
         # Adjust to hit exact target count
@@ -710,7 +691,7 @@ class DatasetCurator:
 
         manifest = DatasetManifest(
             version="1.0",
-            created=datetime.now(timezone.utc).isoformat(),
+            created=datetime.now(UTC).isoformat(),
             source="COCO val2017",
             config={
                 "target_count": self.config.target_count,

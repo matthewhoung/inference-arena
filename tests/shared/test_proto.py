@@ -19,7 +19,6 @@ Specification Reference: Foundation Specification §6 gRPC Interface
 
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -28,7 +27,6 @@ from shared.proto import (
     get_proto_path,
     is_generated,
 )
-
 
 # =============================================================================
 # Fixtures
