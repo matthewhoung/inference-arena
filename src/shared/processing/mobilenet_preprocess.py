@@ -1,5 +1,4 @@
-"""
-MobileNetV2 Preprocessing Pipeline
+"""MobileNetV2 Preprocessing Pipeline.
 
 This module provides the MobileNetPreprocessor class for preparing
 image crops for MobileNetV2 classification inference.
@@ -16,14 +15,12 @@ Specification Reference: Foundation Specification §3.4
 """
 
 from dataclasses import dataclass
-from typing import Tuple
 
 import cv2
 import numpy as np
 
 from shared.config import get_controlled_variable
-from shared.processing.transforms import imagenet_normalize, IMAGENET_MEAN, IMAGENET_STD
-
+from shared.processing.transforms import IMAGENET_MEAN, IMAGENET_STD, imagenet_normalize
 
 # =============================================================================
 # Constants (Loaded from experiment.yaml)
@@ -39,10 +36,10 @@ MOBILENET_INPUT_SIZE: int = _mobilenet_config["target_size"]
 # Data Classes
 # =============================================================================
 
+
 @dataclass
 class MobileNetPreprocessResult:
-    """
-    Result container for MobileNet preprocessing.
+    """Result container for MobileNet preprocessing.
 
     Attributes:
         tensor: Preprocessed image tensor [1, 3, 224, 224], float32, ImageNet normalized
@@ -50,16 +47,16 @@ class MobileNetPreprocessResult:
     """
 
     tensor: np.ndarray
-    original_shape: Tuple[int, int]
+    original_shape: tuple[int, int]
 
 
 # =============================================================================
 # Preprocessor Class
 # =============================================================================
 
+
 class MobileNetPreprocessor:
-    """
-    Preprocessor for MobileNetV2 classification model.
+    """Preprocessor for MobileNetV2 classification model.
 
     Transforms cropped image regions (from YOLO detections) into tensors
     suitable for ONNX Runtime inference. Uses ImageNet normalization
@@ -89,8 +86,7 @@ class MobileNetPreprocessor:
         mean: np.ndarray = IMAGENET_MEAN,
         std: np.ndarray = IMAGENET_STD,
     ) -> None:
-        """
-        Initialize MobileNetPreprocessor.
+        """Initialize MobileNetPreprocessor.
 
         Args:
             input_size: Target square dimension for model input (default: 224)
@@ -102,8 +98,7 @@ class MobileNetPreprocessor:
         self.std = std
 
     def __call__(self, crop: np.ndarray) -> MobileNetPreprocessResult:
-        """
-        Preprocess crop for MobileNetV2 inference.
+        """Preprocess crop for MobileNetV2 inference.
 
         Args:
             crop: RGB uint8 array with shape [H, W, 3]
@@ -117,8 +112,7 @@ class MobileNetPreprocessor:
         return self.preprocess(crop)
 
     def preprocess(self, crop: np.ndarray) -> MobileNetPreprocessResult:
-        """
-        Preprocess crop for MobileNetV2 inference.
+        """Preprocess crop for MobileNetV2 inference.
 
         Pipeline:
             1. Resize to 224x224 (bilinear interpolation)
@@ -166,8 +160,7 @@ class MobileNetPreprocessor:
         )
 
     def preprocess_batch(self, crops: list[np.ndarray]) -> np.ndarray:
-        """
-        Preprocess multiple crops for batched inference.
+        """Preprocess multiple crops for batched inference.
 
         Note: This is provided for future batching support but is not used
         in the current single-request comparison study.
@@ -191,8 +184,7 @@ class MobileNetPreprocessor:
         return np.concatenate(tensors, axis=0)
 
     def _validate_input(self, crop: np.ndarray) -> None:
-        """
-        Validate input crop.
+        """Validate input crop.
 
         Args:
             crop: Crop to validate
@@ -218,9 +210,8 @@ class MobileNetPreprocessor:
             raise ValueError(f"Invalid crop dimensions: {crop.shape[:2]}")
 
     @staticmethod
-    def get_input_shape() -> Tuple[int, int, int, int]:
-        """
-        Get expected ONNX model input shape.
+    def get_input_shape() -> tuple[int, int, int, int]:
+        """Get expected ONNX model input shape.
 
         Returns:
             Tuple of (batch, channels, height, width)
@@ -229,8 +220,7 @@ class MobileNetPreprocessor:
 
     @staticmethod
     def get_input_dtype() -> np.dtype:
-        """
-        Get expected ONNX model input dtype.
+        """Get expected ONNX model input dtype.
 
         Returns:
             numpy dtype (float32)
@@ -242,9 +232,9 @@ class MobileNetPreprocessor:
 # Utility Functions
 # =============================================================================
 
+
 def extract_crop(image: np.ndarray, box: np.ndarray) -> np.ndarray:
-    """
-    Extract a crop from an image using a bounding box.
+    """Extract a crop from an image using a bounding box.
 
     Crops are extracted from the original-resolution image (not the
     letterboxed YOLO input) to preserve maximum detail for classification.

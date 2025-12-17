@@ -1,5 +1,4 @@
-"""
-Processing Module - Shared Preprocessing for All Architectures
+"""Processing Module - Shared Preprocessing for All Architectures.
 
 This module provides identical preprocessing logic for:
 - YOLOv5n object detection (letterbox resize, [0,1] normalization)
@@ -12,16 +11,15 @@ Specification Reference:
     Foundation Specification §3 Preprocessing
 """
 
+from shared.processing.mobilenet_preprocess import MobileNetPreprocessor
 from shared.processing.transforms import (
-    letterbox,
     imagenet_normalize,
-    scale_boxes,
+    letterbox,
     load_image,
     load_image_from_bytes,
+    scale_boxes,
 )
-
 from shared.processing.yolo_preprocess import YOLOPreprocessor
-from shared.processing.mobilenet_preprocess import MobileNetPreprocessor
 
 __all__ = [
     # Low-level transforms

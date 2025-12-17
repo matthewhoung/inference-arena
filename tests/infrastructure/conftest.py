@@ -19,11 +19,11 @@ def pytest_collection_modifyitems(config, items):
     if config.getoption("-m") and "integration" in config.getoption("-m"):
         # Integration tests explicitly requested
         return
-    
+
     skip_integration = pytest.mark.skip(
         reason="Integration tests skipped by default. Run with: pytest -m integration"
     )
-    
+
     for item in items:
         if "integration" in item.keywords:
             item.add_marker(skip_integration)

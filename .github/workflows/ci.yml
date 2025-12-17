@@ -41,7 +41,7 @@ jobs:
       - name: Type check with MyPy
         run: |
           mypy src/
-        continue-on-error: true  # Don't fail on type errors yet
+        continue-on-error: true
 
   # =============================================================================
   # Test Suite
@@ -65,7 +65,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -e ".[dev]"
+          pip install -e ".[dev,infra,model]"
 
       - name: Run config tests
         run: |
@@ -109,7 +109,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -e ".[dev]"
+          pip install -e ".[dev,model]"
 
       - name: Validate experiment.yaml loads
         run: |
@@ -257,7 +257,7 @@ jobs:
       - name: Validate links in README
         run: |
           # Check internal links exist
-          if grep -o '\[.*\](\(docs/.*\.md\|experiment\.yaml\|\.env\.example\))' README.md | sed 's/.*(\(.*\))/\1/' | while read file; do
+          for file in $(grep -o '\[.*\](\(docs/.*\.md\|experiment\.yaml\|\.env\.example\))' README.md | sed 's/.*(\(.*\))/\1/' || true); do
             if [ ! -f "$file" ]; then
               echo "ERROR: Broken link in README.md: $file"
               exit 1
@@ -284,7 +284,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -e ".[dev]"
+          pip install -e ".[dev,model]"
 
       - name: Test preprocessing uses config
         run: |

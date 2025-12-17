@@ -7,10 +7,6 @@ on:
   pull_request:
     paths:
       - 'experiment.yaml'
-  push:
-    branches: [main]
-    paths:
-      - 'experiment.yaml'
 
 jobs:
   validate:
@@ -31,7 +27,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -e ".[dev]"
+          pip install -e ".[dev,model]"
 
       - name: Show experiment.yaml changes
         run: |
@@ -68,18 +64,23 @@ jobs:
 
           config = get_config()
 
+          # Top-level sections
           required_sections = [
               'metadata',
               'controlled_variables',
-              'models',
               'hypotheses',
-              'infrastructure',
-              'load_testing'
+              'infrastructure'
           ]
 
           for section in required_sections:
               assert section in config, f'Missing required section: {section}'
               print(f'✓ Section present: {section}')
+
+          # Nested sections under controlled_variables
+          cv = config['controlled_variables']
+          assert 'models' in cv, 'Missing controlled_variables.models'
+          assert 'load_testing' in cv, 'Missing controlled_variables.load_testing'
+          print('✓ Nested sections present: models, load_testing')
           "
 
       - name: Validate model configurations

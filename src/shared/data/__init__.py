@@ -1,5 +1,4 @@
-"""
-Data Module - COCO Dataset Download and Curation
+"""Data Module - COCO Dataset Download and Curation.
 
 This module provides:
 - coco_dataset: Download and load COCO val2017 images
@@ -13,20 +12,19 @@ Specification Reference:
 """
 
 from shared.data.coco_dataset import (
+    COCO_VAL2017_COUNT,
+    COCO_VAL2017_URL,
     download_coco_val2017,
-    load_coco_image,
     get_coco_image_paths,
     is_coco_downloaded,
-    COCO_VAL2017_URL,
-    COCO_VAL2017_COUNT,
+    load_coco_image,
 )
-
 from shared.data.curator import (
-    DatasetCurator,
     CurationConfig,
     CurationResult,
-    ImageRecord,
+    DatasetCurator,
     DatasetManifest,
+    ImageRecord,
 )
 
 __all__ = [

@@ -1,5 +1,4 @@
-"""
-ONNX Model Exporter
+"""ONNX Model Exporter.
 
 This module exports PyTorch models to ONNX format with controlled parameters
 to ensure reproducibility and compatibility across all architectures.
@@ -21,9 +20,6 @@ import hashlib
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
-
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +42,10 @@ MOBILENET_INPUT_SIZE: int = 224
 # Data Classes
 # =============================================================================
 
+
 @dataclass
 class ExportResult:
-    """
-    Result container for model export operation.
+    """Result container for model export operation.
 
     Attributes:
         model_path: Path to exported ONNX file
@@ -72,9 +68,9 @@ class ExportResult:
 # Checksum Utilities
 # =============================================================================
 
+
 def compute_checksum(file_path: Path) -> str:
-    """
-    Compute SHA256 checksum of a file.
+    """Compute SHA256 checksum of a file.
 
     Args:
         file_path: Path to file
@@ -100,9 +96,9 @@ def compute_checksum(file_path: Path) -> str:
 # ONNX Verification
 # =============================================================================
 
+
 def verify_onnx_model(model_path: Path) -> dict:
-    """
-    Verify ONNX model is valid and meets specifications.
+    """Verify ONNX model is valid and meets specifications.
 
     Checks:
     - File exists and is readable
@@ -192,14 +188,14 @@ def verify_onnx_model(model_path: Path) -> dict:
 # YOLOv5n Export
 # =============================================================================
 
+
 def export_yolov5n(
     output_path: Path,
     opset_version: int = ONNX_OPSET_VERSION,
     input_size: int = YOLO_INPUT_SIZE,
     force: bool = False,
 ) -> ExportResult:
-    """
-    Export YOLOv5n model to ONNX format.
+    """Export YOLOv5n model to ONNX format.
 
     Downloads pretrained YOLOv5n from Ultralytics and exports to ONNX
     with static input shape and NMS included.
@@ -227,9 +223,7 @@ def export_yolov5n(
 
     # Check existing file
     if output_path.exists() and not force:
-        raise FileExistsError(
-            f"Model already exists: {output_path}. Use force=True to overwrite."
-        )
+        raise FileExistsError(f"Model already exists: {output_path}. Use force=True to overwrite.")
 
     # Create output directory
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -240,14 +234,15 @@ def export_yolov5n(
 
     try:
         # Try ultralytics first (preferred)
-        from ultralytics import YOLO
         import os
 
+        from ultralytics import YOLO
+
         logger.info("  Using ultralytics library...")
-        
+
         original_cwd = os.getcwd()
         os.chdir(output_path.parent)
-        
+
         try:
             # Download and load YOLOv5n (downloads to current directory)
             model = YOLO("yolov5n.pt")
@@ -306,7 +301,7 @@ def export_yolov5n(
     input_shape = verification["input_shapes"][0] if verification["input_shapes"] else ()
     output_shape = verification["output_shapes"][0] if verification["output_shapes"] else ()
 
-    logger.info(f"  ✓ Export successful")
+    logger.info("  ✓ Export successful")
     logger.info(f"  File size: {file_size_mb:.2f} MB")
     logger.info(f"  Checksum: {checksum[:16]}...")
 
@@ -324,14 +319,14 @@ def export_yolov5n(
 # MobileNetV2 Export
 # =============================================================================
 
+
 def export_mobilenetv2(
     output_path: Path,
     opset_version: int = ONNX_OPSET_VERSION,
     input_size: int = MOBILENET_INPUT_SIZE,
     force: bool = False,
 ) -> ExportResult:
-    """
-    Export MobileNetV2 model to ONNX format.
+    """Export MobileNetV2 model to ONNX format.
 
     Uses torchvision pretrained MobileNetV2 with ImageNet weights
     and exports to ONNX with static input shape.
@@ -361,9 +356,7 @@ def export_mobilenetv2(
 
     # Check existing file
     if output_path.exists() and not force:
-        raise FileExistsError(
-            f"Model already exists: {output_path}. Use force=True to overwrite."
-        )
+        raise FileExistsError(f"Model already exists: {output_path}. Use force=True to overwrite.")
 
     # Create output directory
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -408,7 +401,7 @@ def export_mobilenetv2(
     input_shape = verification["input_shapes"][0] if verification["input_shapes"] else ()
     output_shape = verification["output_shapes"][0] if verification["output_shapes"] else ()
 
-    logger.info(f"  ✓ Export successful")
+    logger.info("  ✓ Export successful")
     logger.info(f"  File size: {file_size_mb:.2f} MB")
     logger.info(f"  Checksum: {checksum[:16]}...")
 
@@ -426,12 +419,12 @@ def export_mobilenetv2(
 # Batch Export
 # =============================================================================
 
+
 def export_all_models(
     output_dir: Path,
     force: bool = False,
 ) -> dict[str, ExportResult]:
-    """
-    Export all models required for the experiment.
+    """Export all models required for the experiment.
 
     Args:
         output_dir: Directory to save ONNX files

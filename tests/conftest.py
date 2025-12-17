@@ -16,10 +16,10 @@ Author: Matthew Hong
 import numpy as np
 import pytest
 
-
 # =============================================================================
 # Image Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def sample_image() -> np.ndarray:
@@ -61,6 +61,7 @@ def sample_image_portrait() -> np.ndarray:
 # Crop Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def sample_crop() -> np.ndarray:
     """
@@ -101,6 +102,7 @@ def sample_crop_large() -> np.ndarray:
 # Bounding Box Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def sample_boxes() -> np.ndarray:
     """
@@ -115,7 +117,7 @@ def sample_boxes() -> np.ndarray:
         [
             [100, 100, 200, 200, 0.95, 0],  # Box 1
             [300, 150, 450, 350, 0.87, 1],  # Box 2
-            [50, 400, 150, 550, 0.72, 2],   # Box 3
+            [50, 400, 150, 550, 0.72, 2],  # Box 3
         ],
         dtype=np.float32,
     )
@@ -143,6 +145,7 @@ def sample_boxes_letterbox_space() -> np.ndarray:
 # =============================================================================
 # Configuration Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def yolo_input_shape() -> tuple[int, int, int, int]:

@@ -19,35 +19,34 @@ Specification Reference: Foundation Specification §5
 import json
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 
 from shared.data.coco_dataset import (
+    COCO_VAL2017_COUNT,
+    COCO_VAL2017_URL,
+    get_coco_image_paths,
     is_coco_downloaded,
     load_coco_image,
-    get_coco_image_paths,
-    COCO_VAL2017_URL,
-    COCO_VAL2017_COUNT,
 )
 from shared.data.curator import (
+    DEFAULT_CONFIDENCE_THRESHOLD,
+    DEFAULT_MAX_DETECTIONS,
+    DEFAULT_MIN_DETECTIONS,
+    DEFAULT_TARGET_COUNT,
+    TARGET_MEAN_DETECTIONS,
     CurationConfig,
     CurationResult,
-    ImageRecord,
-    DatasetManifest,
     DatasetCurator,
-    DEFAULT_TARGET_COUNT,
-    DEFAULT_MIN_DETECTIONS,
-    DEFAULT_MAX_DETECTIONS,
-    DEFAULT_CONFIDENCE_THRESHOLD,
-    TARGET_MEAN_DETECTIONS,
+    DatasetManifest,
+    ImageRecord,
 )
-
 
 # =============================================================================
 # Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def temp_dir() -> Path:
@@ -69,6 +68,7 @@ def mock_coco_dir(temp_dir: Path) -> Path:
         image_path = coco_dir / f"00000000{i:04d}.jpg"
 
         import cv2
+
         cv2.imwrite(str(image_path), image)
 
     return temp_dir
@@ -96,16 +96,14 @@ def sample_manifest_data() -> dict:
             "max_detections": 5,
         },
         "distribution": {"3": 25, "4": 50, "5": 25},
-        "images": [
-            {"filename": f"00000000{i:04d}.jpg", "detections": 4}
-            for i in range(100)
-        ],
+        "images": [{"filename": f"00000000{i:04d}.jpg", "detections": 4} for i in range(100)],
     }
 
 
 # =============================================================================
 # Tests for COCO Dataset Constants
 # =============================================================================
+
 
 class TestCocoConstants:
     """Tests for COCO dataset constants."""
@@ -123,6 +121,7 @@ class TestCocoConstants:
 # =============================================================================
 # Tests for COCO State Detection
 # =============================================================================
+
 
 class TestIsCOCODownloaded:
     """Tests for is_coco_downloaded function."""
@@ -177,6 +176,7 @@ class TestIsCOCODownloaded:
 # Tests for Image Loading
 # =============================================================================
 
+
 class TestLoadCocoImage:
     """Tests for load_coco_image function."""
 
@@ -219,6 +219,7 @@ class TestGetCocoImagePaths:
 # Tests for CurationConfig
 # =============================================================================
 
+
 class TestCurationConfig:
     """Tests for CurationConfig dataclass."""
 
@@ -255,6 +256,7 @@ class TestCurationConfig:
 # Tests for ImageRecord
 # =============================================================================
 
+
 class TestImageRecord:
     """Tests for ImageRecord dataclass."""
 
@@ -283,6 +285,7 @@ class TestImageRecord:
 # =============================================================================
 # Tests for CurationResult
 # =============================================================================
+
 
 class TestCurationResult:
     """Tests for CurationResult dataclass."""
@@ -313,6 +316,7 @@ class TestCurationResult:
 # =============================================================================
 # Tests for DatasetManifest
 # =============================================================================
+
 
 class TestDatasetManifest:
     """Tests for DatasetManifest dataclass."""
@@ -365,6 +369,7 @@ class TestDatasetManifest:
 # =============================================================================
 # Tests for DatasetCurator
 # =============================================================================
+
 
 class TestDatasetCurator:
     """Tests for DatasetCurator class."""
@@ -438,6 +443,7 @@ class TestDatasetCurator:
 # Tests for Manifest Statistics
 # =============================================================================
 
+
 class TestManifestStatistics:
     """Tests for manifest statistics calculation."""
 
@@ -467,6 +473,7 @@ class TestManifestStatistics:
 # =============================================================================
 # Integration Tests (Slow)
 # =============================================================================
+
 
 class TestCurationIntegration:
     """Integration tests for full curation process."""
@@ -536,6 +543,7 @@ class TestCurationIntegration:
 # =============================================================================
 # Tests for Detection Range Validation
 # =============================================================================
+
 
 class TestDetectionRange:
     """Tests for detection range constants."""

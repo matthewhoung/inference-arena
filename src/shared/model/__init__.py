@@ -1,5 +1,4 @@
-"""
-Model Module - ONNX Model Export and Registry
+"""Model Module - ONNX Model Export and Registry.
 
 This module provides:
 - exporter: Export PyTorch models (YOLOv5n, MobileNetV2) to ONNX format
@@ -13,15 +12,14 @@ Specification Reference:
 """
 
 from shared.model.exporter import (
-    export_yolov5n,
-    export_mobilenetv2,
-    verify_onnx_model,
-    compute_checksum,
+    MOBILENET_INPUT_SIZE,
     ONNX_OPSET_VERSION,
     YOLO_INPUT_SIZE,
-    MOBILENET_INPUT_SIZE,
+    compute_checksum,
+    export_mobilenetv2,
+    export_yolov5n,
+    verify_onnx_model,
 )
-
 from shared.model.registry import (
     ModelRegistry,
     get_default_registry,

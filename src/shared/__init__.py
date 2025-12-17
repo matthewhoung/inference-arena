@@ -1,5 +1,4 @@
-"""
-Shared Module - Controlled Variables for ML Serving Architecture Comparison
+"""Shared Module - Controlled Variables for ML Serving Architecture Comparison.
 
 This module contains shared components used identically across all architectures
 to ensure fair experimental comparison:
@@ -14,10 +13,10 @@ variance as a confounding variable.
 """
 
 from shared.processing import (
-    YOLOPreprocessor,
     MobileNetPreprocessor,
-    letterbox,
+    YOLOPreprocessor,
     imagenet_normalize,
+    letterbox,
     scale_boxes,
 )
 

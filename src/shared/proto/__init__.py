@@ -1,5 +1,4 @@
-"""
-Proto Module - gRPC Service Definitions
+"""Proto Module - gRPC Service Definitions.
 
 This module provides gRPC service definitions for inter-service
 communication in the microservices architecture.
@@ -39,12 +38,11 @@ def is_generated() -> bool:
 
 # Lazy imports for generated modules
 def get_messages():
-    """
-    Get generated protobuf message classes.
-    
+    """Get generated protobuf message classes.
+
     Returns:
         Module containing message classes
-    
+
     Raises:
         ImportError: If proto files not generated
     """
@@ -53,16 +51,16 @@ def get_messages():
             "Proto files not generated. Run 'python scripts/generate_proto.py' first."
         )
     from shared.proto import inference_pb2
+
     return inference_pb2
 
 
 def get_services():
-    """
-    Get generated gRPC service classes.
-    
+    """Get generated gRPC service classes.
+
     Returns:
         Module containing service stubs and servicers
-    
+
     Raises:
         ImportError: If proto files not generated
     """
@@ -71,4 +69,5 @@ def get_services():
             "Proto files not generated. Run 'python scripts/generate_proto.py' first."
         )
     from shared.proto import inference_pb2_grpc
+
     return inference_pb2_grpc

@@ -22,14 +22,13 @@ Author: Matthew Hong
 import json
 import subprocess
 import time
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
 import pytest
 import requests
 
-from shared.config import get_infrastructure_config, get_controlled_variables
-
+from shared.config import get_controlled_variables, get_infrastructure_config
 
 # =============================================================================
 # Constants (Loaded from experiment.yaml where available)
@@ -56,6 +55,7 @@ GRAFANA_URL = "http://localhost:3000"  # Grafana port (not in config yet)
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture(scope="module")
 def project_root() -> Path:
     """Get project root directory."""
@@ -71,11 +71,7 @@ def compose_file_path(project_root: Path) -> Path:
 def is_docker_available() -> bool:
     """Check if Docker is available."""
     try:
-        result = subprocess.run(
-            ["docker", "info"],
-            capture_output=True,
-            timeout=10
-        )
+        result = subprocess.run(["docker", "info"], capture_output=True, timeout=10)
         return result.returncode == 0
     except (subprocess.TimeoutExpired, FileNotFoundError):
         return False
@@ -84,11 +80,7 @@ def is_docker_available() -> bool:
 def is_compose_available() -> bool:
     """Check if Docker Compose is available."""
     try:
-        result = subprocess.run(
-            ["docker", "compose", "version"],
-            capture_output=True,
-            timeout=10
-        )
+        result = subprocess.run(["docker", "compose", "version"], capture_output=True, timeout=10)
         return result.returncode == 0
     except (subprocess.TimeoutExpired, FileNotFoundError):
         return False
@@ -96,12 +88,11 @@ def is_compose_available() -> bool:
 
 @pytest.fixture(scope="module")
 def infrastructure_services(
-    project_root: Path,
-    compose_file_path: Path
+    project_root: Path, compose_file_path: Path
 ) -> Generator[None, None, None]:
     """
     Start infrastructure services for testing.
-    
+
     This fixture:
     1. Starts all infrastructure services
     2. Waits for health checks
@@ -110,51 +101,34 @@ def infrastructure_services(
     """
     if not is_docker_available():
         pytest.skip("Docker not available")
-    
+
     if not is_compose_available():
         pytest.skip("Docker Compose not available")
-    
+
     if not compose_file_path.exists():
         pytest.skip(f"Compose file not found: {compose_file_path}")
-    
+
     # Start services
-    start_cmd = [
-        "docker", "compose",
-        "-f", str(compose_file_path),
-        "up", "-d", "--wait"
-    ]
-    
+    start_cmd = ["docker", "compose", "-f", str(compose_file_path), "up", "-d", "--wait"]
+
     try:
         subprocess.run(
-            start_cmd,
-            cwd=project_root,
-            check=True,
-            capture_output=True,
-            timeout=STARTUP_TIMEOUT
+            start_cmd, cwd=project_root, check=True, capture_output=True, timeout=STARTUP_TIMEOUT
         )
     except subprocess.CalledProcessError as e:
         pytest.fail(f"Failed to start services: {e.stderr.decode()}")
     except subprocess.TimeoutExpired:
         pytest.fail("Timeout waiting for services to start")
-    
+
     # Wait for services to be ready
     _wait_for_services()
-    
+
     yield
-    
+
     # Teardown
-    stop_cmd = [
-        "docker", "compose",
-        "-f", str(compose_file_path),
-        "down", "-v"
-    ]
-    
-    subprocess.run(
-        stop_cmd,
-        cwd=project_root,
-        capture_output=True,
-        timeout=60
-    )
+    stop_cmd = ["docker", "compose", "-f", str(compose_file_path), "down", "-v"]
+
+    subprocess.run(stop_cmd, cwd=project_root, capture_output=True, timeout=60)
 
 
 def _wait_for_services() -> None:
@@ -165,9 +139,9 @@ def _wait_for_services() -> None:
         ("Prometheus", f"{PROMETHEUS_URL}/-/healthy"),
         ("Grafana", f"{GRAFANA_URL}/api/health"),
     ]
-    
+
     deadline = time.time() + STARTUP_TIMEOUT
-    
+
     for name, url in services:
         while time.time() < deadline:
             try:
@@ -184,6 +158,7 @@ def _wait_for_services() -> None:
 # =============================================================================
 # Integration Tests
 # =============================================================================
+
 
 @pytest.mark.integration
 class TestServiceConnectivity:
@@ -232,7 +207,7 @@ class TestMinIOOperations:
             _minio_endpoint,
             access_key=_infra_config["minio"]["access_key"],
             secret_key=_infra_config["minio"]["secret_key"],
-            secure=_infra_config["minio"]["secure"]
+            secure=_infra_config["minio"]["secure"],
         )
 
         buckets = client.list_buckets()
@@ -250,7 +225,7 @@ class TestMinIOOperations:
             _minio_endpoint,
             access_key=_infra_config["minio"]["access_key"],
             secret_key=_infra_config["minio"]["secret_key"],
-            secure=_infra_config["minio"]["secure"]
+            secure=_infra_config["minio"]["secure"],
         )
 
         bucket_name = "test-bucket"
@@ -273,10 +248,10 @@ class TestPrometheusMetrics:
         """Prometheus should have healthy targets."""
         response = requests.get(f"{PROMETHEUS_URL}/api/v1/targets", timeout=5)
         assert response.status_code == 200
-        
+
         data = response.json()
         assert data["status"] == "success"
-        
+
         active_targets = data["data"]["activeTargets"]
         assert len(active_targets) > 0, "No active scrape targets"
 
@@ -284,16 +259,16 @@ class TestPrometheusMetrics:
         """Prometheus should successfully scrape cAdvisor."""
         # Wait a bit for scraping to occur
         time.sleep(3)
-        
+
         response = requests.get(f"{PROMETHEUS_URL}/api/v1/targets", timeout=5)
         data = response.json()
-        
+
         cadvisor_target = None
         for target in data["data"]["activeTargets"]:
             if target.get("labels", {}).get("job") == "cadvisor":
                 cadvisor_target = target
                 break
-        
+
         assert cadvisor_target is not None, "cAdvisor target not found"
         assert cadvisor_target["health"] == "up", "cAdvisor target not healthy"
 
@@ -301,18 +276,16 @@ class TestPrometheusMetrics:
         """Prometheus should have container CPU metrics."""
         # Wait for metrics to be scraped
         time.sleep(5)
-        
+
         query = "container_cpu_usage_seconds_total"
         response = requests.get(
-            f"{PROMETHEUS_URL}/api/v1/query",
-            params={"query": query},
-            timeout=5
+            f"{PROMETHEUS_URL}/api/v1/query", params={"query": query}, timeout=5
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "success"
-        
+
         # Should have some results (at least for infrastructure containers)
         results = data["data"]["result"]
         assert len(results) > 0, f"No results for {query}"
@@ -325,18 +298,13 @@ class TestGrafanaProvisioning:
     def test_grafana_prometheus_datasource(self, infrastructure_services: None) -> None:
         """Grafana should have Prometheus datasource configured."""
         response = requests.get(
-            f"{GRAFANA_URL}/api/datasources",
-            auth=("admin", "admin"),
-            timeout=5
+            f"{GRAFANA_URL}/api/datasources", auth=("admin", "admin"), timeout=5
         )
-        
+
         assert response.status_code == 200
         datasources = response.json()
-        
-        prometheus_ds = next(
-            (ds for ds in datasources if ds["type"] == "prometheus"),
-            None
-        )
+
+        prometheus_ds = next((ds for ds in datasources if ds["type"] == "prometheus"), None)
         assert prometheus_ds is not None, "Prometheus datasource not found"
 
     def test_grafana_dashboard_provisioned(self, infrastructure_services: None) -> None:
@@ -345,12 +313,12 @@ class TestGrafanaProvisioning:
             f"{GRAFANA_URL}/api/search",
             params={"query": "Infrastructure"},
             auth=("admin", "admin"),
-            timeout=5
+            timeout=5,
         )
-        
+
         assert response.status_code == 200
         dashboards = response.json()
-        
+
         # Should find at least one dashboard
         assert len(dashboards) > 0, "No dashboards found"
 
@@ -364,33 +332,32 @@ class TestNetworkConnectivity:
         result = subprocess.run(
             ["docker", "network", "inspect", "inference-arena-backend"],
             capture_output=True,
-            text=True
+            text=True,
         )
-        
+
         assert result.returncode == 0
         network_info = json.loads(result.stdout)
-        
+
         containers = network_info[0].get("Containers", {})
         container_names = [c["Name"] for c in containers.values()]
-        
-        assert any("minio" in name for name in container_names), \
-            "MinIO not on backend network"
-        assert any("cadvisor" in name for name in container_names), \
-            "cAdvisor not on backend network"
+
+        assert any("minio" in name for name in container_names), "MinIO not on backend network"
+        assert any(
+            "cadvisor" in name for name in container_names
+        ), "cAdvisor not on backend network"
 
     def test_grafana_on_infra_network(self, infrastructure_services: None) -> None:
         """Grafana should be on infra network."""
         result = subprocess.run(
             ["docker", "network", "inspect", "inference-arena-infra"],
             capture_output=True,
-            text=True
+            text=True,
         )
-        
+
         assert result.returncode == 0
         network_info = json.loads(result.stdout)
-        
+
         containers = network_info[0].get("Containers", {})
         container_names = [c["Name"] for c in containers.values()]
-        
-        assert any("grafana" in name for name in container_names), \
-            "Grafana not on infra network"
+
+        assert any("grafana" in name for name in container_names), "Grafana not on infra network"

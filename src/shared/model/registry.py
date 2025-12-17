@@ -1,5 +1,4 @@
-"""
-ONNX Model Registry
+"""ONNX Model Registry.
 
 This module provides a registry for loading and caching ONNX Runtime
 inference sessions with consistent configuration across all architectures.
@@ -21,7 +20,6 @@ import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Lock
-from typing import Optional
 
 import numpy as np
 
@@ -43,10 +41,10 @@ DEFAULT_INTER_OP_THREADS: int = 1
 # Data Classes
 # =============================================================================
 
+
 @dataclass
 class ModelInfo:
-    """
-    Information about a loaded model.
+    """Information about a loaded model.
 
     Attributes:
         name: Model identifier
@@ -69,8 +67,7 @@ class ModelInfo:
 
 @dataclass
 class SessionConfig:
-    """
-    Configuration for ONNX Runtime inference session.
+    """Configuration for ONNX Runtime inference session.
 
     Attributes:
         intra_op_threads: Number of threads for intra-op parallelism
@@ -87,9 +84,9 @@ class SessionConfig:
 # Model Registry
 # =============================================================================
 
+
 class ModelRegistry:
-    """
-    Registry for loading and caching ONNX Runtime inference sessions.
+    """Registry for loading and caching ONNX Runtime inference sessions.
 
     Provides consistent model loading with:
     - Configurable thread settings for fair CPU allocation
@@ -115,10 +112,9 @@ class ModelRegistry:
     def __init__(
         self,
         models_dir: Path,
-        config: Optional[SessionConfig] = None,
+        config: SessionConfig | None = None,
     ) -> None:
-        """
-        Initialize ModelRegistry.
+        """Initialize ModelRegistry.
 
         Args:
             models_dir: Directory containing ONNX model files
@@ -127,18 +123,17 @@ class ModelRegistry:
         self.models_dir = Path(models_dir)
         self.config = config or SessionConfig()
 
-        self._sessions: dict[str, "ort.InferenceSession"] = {}
+        self._sessions: dict[str, ort.InferenceSession] = {}
         self._model_info: dict[str, ModelInfo] = {}
         self._lock = Lock()
 
-        logger.info(f"ModelRegistry initialized")
+        logger.info("ModelRegistry initialized")
         logger.info(f"  Models dir: {self.models_dir}")
         logger.info(f"  Intra-op threads: {self.config.intra_op_threads}")
         logger.info(f"  Inter-op threads: {self.config.inter_op_threads}")
 
     def get_session(self, model_name: str) -> "ort.InferenceSession":
-        """
-        Get ONNX Runtime inference session for a model.
+        """Get ONNX Runtime inference session for a model.
 
         Sessions are cached after first load. Thread-safe for concurrent access.
 
@@ -164,8 +159,7 @@ class ModelRegistry:
             return self._sessions[model_name]
 
     def get_model_info(self, model_name: str) -> ModelInfo:
-        """
-        Get information about a loaded model.
+        """Get information about a loaded model.
 
         Args:
             model_name: Name of model
@@ -188,8 +182,7 @@ class ModelRegistry:
         return self._model_info[model_name]
 
     def _load_model(self, model_name: str) -> None:
-        """
-        Load a model into the registry.
+        """Load a model into the registry.
 
         Args:
             model_name: Name of model to load
@@ -261,8 +254,7 @@ class ModelRegistry:
         logger.info(f"    Output: {model_info.output_name} {model_info.output_shape}")
 
     def is_loaded(self, model_name: str) -> bool:
-        """
-        Check if a model is already loaded.
+        """Check if a model is already loaded.
 
         Args:
             model_name: Name of model
@@ -273,8 +265,7 @@ class ModelRegistry:
         return model_name in self._sessions
 
     def preload_all(self) -> None:
-        """
-        Preload all known models into cache.
+        """Preload all known models into cache.
 
         Useful for warming up before experiments to avoid
         first-request loading latency.
@@ -287,8 +278,7 @@ class ModelRegistry:
                     logger.warning(f"Could not preload {model_name}: {e}")
 
     def clear_cache(self) -> None:
-        """
-        Clear all cached sessions.
+        """Clear all cached sessions.
 
         Useful for testing or when models have been updated.
         """
@@ -298,8 +288,7 @@ class ModelRegistry:
             logger.info("Model cache cleared")
 
     def list_available(self) -> list[str]:
-        """
-        List models available in the models directory.
+        """List models available in the models directory.
 
         Returns:
             List of model names that can be loaded
@@ -317,16 +306,15 @@ class ModelRegistry:
 # Default Registry Singleton
 # =============================================================================
 
-_default_registry: Optional[ModelRegistry] = None
+_default_registry: ModelRegistry | None = None
 _default_registry_lock = Lock()
 
 
 def get_default_registry(
-    models_dir: Optional[Path] = None,
-    config: Optional[SessionConfig] = None,
+    models_dir: Path | None = None,
+    config: SessionConfig | None = None,
 ) -> ModelRegistry:
-    """
-    Get or create the default ModelRegistry singleton.
+    """Get or create the default ModelRegistry singleton.
 
     Args:
         models_dir: Directory containing models (default: ./models)
@@ -353,8 +341,7 @@ def get_default_registry(
 
 
 def reset_default_registry() -> None:
-    """
-    Reset the default registry singleton.
+    """Reset the default registry singleton.
 
     Useful for testing or reconfiguration.
     """

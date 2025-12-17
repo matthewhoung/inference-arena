@@ -1,5 +1,4 @@
-"""
-Low-Level Image Transforms
+"""Low-Level Image Transforms.
 
 This module contains atomic transformation functions used by
 YOLOPreprocessor and MobileNetPreprocessor.
@@ -19,13 +18,10 @@ Author: Matthew Hong
 Specification Reference: Foundation Specification §3.2, §3.3, §3.4
 """
 
-from typing import Tuple
-
 import cv2
 import numpy as np
 
 from shared.config import get_controlled_variable
-
 
 # =============================================================================
 # Constants (Loaded from experiment.yaml)
@@ -38,16 +34,16 @@ IMAGENET_MEAN: np.ndarray = np.array(_mobilenet_config["mean"], dtype=np.float32
 IMAGENET_STD: np.ndarray = np.array(_mobilenet_config["std"], dtype=np.float32)
 
 # Default letterbox padding color (gray, matches Ultralytics default)
-LETTERBOX_COLOR: Tuple[int, int, int] = (114, 114, 114)
+LETTERBOX_COLOR: tuple[int, int, int] = (114, 114, 114)
 
 
 # =============================================================================
 # Image Loading
 # =============================================================================
 
+
 def load_image(image_path: str) -> np.ndarray:
-    """
-    Load an image file as an RGB numpy array.
+    """Load an image file as an RGB numpy array.
 
     Uses OpenCV for decoding (libjpeg-turbo optimized) with explicit
     BGR to RGB conversion for consistency with model training pipelines.
@@ -79,8 +75,7 @@ def load_image(image_path: str) -> np.ndarray:
 
 
 def load_image_from_bytes(image_bytes: bytes) -> np.ndarray:
-    """
-    Decode image bytes as an RGB numpy array.
+    """Decode image bytes as an RGB numpy array.
 
     Useful for processing images received via HTTP/gRPC without
     writing to disk.
@@ -119,13 +114,13 @@ def load_image_from_bytes(image_bytes: bytes) -> np.ndarray:
 # Geometric Transforms
 # =============================================================================
 
+
 def letterbox(
     image: np.ndarray,
     target_size: int,
-    color: Tuple[int, int, int] = LETTERBOX_COLOR,
-) -> Tuple[np.ndarray, float, Tuple[int, int]]:
-    """
-    Resize image with letterboxing to maintain aspect ratio.
+    color: tuple[int, int, int] = LETTERBOX_COLOR,
+) -> tuple[np.ndarray, float, tuple[int, int]]:
+    """Resize image with letterboxing to maintain aspect ratio.
 
     Letterboxing scales the image to fit within a square target size
     while preserving aspect ratio, then pads the remaining space with
@@ -188,11 +183,10 @@ def letterbox(
 def scale_boxes(
     boxes: np.ndarray,
     scale: float,
-    padding: Tuple[int, int],
-    original_shape: Tuple[int, int],
+    padding: tuple[int, int],
+    original_shape: tuple[int, int],
 ) -> np.ndarray:
-    """
-    Convert bounding boxes from letterboxed coordinates to original image coordinates.
+    """Convert bounding boxes from letterboxed coordinates to original image coordinates.
 
     YOLO outputs coordinates in the letterboxed space (e.g., 640x640).
     This function reverses the letterbox transformation to get coordinates
@@ -240,9 +234,9 @@ def scale_boxes(
 # Intensity Transforms
 # =============================================================================
 
+
 def imagenet_normalize(image: np.ndarray) -> np.ndarray:
-    """
-    Apply ImageNet normalization to an image.
+    """Apply ImageNet normalization to an image.
 
     Converts image to float32, scales to [0, 1], then normalizes using
     ImageNet channel means and standard deviations.
