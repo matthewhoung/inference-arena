@@ -18,7 +18,6 @@ Author: Matthew Hong
 Specification Reference: Foundation Specification §3.2, §3.3, §3.4
 """
 
-
 import cv2
 import numpy as np
 
@@ -41,6 +40,7 @@ LETTERBOX_COLOR: tuple[int, int, int] = (114, 114, 114)
 # =============================================================================
 # Image Loading
 # =============================================================================
+
 
 def load_image(image_path: str) -> np.ndarray:
     """Load an image file as an RGB numpy array.
@@ -113,6 +113,7 @@ def load_image_from_bytes(image_bytes: bytes) -> np.ndarray:
 # =============================================================================
 # Geometric Transforms
 # =============================================================================
+
 
 def letterbox(
     image: np.ndarray,
@@ -232,6 +233,7 @@ def scale_boxes(
 # =============================================================================
 # Intensity Transforms
 # =============================================================================
+
 
 def imagenet_normalize(image: np.ndarray) -> np.ndarray:
     """Apply ImageNet normalization to an image.

@@ -53,6 +53,7 @@ if _CONFIG_PATH is None:
 # Configuration Loading
 # =============================================================================
 
+
 @lru_cache(maxsize=1)
 def get_config() -> dict[str, Any]:
     """Load and cache the experiment configuration.
@@ -94,6 +95,7 @@ def reload_config() -> dict[str, Any]:
 # =============================================================================
 # Controlled Variables Access
 # =============================================================================
+
 
 def get_controlled_variable(section: str, key: str) -> Any:
     """Get a controlled variable value by section and key.
@@ -155,9 +157,7 @@ def get_controlled_variables(section: str) -> dict[str, Any]:
 
     if section not in controlled:
         available = list(controlled.keys())
-        raise KeyError(
-            f"Section '{section}' not found. Available: {available}"
-        )
+        raise KeyError(f"Section '{section}' not found. Available: {available}")
 
     return controlled[section]
 
@@ -165,6 +165,7 @@ def get_controlled_variables(section: str) -> dict[str, Any]:
 # =============================================================================
 # Model Configuration
 # =============================================================================
+
 
 def get_model_config(model_name: str) -> dict[str, Any]:
     """Get configuration for a specific model.
@@ -204,6 +205,7 @@ def get_model_names() -> list[str]:
 # Hypothesis Access
 # =============================================================================
 
+
 def get_hypothesis(hypothesis_id: str) -> dict[str, Any]:
     """Get a specific hypothesis by ID.
 
@@ -223,9 +225,7 @@ def get_hypothesis(hypothesis_id: str) -> dict[str, Any]:
 
     if hypothesis_id not in hypotheses:
         available = list(hypotheses.keys())
-        raise KeyError(
-            f"Hypothesis '{hypothesis_id}' not found. Available: {available}"
-        )
+        raise KeyError(f"Hypothesis '{hypothesis_id}' not found. Available: {available}")
 
     return hypotheses[hypothesis_id]
 
@@ -258,6 +258,7 @@ def get_hypotheses_by_category(category: str) -> dict[str, dict[str, Any]]:
 # Infrastructure Configuration
 # =============================================================================
 
+
 def get_infrastructure_config(service: str | None = None) -> dict[str, Any]:
     """Get infrastructure configuration.
 
@@ -281,9 +282,7 @@ def get_infrastructure_config(service: str | None = None) -> dict[str, Any]:
 
     if service not in infra:
         available = list(infra.keys())
-        raise KeyError(
-            f"Service '{service}' not found. Available: {available}"
-        )
+        raise KeyError(f"Service '{service}' not found. Available: {available}")
 
     return infra[service]
 
@@ -308,6 +307,7 @@ def get_minio_config() -> dict[str, Any]:
 # Triton Configuration
 # =============================================================================
 
+
 def get_triton_config() -> dict[str, Any]:
     """Get Triton Inference Server configuration.
 
@@ -326,6 +326,7 @@ def get_triton_config() -> dict[str, Any]:
 # =============================================================================
 # Load Testing Configuration
 # =============================================================================
+
 
 def get_load_testing_config() -> dict[str, Any]:
     """Get load testing protocol configuration.
@@ -360,6 +361,7 @@ def get_concurrent_user_levels() -> list[int]:
 # Metadata
 # =============================================================================
 
+
 def get_metadata() -> dict[str, Any]:
     """Get experiment metadata.
 
@@ -391,6 +393,7 @@ def get_spec_version() -> str:
 # =============================================================================
 # Validation
 # =============================================================================
+
 
 def validate_config() -> list[str]:
     """Validate the experiment configuration.
@@ -426,7 +429,14 @@ def validate_config() -> list[str]:
 
     # Check controlled variables
     cv = config.get("controlled_variables", {})
-    required_cv = ["models", "preprocessing", "resources", "onnx_runtime", "dataset", "load_testing"]
+    required_cv = [
+        "models",
+        "preprocessing",
+        "resources",
+        "onnx_runtime",
+        "dataset",
+        "load_testing",
+    ]
 
     for section in required_cv:
         if section not in cv:
@@ -456,14 +466,16 @@ def validate_config() -> list[str]:
 # Module Initialization Check
 # =============================================================================
 
+
 def _check_config_exists() -> None:
     """Warn if config file is missing (for development)."""
     if not _CONFIG_PATH.exists():
         import warnings
+
         warnings.warn(
-            f"experiment.yaml not found at {_CONFIG_PATH}. "
-            f"Some functionality may not work.",
-            UserWarning, stacklevel=2
+            f"experiment.yaml not found at {_CONFIG_PATH}. " f"Some functionality may not work.",
+            UserWarning,
+            stacklevel=2,
         )
 
 

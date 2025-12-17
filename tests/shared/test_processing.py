@@ -43,6 +43,7 @@ from shared.processing.yolo_preprocess import (
 # Tests for transforms.py
 # =============================================================================
 
+
 class TestLetterbox:
     """Tests for letterbox transform."""
 
@@ -58,14 +59,17 @@ class TestLetterbox:
 
         assert letterboxed.dtype == np.uint8
 
-    @pytest.mark.parametrize("shape,expected_scale", [
-        ((1080, 1920, 3), 640 / 1920),   # landscape: width is limiting
-        ((1920, 1080, 3), 640 / 1920),   # portrait: height is limiting
-        ((640, 640, 3), 1.0),            # square: exact fit
-        ((320, 320, 3), 2.0),            # small square: upscale
-        ((480, 640, 3), 1.0),            # 4:3 landscape
-        ((640, 480, 3), 640 / 640),      # 4:3 portrait
-    ])
+    @pytest.mark.parametrize(
+        "shape,expected_scale",
+        [
+            ((1080, 1920, 3), 640 / 1920),  # landscape: width is limiting
+            ((1920, 1080, 3), 640 / 1920),  # portrait: height is limiting
+            ((640, 640, 3), 1.0),  # square: exact fit
+            ((320, 320, 3), 2.0),  # small square: upscale
+            ((480, 640, 3), 1.0),  # 4:3 landscape
+            ((640, 480, 3), 640 / 640),  # 4:3 portrait
+        ],
+    )
     def test_letterbox_scale(self, shape: tuple, expected_scale: float) -> None:
         """Letterbox scale should match expected for various aspect ratios."""
         rng = np.random.default_rng(42)
@@ -75,11 +79,14 @@ class TestLetterbox:
 
         assert np.isclose(scale, expected_scale, rtol=1e-5)
 
-    @pytest.mark.parametrize("shape,expected_pad_w_zero,expected_pad_h_zero", [
-        ((1080, 1920, 3), True, False),   # landscape: pad height
-        ((1920, 1080, 3), False, True),   # portrait: pad width
-        ((640, 640, 3), True, True),      # square: no padding
-    ])
+    @pytest.mark.parametrize(
+        "shape,expected_pad_w_zero,expected_pad_h_zero",
+        [
+            ((1080, 1920, 3), True, False),  # landscape: pad height
+            ((1920, 1080, 3), False, True),  # portrait: pad width
+            ((640, 640, 3), True, True),  # square: no padding
+        ],
+    )
     def test_letterbox_padding_direction(
         self,
         shape: tuple,
@@ -244,6 +251,7 @@ class TestLoadImage:
 # Tests for YOLOPreprocessor
 # =============================================================================
 
+
 class TestYOLOPreprocessor:
     """Tests for YOLOPreprocessor class."""
 
@@ -395,6 +403,7 @@ class TestYOLOPreprocessor:
 # =============================================================================
 # Tests for MobileNetPreprocessor
 # =============================================================================
+
 
 class TestMobileNetPreprocessor:
     """Tests for MobileNetPreprocessor class."""
@@ -637,6 +646,7 @@ class TestExtractCrop:
 # =============================================================================
 # Integration Tests
 # =============================================================================
+
 
 class TestPreprocessingPipeline:
     """Integration tests for complete preprocessing pipeline."""

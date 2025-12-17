@@ -55,6 +55,7 @@ GRAFANA_URL = "http://localhost:3000"  # Grafana port (not in config yet)
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture(scope="module")
 def project_root() -> Path:
     """Get project root directory."""
@@ -70,11 +71,7 @@ def compose_file_path(project_root: Path) -> Path:
 def is_docker_available() -> bool:
     """Check if Docker is available."""
     try:
-        result = subprocess.run(
-            ["docker", "info"],
-            capture_output=True,
-            timeout=10
-        )
+        result = subprocess.run(["docker", "info"], capture_output=True, timeout=10)
         return result.returncode == 0
     except (subprocess.TimeoutExpired, FileNotFoundError):
         return False
@@ -83,11 +80,7 @@ def is_docker_available() -> bool:
 def is_compose_available() -> bool:
     """Check if Docker Compose is available."""
     try:
-        result = subprocess.run(
-            ["docker", "compose", "version"],
-            capture_output=True,
-            timeout=10
-        )
+        result = subprocess.run(["docker", "compose", "version"], capture_output=True, timeout=10)
         return result.returncode == 0
     except (subprocess.TimeoutExpired, FileNotFoundError):
         return False
@@ -95,8 +88,7 @@ def is_compose_available() -> bool:
 
 @pytest.fixture(scope="module")
 def infrastructure_services(
-    project_root: Path,
-    compose_file_path: Path
+    project_root: Path, compose_file_path: Path
 ) -> Generator[None, None, None]:
     """
     Start infrastructure services for testing.
@@ -117,19 +109,11 @@ def infrastructure_services(
         pytest.skip(f"Compose file not found: {compose_file_path}")
 
     # Start services
-    start_cmd = [
-        "docker", "compose",
-        "-f", str(compose_file_path),
-        "up", "-d", "--wait"
-    ]
+    start_cmd = ["docker", "compose", "-f", str(compose_file_path), "up", "-d", "--wait"]
 
     try:
         subprocess.run(
-            start_cmd,
-            cwd=project_root,
-            check=True,
-            capture_output=True,
-            timeout=STARTUP_TIMEOUT
+            start_cmd, cwd=project_root, check=True, capture_output=True, timeout=STARTUP_TIMEOUT
         )
     except subprocess.CalledProcessError as e:
         pytest.fail(f"Failed to start services: {e.stderr.decode()}")
@@ -142,18 +126,9 @@ def infrastructure_services(
     yield
 
     # Teardown
-    stop_cmd = [
-        "docker", "compose",
-        "-f", str(compose_file_path),
-        "down", "-v"
-    ]
+    stop_cmd = ["docker", "compose", "-f", str(compose_file_path), "down", "-v"]
 
-    subprocess.run(
-        stop_cmd,
-        cwd=project_root,
-        capture_output=True,
-        timeout=60
-    )
+    subprocess.run(stop_cmd, cwd=project_root, capture_output=True, timeout=60)
 
 
 def _wait_for_services() -> None:
@@ -183,6 +158,7 @@ def _wait_for_services() -> None:
 # =============================================================================
 # Integration Tests
 # =============================================================================
+
 
 @pytest.mark.integration
 class TestServiceConnectivity:
@@ -231,7 +207,7 @@ class TestMinIOOperations:
             _minio_endpoint,
             access_key=_infra_config["minio"]["access_key"],
             secret_key=_infra_config["minio"]["secret_key"],
-            secure=_infra_config["minio"]["secure"]
+            secure=_infra_config["minio"]["secure"],
         )
 
         buckets = client.list_buckets()
@@ -249,7 +225,7 @@ class TestMinIOOperations:
             _minio_endpoint,
             access_key=_infra_config["minio"]["access_key"],
             secret_key=_infra_config["minio"]["secret_key"],
-            secure=_infra_config["minio"]["secure"]
+            secure=_infra_config["minio"]["secure"],
         )
 
         bucket_name = "test-bucket"
@@ -303,9 +279,7 @@ class TestPrometheusMetrics:
 
         query = "container_cpu_usage_seconds_total"
         response = requests.get(
-            f"{PROMETHEUS_URL}/api/v1/query",
-            params={"query": query},
-            timeout=5
+            f"{PROMETHEUS_URL}/api/v1/query", params={"query": query}, timeout=5
         )
 
         assert response.status_code == 200
@@ -324,18 +298,13 @@ class TestGrafanaProvisioning:
     def test_grafana_prometheus_datasource(self, infrastructure_services: None) -> None:
         """Grafana should have Prometheus datasource configured."""
         response = requests.get(
-            f"{GRAFANA_URL}/api/datasources",
-            auth=("admin", "admin"),
-            timeout=5
+            f"{GRAFANA_URL}/api/datasources", auth=("admin", "admin"), timeout=5
         )
 
         assert response.status_code == 200
         datasources = response.json()
 
-        prometheus_ds = next(
-            (ds for ds in datasources if ds["type"] == "prometheus"),
-            None
-        )
+        prometheus_ds = next((ds for ds in datasources if ds["type"] == "prometheus"), None)
         assert prometheus_ds is not None, "Prometheus datasource not found"
 
     def test_grafana_dashboard_provisioned(self, infrastructure_services: None) -> None:
@@ -344,7 +313,7 @@ class TestGrafanaProvisioning:
             f"{GRAFANA_URL}/api/search",
             params={"query": "Infrastructure"},
             auth=("admin", "admin"),
-            timeout=5
+            timeout=5,
         )
 
         assert response.status_code == 200
@@ -363,7 +332,7 @@ class TestNetworkConnectivity:
         result = subprocess.run(
             ["docker", "network", "inspect", "inference-arena-backend"],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         assert result.returncode == 0
@@ -372,17 +341,17 @@ class TestNetworkConnectivity:
         containers = network_info[0].get("Containers", {})
         container_names = [c["Name"] for c in containers.values()]
 
-        assert any("minio" in name for name in container_names), \
-            "MinIO not on backend network"
-        assert any("cadvisor" in name for name in container_names), \
-            "cAdvisor not on backend network"
+        assert any("minio" in name for name in container_names), "MinIO not on backend network"
+        assert any(
+            "cadvisor" in name for name in container_names
+        ), "cAdvisor not on backend network"
 
     def test_grafana_on_infra_network(self, infrastructure_services: None) -> None:
         """Grafana should be on infra network."""
         result = subprocess.run(
             ["docker", "network", "inspect", "inference-arena-infra"],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         assert result.returncode == 0
@@ -391,5 +360,4 @@ class TestNetworkConnectivity:
         containers = network_info[0].get("Containers", {})
         container_names = [c["Name"] for c in containers.values()]
 
-        assert any("grafana" in name for name in container_names), \
-            "Grafana not on infra network"
+        assert any("grafana" in name for name in container_names), "Grafana not on infra network"

@@ -31,6 +31,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 # Triton Config Tests
 # =============================================================================
 
+
 class TestTritonConfigGeneration:
     """Test Triton config.pbtxt generation."""
 
@@ -140,6 +141,7 @@ class TestTritonConfigGeneration:
 # MinIO Registry Tests (Mocked)
 # =============================================================================
 
+
 class TestMinIORegistryMocked:
     """Test MinIO registry with mocked client."""
 
@@ -153,17 +155,21 @@ class TestMinIORegistryMocked:
         """
         # Create a mock module if minio isn't installed
         import sys
+
         try:
             import minio  # noqa: F401  # Import needed to check availability
+
             patch_target = "minio.Minio"
         except ImportError:
             mock_minio_module = MagicMock()
-            sys.modules['minio'] = mock_minio_module
-            sys.modules['minio.error'] = MagicMock()
+            sys.modules["minio"] = mock_minio_module
+            sys.modules["minio.error"] = MagicMock()
             patch_target = "minio.Minio"
 
-        with patch(patch_target) as MockMinio, \
-             patch("infrastructure.minio.init_models.MINIO_AVAILABLE", True):
+        with (
+            patch(patch_target) as MockMinio,
+            patch("infrastructure.minio.init_models.MINIO_AVAILABLE", True),
+        ):
             client = MagicMock()
             MockMinio.return_value = client
 
@@ -174,8 +180,8 @@ class TestMinIORegistryMocked:
             client.fput_object.return_value = None
             client.put_object.return_value = None
 
-            if 'infrastructure.minio.init_models' in sys.modules:
-                importlib.reload(sys.modules['infrastructure.minio.init_models'])
+            if "infrastructure.minio.init_models" in sys.modules:
+                importlib.reload(sys.modules["infrastructure.minio.init_models"])
 
             yield client
 
@@ -250,6 +256,7 @@ class TestMinIORegistryMocked:
 # Metadata Structure Tests
 # =============================================================================
 
+
 class TestMetadataStructure:
     """Test metadata.json structure and content."""
 
@@ -317,6 +324,7 @@ class TestMetadataStructure:
 # Bucket Structure Tests
 # =============================================================================
 
+
 class TestBucketStructure:
     """Test expected MinIO bucket structure."""
 
@@ -347,6 +355,7 @@ class TestBucketStructure:
 # Integration Tests (Requires MinIO)
 # =============================================================================
 
+
 @pytest.mark.integration
 class TestMinIOIntegration:
     """Integration tests requiring running MinIO instance."""
@@ -356,6 +365,7 @@ class TestMinIOIntegration:
         """Create registry connected to running MinIO."""
         try:
             from infrastructure.minio.init_models import MinIOModelRegistry
+
             registry = MinIOModelRegistry()
             registry.wait_for_minio()
             return registry

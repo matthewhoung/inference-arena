@@ -20,6 +20,7 @@ Specification Reference: Foundation Specification §5.2
 import json
 import logging
 import shutil
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -63,6 +64,7 @@ TARGET_STD_DETECTIONS: float = 0.8
 # =============================================================================
 # Data Classes
 # =============================================================================
+
 
 @dataclass
 class CurationConfig:
@@ -166,6 +168,7 @@ class DatasetManifest:
 # Detection Counter
 # =============================================================================
 
+
 class DetectionCounter:
     """Counts detections in images using YOLOv5n ONNX model.
 
@@ -204,8 +207,7 @@ class DetectionCounter:
 
         if not model_path.exists():
             raise FileNotFoundError(
-                f"YOLOv5n model not found at {model_path}. "
-                "Run 'make setup-models' first."
+                f"YOLOv5n model not found at {model_path}. " "Run 'make setup-models' first."
             )
 
         # Configure session for CPU with controlled threading
@@ -384,7 +386,9 @@ class DetectionCounter:
                 intersection = w * h
 
                 area_i = (cls_x2[i] - cls_x1[i]) * (cls_y2[i] - cls_y1[i])
-                area_others = (cls_x2[order[1:]] - cls_x1[order[1:]]) * (cls_y2[order[1:]] - cls_y1[order[1:]])
+                area_others = (cls_x2[order[1:]] - cls_x1[order[1:]]) * (
+                    cls_y2[order[1:]] - cls_y1[order[1:]]
+                )
                 union = area_i + area_others - intersection
 
                 iou = intersection / (union + 1e-6)
@@ -399,6 +403,7 @@ class DetectionCounter:
 # =============================================================================
 # Dataset Curator
 # =============================================================================
+
 
 class DatasetCurator:
     """Curates thesis test dataset from COCO val2017.
@@ -475,7 +480,7 @@ class DatasetCurator:
     def curate(
         self,
         force: bool = False,
-        progress_callback: callable | None = None,
+        progress_callback: Callable | None = None,
     ) -> CurationResult:
         """Curate thesis test dataset.
 
@@ -516,7 +521,8 @@ class DatasetCurator:
 
         # Track results by detection count for balanced sampling
         candidates: dict[int, list[ImageRecord]] = {
-            i: [] for i in range(
+            i: []
+            for i in range(
                 self.config.min_detections,
                 self.config.max_detections + 1,
             )
@@ -608,10 +614,12 @@ class DatasetCurator:
 
         # Calculate target per bucket for mean=4
         # For range [3, 4, 5], we want more 4s to center the mean
-        detection_range = list(range(
-            self.config.min_detections,
-            self.config.max_detections + 1,
-        ))
+        detection_range = list(
+            range(
+                self.config.min_detections,
+                self.config.max_detections + 1,
+            )
+        )
         len(detection_range)
 
         # Weight middle values more heavily for tighter std
@@ -656,9 +664,7 @@ class DatasetCurator:
             for det_count in detection_range:
                 available = candidates.get(det_count, [])
                 already_selected = {r.filename for r in selected}
-                remaining_available = [
-                    r for r in available if r.filename not in already_selected
-                ]
+                remaining_available = [r for r in available if r.filename not in already_selected]
                 if remaining_available:
                     selected.append(remaining_available[0])
                     if len(selected) >= self.config.target_count:
@@ -669,7 +675,7 @@ class DatasetCurator:
             if len(selected) >= all_available:
                 break
 
-        return selected[:self.config.target_count]
+        return selected[: self.config.target_count]
 
     def _generate_manifest(self, result: CurationResult) -> DatasetManifest:
         """Generate manifest from curation result."""
@@ -678,7 +684,7 @@ class DatasetCurator:
         if counts:
             mean_det = sum(counts) / len(counts)
             variance = sum((x - mean_det) ** 2 for x in counts) / len(counts)
-            std_det = variance ** 0.5
+            std_det = variance**0.5
             min_det = min(counts)
             max_det = max(counts)
         else:
@@ -725,10 +731,12 @@ class DatasetCurator:
         result.total_selected = manifest.statistics.get("total_images", 0)
 
         for img_data in manifest.images:
-            result.images.append(ImageRecord(
-                filename=img_data["filename"],
-                detection_count=img_data["detections"],
-            ))
+            result.images.append(
+                ImageRecord(
+                    filename=img_data["filename"],
+                    detection_count=img_data["detections"],
+                )
+            )
 
         return result
 
@@ -745,7 +753,11 @@ class DatasetCurator:
         logger.info(f"  Errors:            {result.errors}")
         logger.info(f"  Selected:          {result.total_selected}")
         logger.info("")
-        logger.info(f"  Mean detections:   {stats['mean_detections']:.2f} (target: {TARGET_MEAN_DETECTIONS})")
-        logger.info(f"  Std detections:    {stats['std_detections']:.2f} (target: ~{TARGET_STD_DETECTIONS})")
+        logger.info(
+            f"  Mean detections:   {stats['mean_detections']:.2f} (target: {TARGET_MEAN_DETECTIONS})"
+        )
+        logger.info(
+            f"  Std detections:    {stats['std_detections']:.2f} (target: ~{TARGET_STD_DETECTIONS})"
+        )
         logger.info(f"  Distribution:      {manifest.distribution}")
         logger.info(f"  Output:            {self.output_dir}")

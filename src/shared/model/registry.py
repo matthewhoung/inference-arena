@@ -41,6 +41,7 @@ DEFAULT_INTER_OP_THREADS: int = 1
 # Data Classes
 # =============================================================================
 
+
 @dataclass
 class ModelInfo:
     """Information about a loaded model.
@@ -82,6 +83,7 @@ class SessionConfig:
 # =============================================================================
 # Model Registry
 # =============================================================================
+
 
 class ModelRegistry:
     """Registry for loading and caching ONNX Runtime inference sessions.

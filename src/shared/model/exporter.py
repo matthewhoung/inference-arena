@@ -42,6 +42,7 @@ MOBILENET_INPUT_SIZE: int = 224
 # Data Classes
 # =============================================================================
 
+
 @dataclass
 class ExportResult:
     """Result container for model export operation.
@@ -66,6 +67,7 @@ class ExportResult:
 # =============================================================================
 # Checksum Utilities
 # =============================================================================
+
 
 def compute_checksum(file_path: Path) -> str:
     """Compute SHA256 checksum of a file.
@@ -93,6 +95,7 @@ def compute_checksum(file_path: Path) -> str:
 # =============================================================================
 # ONNX Verification
 # =============================================================================
+
 
 def verify_onnx_model(model_path: Path) -> dict:
     """Verify ONNX model is valid and meets specifications.
@@ -185,6 +188,7 @@ def verify_onnx_model(model_path: Path) -> dict:
 # YOLOv5n Export
 # =============================================================================
 
+
 def export_yolov5n(
     output_path: Path,
     opset_version: int = ONNX_OPSET_VERSION,
@@ -219,9 +223,7 @@ def export_yolov5n(
 
     # Check existing file
     if output_path.exists() and not force:
-        raise FileExistsError(
-            f"Model already exists: {output_path}. Use force=True to overwrite."
-        )
+        raise FileExistsError(f"Model already exists: {output_path}. Use force=True to overwrite.")
 
     # Create output directory
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -317,6 +319,7 @@ def export_yolov5n(
 # MobileNetV2 Export
 # =============================================================================
 
+
 def export_mobilenetv2(
     output_path: Path,
     opset_version: int = ONNX_OPSET_VERSION,
@@ -353,9 +356,7 @@ def export_mobilenetv2(
 
     # Check existing file
     if output_path.exists() and not force:
-        raise FileExistsError(
-            f"Model already exists: {output_path}. Use force=True to overwrite."
-        )
+        raise FileExistsError(f"Model already exists: {output_path}. Use force=True to overwrite.")
 
     # Create output directory
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -417,6 +418,7 @@ def export_mobilenetv2(
 # =============================================================================
 # Batch Export
 # =============================================================================
+
 
 def export_all_models(
     output_dir: Path,

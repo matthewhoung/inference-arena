@@ -25,7 +25,9 @@ from shared.config import get_controlled_variables, get_infrastructure_config
 
 # Load infrastructure config for port assertions
 _infra_config = get_infrastructure_config()
-_minio_api_port = _infra_config["minio"]["external_endpoint"].split(":")[-1]  # Extract port from "localhost:9000"
+_minio_api_port = _infra_config["minio"]["external_endpoint"].split(":")[
+    -1
+]  # Extract port from "localhost:9000"
 _monitoring_config = get_controlled_variables("monitoring")
 _cadvisor_port = str(_monitoring_config["cadvisor"]["port"])
 
@@ -33,6 +35,7 @@ _cadvisor_port = str(_monitoring_config["cadvisor"]["port"])
 # =============================================================================
 # Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def project_root() -> Path:
@@ -71,7 +74,14 @@ def prometheus_config(project_root: Path) -> dict[str, Any]:
 @pytest.fixture
 def grafana_datasources(project_root: Path) -> dict[str, Any]:
     """Load and parse Grafana datasources.yml."""
-    config_path = project_root / "infrastructure" / "grafana" / "provisioning" / "datasources" / "datasources.yml"
+    config_path = (
+        project_root
+        / "infrastructure"
+        / "grafana"
+        / "provisioning"
+        / "datasources"
+        / "datasources.yml"
+    )
     if not config_path.exists():
         pytest.skip(f"Grafana datasources not found: {config_path}")
 
@@ -82,7 +92,14 @@ def grafana_datasources(project_root: Path) -> dict[str, Any]:
 @pytest.fixture
 def grafana_dashboard(project_root: Path) -> dict[str, Any]:
     """Load and parse Grafana dashboard JSON."""
-    dashboard_path = project_root / "infrastructure" / "grafana" / "provisioning" / "dashboards" / "infrastructure.json"
+    dashboard_path = (
+        project_root
+        / "infrastructure"
+        / "grafana"
+        / "provisioning"
+        / "dashboards"
+        / "infrastructure.json"
+    )
     if not dashboard_path.exists():
         pytest.skip(f"Grafana dashboard not found: {dashboard_path}")
 
@@ -93,6 +110,7 @@ def grafana_dashboard(project_root: Path) -> dict[str, Any]:
 # =============================================================================
 # Docker Compose Structure Tests
 # =============================================================================
+
 
 class TestComposeStructure:
     """Test docker-compose.infra.yml structure and syntax."""
@@ -126,6 +144,7 @@ class TestComposeStructure:
 # Required Services Tests
 # =============================================================================
 
+
 class TestRequiredServices:
     """Test that all required infrastructure services are defined."""
 
@@ -150,12 +169,15 @@ class TestRequiredServices:
         assert "container_name" in services[service], f"{service} missing container_name"
         # Container names should follow naming convention
         container_name = services[service]["container_name"]
-        assert container_name.startswith("inference-arena-"), f"{service} container name should start with 'inference-arena-'"
+        assert container_name.startswith(
+            "inference-arena-"
+        ), f"{service} container name should start with 'inference-arena-'"
 
 
 # =============================================================================
 # MinIO Service Tests
 # =============================================================================
+
 
 class TestMinIOService:
     """Test MinIO service configuration."""
@@ -173,7 +195,9 @@ class TestMinIOService:
         ports = minio.get("ports", [])
         port_mappings = [str(p) for p in ports]
         # Use port from config for API port
-        assert any(_minio_api_port in p for p in port_mappings), f"MinIO API port {_minio_api_port} not exposed"
+        assert any(
+            _minio_api_port in p for p in port_mappings
+        ), f"MinIO API port {_minio_api_port} not exposed"
         # MinIO console port (9001) - TODO: Add to experiment.yaml infrastructure config
         assert any("9001" in p for p in port_mappings), "MinIO console port 9001 not exposed"
 
@@ -189,8 +213,9 @@ class TestMinIOService:
         """MinIO should have persistent volume for data."""
         minio = compose_config["services"]["minio"]
         volumes = minio.get("volumes", [])
-        assert any("minio" in str(v).lower() and "/data" in str(v) for v in volumes), \
-            "MinIO should mount data volume"
+        assert any(
+            "minio" in str(v).lower() and "/data" in str(v) for v in volumes
+        ), "MinIO should mount data volume"
 
     def test_minio_credentials(self, compose_config: dict[str, Any]) -> None:
         """MinIO should have environment variables for credentials."""
@@ -210,6 +235,7 @@ class TestMinIOService:
 # cAdvisor Service Tests
 # =============================================================================
 
+
 class TestCAdvisorService:
     """Test cAdvisor service configuration."""
 
@@ -225,7 +251,9 @@ class TestCAdvisorService:
         ports = cadvisor.get("ports", [])
         port_mappings = [str(p) for p in ports]
         # Use port from config (experiment.yaml)
-        assert any(_cadvisor_port in p for p in port_mappings), f"cAdvisor port {_cadvisor_port} not exposed"
+        assert any(
+            _cadvisor_port in p for p in port_mappings
+        ), f"cAdvisor port {_cadvisor_port} not exposed"
 
     def test_cadvisor_required_volumes(self, compose_config: dict[str, Any]) -> None:
         """cAdvisor should have required host volume mounts."""
@@ -247,6 +275,7 @@ class TestCAdvisorService:
 # =============================================================================
 # Prometheus Service Tests
 # =============================================================================
+
 
 class TestPrometheusService:
     """Test Prometheus service configuration."""
@@ -287,6 +316,7 @@ class TestPrometheusService:
 # Grafana Service Tests
 # =============================================================================
 
+
 class TestGrafanaService:
     """Test Grafana service configuration."""
 
@@ -326,6 +356,7 @@ class TestGrafanaService:
 # Network Tests
 # =============================================================================
 
+
 class TestNetworks:
     """Test network configuration."""
 
@@ -345,8 +376,9 @@ class TestNetworks:
 
         for network_key, network_config in networks.items():
             assert "name" in network_config, f"Network {network_key} should have explicit name"
-            assert "inference-arena" in network_config["name"], \
-                "Network name should include 'inference-arena' prefix"
+            assert (
+                "inference-arena" in network_config["name"]
+            ), "Network name should include 'inference-arena' prefix"
 
     def test_minio_on_backend_network(self, compose_config: dict[str, Any]) -> None:
         """MinIO should be on backend network for architecture access."""
@@ -365,6 +397,7 @@ class TestNetworks:
 # =============================================================================
 # Prometheus Configuration Tests
 # =============================================================================
+
 
 class TestPrometheusConfig:
     """Test prometheus.yml configuration."""
@@ -399,6 +432,7 @@ class TestPrometheusConfig:
 # Grafana Configuration Tests
 # =============================================================================
 
+
 class TestGrafanaConfig:
     """Test Grafana provisioning configuration."""
 
@@ -424,4 +458,6 @@ class TestGrafanaConfig:
         """Dashboard should have memory usage panel."""
         panels = grafana_dashboard.get("panels", [])
         panel_titles = [p.get("title", "") for p in panels]
-        assert any("memory" in t.lower() for t in panel_titles), "Dashboard should have Memory panel"
+        assert any(
+            "memory" in t.lower() for t in panel_titles
+        ), "Dashboard should have Memory panel"

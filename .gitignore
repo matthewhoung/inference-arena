@@ -32,6 +32,7 @@ env/
 .env.*.local
 
 # IDE
+.ruff_cache/
 .claude/
 .idea/
 .vscode/

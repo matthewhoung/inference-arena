@@ -48,10 +48,11 @@ from shared.config import (
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture(autouse=True)
 def clear_config_cache():
     """Clear config cache before each test."""
-    reload_config.cache_clear() if hasattr(reload_config, 'cache_clear') else None
+    reload_config.cache_clear() if hasattr(reload_config, "cache_clear") else None
     get_config.cache_clear()
     yield
     get_config.cache_clear()
@@ -66,6 +67,7 @@ def config() -> dict[str, Any]:
 # =============================================================================
 # Config Loading Tests
 # =============================================================================
+
 
 class TestConfigLoading:
     """Test configuration file loading."""
@@ -107,6 +109,7 @@ class TestConfigLoading:
 # Metadata Tests
 # =============================================================================
 
+
 class TestMetadata:
     """Test metadata access."""
 
@@ -130,6 +133,7 @@ class TestMetadata:
 # =============================================================================
 # Controlled Variables Tests
 # =============================================================================
+
 
 class TestControlledVariables:
     """Test controlled variable access."""
@@ -185,6 +189,7 @@ class TestControlledVariables:
 # Model Configuration Tests
 # =============================================================================
 
+
 class TestModelConfiguration:
     """Test model configuration access."""
 
@@ -225,6 +230,7 @@ class TestModelConfiguration:
 # =============================================================================
 # Hypothesis Tests
 # =============================================================================
+
 
 class TestHypotheses:
     """Test hypothesis access."""
@@ -268,6 +274,7 @@ class TestHypotheses:
 # =============================================================================
 # Infrastructure Tests
 # =============================================================================
+
 
 class TestInfrastructureConfig:
     """Test infrastructure configuration access."""
@@ -313,6 +320,7 @@ class TestInfrastructureConfig:
 # Load Testing Tests
 # =============================================================================
 
+
 class TestLoadTestingConfig:
     """Test load testing configuration access."""
 
@@ -345,6 +353,7 @@ class TestLoadTestingConfig:
 # Validation Tests
 # =============================================================================
 
+
 class TestValidation:
     """Test configuration validation."""
 
@@ -368,6 +377,7 @@ class TestValidation:
 # Integration Tests
 # =============================================================================
 
+
 class TestConfigIntegration:
     """Integration tests for config consistency."""
 
@@ -390,8 +400,9 @@ class TestConfigIntegration:
             prediction = h_config.get("testable_prediction", "")
             # At least one architecture should be mentioned
             mentioned = any(arch in prediction.lower() for arch in architectures)
-            assert mentioned or "all" in prediction.lower(), \
-                f"{h_id} prediction doesn't reference architectures"
+            assert (
+                mentioned or "all" in prediction.lower()
+            ), f"{h_id} prediction doesn't reference architectures"
 
     def test_concurrent_users_are_ordered(self) -> None:
         """Concurrent user levels should be in ascending order."""

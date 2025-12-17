@@ -36,6 +36,7 @@ MOBILENET_INPUT_SIZE: int = _mobilenet_config["target_size"]
 # Data Classes
 # =============================================================================
 
+
 @dataclass
 class MobileNetPreprocessResult:
     """Result container for MobileNet preprocessing.
@@ -52,6 +53,7 @@ class MobileNetPreprocessResult:
 # =============================================================================
 # Preprocessor Class
 # =============================================================================
+
 
 class MobileNetPreprocessor:
     """Preprocessor for MobileNetV2 classification model.
@@ -229,6 +231,7 @@ class MobileNetPreprocessor:
 # =============================================================================
 # Utility Functions
 # =============================================================================
+
 
 def extract_crop(image: np.ndarray, box: np.ndarray) -> np.ndarray:
     """Extract a crop from an image using a bounding box.

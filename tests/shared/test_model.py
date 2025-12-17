@@ -47,6 +47,7 @@ from shared.model.registry import (
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def temp_dir() -> Path:
     """Create temporary directory for test files."""
@@ -99,6 +100,7 @@ def registry_with_mock_model(temp_dir: Path, mock_onnx_model: Path) -> ModelRegi
     """Create registry with mock model available."""
     # Copy mock model as yolov5n.onnx
     import shutil
+
     yolo_path = temp_dir / "yolov5n.onnx"
     shutil.copy(mock_onnx_model, yolo_path)
 
@@ -108,6 +110,7 @@ def registry_with_mock_model(temp_dir: Path, mock_onnx_model: Path) -> ModelRegi
 # =============================================================================
 # Tests for Checksum
 # =============================================================================
+
 
 class TestComputeChecksum:
     """Tests for compute_checksum function."""
@@ -160,6 +163,7 @@ class TestComputeChecksum:
 # Tests for ONNX Verification
 # =============================================================================
 
+
 class TestVerifyOnnxModel:
     """Tests for verify_onnx_model function."""
 
@@ -211,6 +215,7 @@ class TestVerifyOnnxModel:
 # Tests for Export Constants
 # =============================================================================
 
+
 class TestExportConstants:
     """Tests for export module constants."""
 
@@ -230,6 +235,7 @@ class TestExportConstants:
 # =============================================================================
 # Tests for Export Functions (Slow - require torch)
 # =============================================================================
+
 
 class TestExportYOLOv5n:
     """Tests for YOLOv5n export function."""
@@ -330,6 +336,7 @@ class TestExportMobileNetV2:
 # Tests for SessionConfig
 # =============================================================================
 
+
 class TestSessionConfig:
     """Tests for SessionConfig dataclass."""
 
@@ -361,6 +368,7 @@ class TestSessionConfig:
 # =============================================================================
 # Tests for ModelRegistry
 # =============================================================================
+
 
 class TestModelRegistry:
     """Tests for ModelRegistry class."""
@@ -484,6 +492,7 @@ class TestGetDefaultRegistry:
 # =============================================================================
 # Integration Tests
 # =============================================================================
+
 
 class TestModelIntegration:
     """Integration tests for model export and registry."""

@@ -32,6 +32,7 @@ from shared.proto import (
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def temp_dir() -> Path:
     """Create temporary directory for test files."""
@@ -48,6 +49,7 @@ def proto_content() -> str:
 # =============================================================================
 # Tests for Proto File Structure
 # =============================================================================
+
 
 class TestProtoFile:
     """Tests for inference.proto file structure."""
@@ -174,6 +176,7 @@ class TestProtoFields:
 # Tests for Generated Files (requires grpcio-tools)
 # =============================================================================
 
+
 class TestProtoGeneration:
     """Tests for proto file generation."""
 
@@ -184,20 +187,19 @@ class TestProtoGeneration:
 
     @pytest.mark.skipif(
         not is_generated(),
-        reason="Proto files not generated - run 'python scripts/generate_proto.py'"
+        reason="Proto files not generated - run 'python scripts/generate_proto.py'",
     )
     def test_import_pb2(self) -> None:
         """Should be able to import inference_pb2."""
         from shared.proto import inference_pb2
+
         assert inference_pb2 is not None
 
-    @pytest.mark.skipif(
-        not is_generated(),
-        reason="Proto files not generated"
-    )
+    @pytest.mark.skipif(not is_generated(), reason="Proto files not generated")
     def test_import_pb2_grpc(self) -> None:
         """Should be able to import inference_pb2_grpc."""
         from shared.proto import inference_pb2_grpc
+
         assert inference_pb2_grpc is not None
 
 
@@ -205,9 +207,9 @@ class TestProtoGeneration:
 # Tests for Message Classes (requires generated files)
 # =============================================================================
 
+
 @pytest.mark.skipif(
-    not is_generated(),
-    reason="Proto files not generated - run 'python scripts/generate_proto.py'"
+    not is_generated(), reason="Proto files not generated - run 'python scripts/generate_proto.py'"
 )
 class TestMessageClasses:
     """Tests for generated message classes."""
@@ -307,10 +309,8 @@ class TestMessageClasses:
 # Tests for Serialization (requires generated files)
 # =============================================================================
 
-@pytest.mark.skipif(
-    not is_generated(),
-    reason="Proto files not generated"
-)
+
+@pytest.mark.skipif(not is_generated(), reason="Proto files not generated")
 class TestSerialization:
     """Tests for message serialization/deserialization."""
 
@@ -388,10 +388,8 @@ class TestSerialization:
 # Tests for Service Stubs (requires generated files)
 # =============================================================================
 
-@pytest.mark.skipif(
-    not is_generated(),
-    reason="Proto files not generated"
-)
+
+@pytest.mark.skipif(not is_generated(), reason="Proto files not generated")
 class TestServiceStubs:
     """Tests for generated service stubs."""
 
@@ -431,10 +429,8 @@ class TestServiceStubs:
 # Tests for Batch Messages (requires generated files)
 # =============================================================================
 
-@pytest.mark.skipif(
-    not is_generated(),
-    reason="Proto files not generated"
-)
+
+@pytest.mark.skipif(not is_generated(), reason="Proto files not generated")
 class TestBatchMessages:
     """Tests for batch message types."""
 

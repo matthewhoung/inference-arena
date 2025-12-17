@@ -51,6 +51,7 @@ def get_messages():
             "Proto files not generated. Run 'python scripts/generate_proto.py' first."
         )
     from shared.proto import inference_pb2
+
     return inference_pb2
 
 
@@ -68,4 +69,5 @@ def get_services():
             "Proto files not generated. Run 'python scripts/generate_proto.py' first."
         )
     from shared.proto import inference_pb2_grpc
+
     return inference_pb2_grpc

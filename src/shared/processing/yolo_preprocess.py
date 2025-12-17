@@ -40,6 +40,7 @@ YOLO_NORMALIZATION_SCALE: float = _yolo_config["normalization_scale"]
 # Data Classes
 # =============================================================================
 
+
 @dataclass
 class YOLOPreprocessResult:
     """Result container for YOLO preprocessing.
@@ -71,6 +72,7 @@ class YOLOPreprocessResult:
 # =============================================================================
 # Preprocessor Class
 # =============================================================================
+
 
 class YOLOPreprocessor:
     """Preprocessor for YOLOv5n object detection model.

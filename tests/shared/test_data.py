@@ -47,6 +47,7 @@ from shared.data.curator import (
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def temp_dir() -> Path:
     """Create temporary directory for test files."""
@@ -67,6 +68,7 @@ def mock_coco_dir(temp_dir: Path) -> Path:
         image_path = coco_dir / f"00000000{i:04d}.jpg"
 
         import cv2
+
         cv2.imwrite(str(image_path), image)
 
     return temp_dir
@@ -94,16 +96,14 @@ def sample_manifest_data() -> dict:
             "max_detections": 5,
         },
         "distribution": {"3": 25, "4": 50, "5": 25},
-        "images": [
-            {"filename": f"00000000{i:04d}.jpg", "detections": 4}
-            for i in range(100)
-        ],
+        "images": [{"filename": f"00000000{i:04d}.jpg", "detections": 4} for i in range(100)],
     }
 
 
 # =============================================================================
 # Tests for COCO Dataset Constants
 # =============================================================================
+
 
 class TestCocoConstants:
     """Tests for COCO dataset constants."""
@@ -121,6 +121,7 @@ class TestCocoConstants:
 # =============================================================================
 # Tests for COCO State Detection
 # =============================================================================
+
 
 class TestIsCOCODownloaded:
     """Tests for is_coco_downloaded function."""
@@ -175,6 +176,7 @@ class TestIsCOCODownloaded:
 # Tests for Image Loading
 # =============================================================================
 
+
 class TestLoadCocoImage:
     """Tests for load_coco_image function."""
 
@@ -217,6 +219,7 @@ class TestGetCocoImagePaths:
 # Tests for CurationConfig
 # =============================================================================
 
+
 class TestCurationConfig:
     """Tests for CurationConfig dataclass."""
 
@@ -253,6 +256,7 @@ class TestCurationConfig:
 # Tests for ImageRecord
 # =============================================================================
 
+
 class TestImageRecord:
     """Tests for ImageRecord dataclass."""
 
@@ -281,6 +285,7 @@ class TestImageRecord:
 # =============================================================================
 # Tests for CurationResult
 # =============================================================================
+
 
 class TestCurationResult:
     """Tests for CurationResult dataclass."""
@@ -311,6 +316,7 @@ class TestCurationResult:
 # =============================================================================
 # Tests for DatasetManifest
 # =============================================================================
+
 
 class TestDatasetManifest:
     """Tests for DatasetManifest dataclass."""
@@ -363,6 +369,7 @@ class TestDatasetManifest:
 # =============================================================================
 # Tests for DatasetCurator
 # =============================================================================
+
 
 class TestDatasetCurator:
     """Tests for DatasetCurator class."""
@@ -436,6 +443,7 @@ class TestDatasetCurator:
 # Tests for Manifest Statistics
 # =============================================================================
 
+
 class TestManifestStatistics:
     """Tests for manifest statistics calculation."""
 
@@ -465,6 +473,7 @@ class TestManifestStatistics:
 # =============================================================================
 # Integration Tests (Slow)
 # =============================================================================
+
 
 class TestCurationIntegration:
     """Integration tests for full curation process."""
@@ -534,6 +543,7 @@ class TestCurationIntegration:
 # =============================================================================
 # Tests for Detection Range Validation
 # =============================================================================
+
 
 class TestDetectionRange:
     """Tests for detection range constants."""

@@ -45,6 +45,7 @@ COCO_ZIP_SIZE_MB: float = 778.0
 # Download Progress
 # =============================================================================
 
+
 class DownloadProgressBar:
     """Progress bar callback for urllib downloads.
 
@@ -95,9 +96,11 @@ class DownloadProgressBar:
             )
             self.last_percent = percent
 
+
 # =============================================================================
 # State Detection
 # =============================================================================
+
 
 def is_coco_downloaded(data_dir: Path) -> tuple[bool, str]:
     """Check if COCO val2017 is already downloaded.
@@ -133,6 +136,7 @@ def is_coco_downloaded(data_dir: Path) -> tuple[bool, str]:
 # =============================================================================
 # Download Functions
 # =============================================================================
+
 
 def download_coco_val2017(
     data_dir: Path,
@@ -203,9 +207,7 @@ def download_coco_val2017(
     logger.info(f"  Extracted {jpg_count} images to {images_dir}")
 
     if jpg_count < COCO_VAL2017_COUNT:
-        raise RuntimeError(
-            f"Extraction incomplete: got {jpg_count}, expected {COCO_VAL2017_COUNT}"
-        )
+        raise RuntimeError(f"Extraction incomplete: got {jpg_count}, expected {COCO_VAL2017_COUNT}")
 
     # Cleanup zip file
     if cleanup_zip and zip_path.exists():
@@ -218,6 +220,7 @@ def download_coco_val2017(
 # =============================================================================
 # Image Loading
 # =============================================================================
+
 
 def load_coco_image(image_path: Path) -> np.ndarray:
     """Load a COCO image as RGB numpy array.
