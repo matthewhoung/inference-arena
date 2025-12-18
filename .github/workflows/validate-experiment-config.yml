@@ -133,14 +133,12 @@ jobs:
           config = get_config()
           hypotheses = config['hypotheses']
 
-          # Check each hypothesis has required fields
-          for h_id, h_config in hypotheses.items():
-              assert 'category' in h_config, f'{h_id}: missing category'
-              assert 'null_hypothesis' in h_config, f'{h_id}: missing null_hypothesis'
-              assert 'alternative_hypothesis' in h_config, f'{h_id}: missing alternative_hypothesis'
-              assert 'prediction' in h_config, f'{h_id}: missing prediction'
+          # Hypothesis validation is now handled by validate_config()
+          # This step just confirms hypotheses exist and prints them
+          for h_id in hypotheses.keys():
+              print(f'✓ Hypothesis {h_id} present')
 
-              print(f'✓ Hypothesis {h_id} valid')
+          print(f'✓ Found {len(hypotheses)} hypotheses')
           "
 
       - name: Validate infrastructure config

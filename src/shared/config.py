@@ -459,6 +459,19 @@ def validate_config() -> list[str]:
         if field not in onnx:
             errors.append(f"Missing onnx_runtime field: {field}")
 
+    # Check hypotheses
+    hypotheses = config.get("hypotheses", {})
+    for h_id, h_config in hypotheses.items():
+        # Required fields for all hypotheses
+        required_fields = ["category", "statement", "rationale"]
+        for field in required_fields:
+            if field not in h_config:
+                errors.append(f"Hypothesis {h_id} missing required field: {field}")
+
+        # Must have either 'testable_prediction' or 'prediction'
+        if "testable_prediction" not in h_config and "prediction" not in h_config:
+            errors.append(f"Hypothesis {h_id} missing testable_prediction or prediction")
+
     return errors
 
 
