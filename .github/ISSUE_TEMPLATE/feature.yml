@@ -8,14 +8,6 @@ body:
         ## Feature Request
         Describe the feature you want to implement.
 
-  - type: input
-    id: milestone
-    attributes:
-      description: "Which milestone does this belong to?"
-      placeholder: "M1: Foundation"
-    validations:
-      required: true
-
   - type: textarea
     id: description
     attributes:

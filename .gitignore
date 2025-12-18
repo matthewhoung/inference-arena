@@ -66,6 +66,11 @@ models/*.pt
 # Keep download script
 !models/download_models.py
 
+# Architecture-specific downloaded models (downloaded from MinIO on startup)
+architectures/monolithic/models/
+architectures/microservices/*/models/
+architectures/triton/gateway/models/
+
 # Experiment results (generated)
 results/raw/
 results/processed/

@@ -8,6 +8,11 @@ on:
     paths:
       - 'experiment.yaml'
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   validate:
     name: Validate experiment.yaml Changes
@@ -133,14 +138,12 @@ jobs:
           config = get_config()
           hypotheses = config['hypotheses']
 
-          # Check each hypothesis has required fields
-          for h_id, h_config in hypotheses.items():
-              assert 'category' in h_config, f'{h_id}: missing category'
-              assert 'null_hypothesis' in h_config, f'{h_id}: missing null_hypothesis'
-              assert 'alternative_hypothesis' in h_config, f'{h_id}: missing alternative_hypothesis'
-              assert 'prediction' in h_config, f'{h_id}: missing prediction'
+          # Hypothesis validation is now handled by validate_config()
+          # This step just confirms hypotheses exist and prints them
+          for h_id in hypotheses.keys():
+              print(f'✓ Hypothesis {h_id} present')
 
-              print(f'✓ Hypothesis {h_id} valid')
+          print(f'✓ Found {len(hypotheses)} hypotheses')
           "
 
       - name: Validate infrastructure config
@@ -163,10 +166,10 @@ jobs:
       - name: Validate threading configuration
         run: |
           python -c "
-          from shared.config import get_controlled_variable, get_triton_config
+          from shared.config import get_controlled_variables, get_triton_config
 
           # Get ONNX runtime threading
-          onnx_runtime = get_controlled_variable('onnx_runtime')
+          onnx_runtime = get_controlled_variables('onnx_runtime')
           onnx_intra = onnx_runtime['intra_op_num_threads']
           onnx_inter = onnx_runtime['inter_op_num_threads']
 

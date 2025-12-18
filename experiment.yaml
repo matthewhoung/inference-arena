@@ -384,7 +384,20 @@ changelog:
     change: "Initial pre-registration of hypotheses and controlled variables"
     justification: "N/A - initial commit"
     author: "Matthew Hong"
-    
+
+  - date: "2025-12-18"
+    version: "1.1.0"
+    change: "Clarified microservices architecture: Detection service exposes HTTP endpoint for client access while using gRPC for inter-service communication with Classification service"
+    justification: |
+      Required for fair experimental comparison and hypothesis H1b testing:
+      1. External Interface Consistency: All architectures (monolithic, microservices, triton) must expose HTTP endpoints for Locust load testing to ensure fair comparison of client-facing latency
+      2. Hypothesis H1b Requirement: 'asyncio.gather enables parallel classification calls that mask gRPC latency during fan-out' explicitly requires gRPC between Detection and Classification services
+      3. Resource Constraints: Two-service architecture (Detection + Classification) maintains 4 vCPU total allocation as specified in controlled_variables.resources
+      4. Realistic Microservices: HTTP for external API, gRPC for efficient inter-service communication is industry-standard pattern
+      Architecture: Client → HTTP → Detection (8200) → gRPC → Classification (8201)
+    author: "Matthew Hong"
+    impact: "Implementation only - no change to hypotheses or controlled variables"
+
   # Template for future changes:
   # - date: "YYYY-MM-DD"
   #   version: "1.x.x"
