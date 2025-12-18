@@ -8,6 +8,11 @@ on:
     paths:
       - 'experiment.yaml'
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   validate:
     name: Validate experiment.yaml Changes
