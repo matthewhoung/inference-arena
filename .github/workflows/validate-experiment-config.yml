@@ -161,10 +161,10 @@ jobs:
       - name: Validate threading configuration
         run: |
           python -c "
-          from shared.config import get_controlled_variable, get_triton_config
+          from shared.config import get_controlled_variables, get_triton_config
 
           # Get ONNX runtime threading
-          onnx_runtime = get_controlled_variable('onnx_runtime')
+          onnx_runtime = get_controlled_variables('onnx_runtime')
           onnx_intra = onnx_runtime['intra_op_num_threads']
           onnx_inter = onnx_runtime['inter_op_num_threads']
 
