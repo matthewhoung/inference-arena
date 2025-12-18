@@ -1,0 +1,1 @@
+"""Monolithic inference service package."""
