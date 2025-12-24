@@ -15,7 +15,7 @@
             }
         ]
     },
-    "description": "Container resource metrics for ML serving architecture experiments",
+    "description": "Resource metrics for Triton Architecture",
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 1,
@@ -33,7 +33,7 @@
             },
             "id": 1,
             "panels": [],
-            "title": "Overview",
+            "title": "Triton Architecture - Resource Metrics",
             "type": "row"
         },
         {
@@ -41,7 +41,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
             },
-            "description": "CPU utilization percentage per container",
+            "description": "CPU utilization percentage for Triton containers",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -104,8 +104,8 @@
                 "overrides": []
             },
             "gridPos": {
-                "h": 8,
-                "w": 12,
+                "h": 10,
+                "w": 24,
                 "x": 0,
                 "y": 1
             },
@@ -132,13 +132,24 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "sum(rate(container_cpu_usage_seconds_total{name=~\"inference-arena-.*\"}[30s])) by (name) * 100",
-                    "legendFormat": "{{name}}",
+                    "expr": "sum(rate(container_cpu_usage_seconds_total{container_id=\"222222222222\"}[30s])) * 100",
+                    "legendFormat": "triton-gateway",
                     "range": true,
                     "refId": "A"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "editorMode": "code",
+                    "expr": "sum(rate(container_cpu_usage_seconds_total{container_id=\"333333333333\"}[30s])) * 100",
+                    "legendFormat": "triton-server",
+                    "range": true,
+                    "refId": "B"
                 }
             ],
-            "title": "CPU Utilization by Container",
+            "title": "CPU Utilization - Triton",
             "type": "timeseries"
         },
         {
@@ -146,7 +157,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
             },
-            "description": "Memory usage in megabytes per container",
+            "description": "Memory usage for Triton container",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -208,10 +219,10 @@
                 "overrides": []
             },
             "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 12,
-                "y": 1
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 11
             },
             "id": 3,
             "options": {
@@ -236,13 +247,24 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "container_memory_usage_bytes{name=~\"inference-arena-.*\"} / 1024 / 1024",
-                    "legendFormat": "{{name}}",
+                    "expr": "sum(container_memory_usage_bytes{container_id=\"222222222222\"}) / 1024 / 1024",
+                    "legendFormat": "triton-gateway",
                     "range": true,
                     "refId": "A"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "editorMode": "code",
+                    "expr": "sum(container_memory_usage_bytes{container_id=\"333333333333\"}) / 1024 / 1024",
+                    "legendFormat": "triton-server",
+                    "range": true,
+                    "refId": "B"
                 }
             ],
-            "title": "Memory Usage by Container",
+            "title": "Memory Usage - Triton",
             "type": "timeseries"
         },
         {
@@ -251,216 +273,11 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 9
-            },
-            "id": 4,
-            "panels": [],
-            "title": "Network I/O",
-            "type": "row"
-        },
-        {
-            "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-            },
-            "description": "Network receive rate in KB/s per container",
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "palette-classic"
-                    },
-                    "custom": {
-                        "axisBorderShow": false,
-                        "axisCenteredZero": false,
-                        "axisColorMode": "text",
-                        "axisLabel": "KB/s",
-                        "axisPlacement": "auto",
-                        "barAlignment": 0,
-                        "drawStyle": "line",
-                        "fillOpacity": 10,
-                        "gradientMode": "none",
-                        "hideFrom": {
-                            "legend": false,
-                            "tooltip": false,
-                            "viz": false
-                        },
-                        "insertNulls": false,
-                        "lineInterpolation": "smooth",
-                        "lineWidth": 2,
-                        "pointSize": 5,
-                        "scaleDistribution": {
-                            "type": "linear"
-                        },
-                        "showPoints": "never",
-                        "spanNulls": false,
-                        "stacking": {
-                            "group": "A",
-                            "mode": "none"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
-                        }
-                    },
-                    "mappings": [],
-                    "min": 0,
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    },
-                    "unit": "KBs"
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 7,
-                "w": 12,
-                "x": 0,
-                "y": 10
-            },
-            "id": 5,
-            "options": {
-                "legend": {
-                    "calcs": [
-                        "mean",
-                        "max"
-                    ],
-                    "displayMode": "table",
-                    "placement": "bottom",
-                    "showLegend": true
-                },
-                "tooltip": {
-                    "mode": "multi",
-                    "sort": "desc"
-                }
-            },
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "prometheus",
-                        "uid": "${datasource}"
-                    },
-                    "editorMode": "code",
-                    "expr": "sum(rate(container_network_receive_bytes_total{name=~\"inference-arena-.*\"}[30s])) by (name) / 1024",
-                    "legendFormat": "{{name}}",
-                    "range": true,
-                    "refId": "A"
-                }
-            ],
-            "title": "Network Receive Rate",
-            "type": "timeseries"
-        },
-        {
-            "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-            },
-            "description": "Network transmit rate in KB/s per container",
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "palette-classic"
-                    },
-                    "custom": {
-                        "axisBorderShow": false,
-                        "axisCenteredZero": false,
-                        "axisColorMode": "text",
-                        "axisLabel": "KB/s",
-                        "axisPlacement": "auto",
-                        "barAlignment": 0,
-                        "drawStyle": "line",
-                        "fillOpacity": 10,
-                        "gradientMode": "none",
-                        "hideFrom": {
-                            "legend": false,
-                            "tooltip": false,
-                            "viz": false
-                        },
-                        "insertNulls": false,
-                        "lineInterpolation": "smooth",
-                        "lineWidth": 2,
-                        "pointSize": 5,
-                        "scaleDistribution": {
-                            "type": "linear"
-                        },
-                        "showPoints": "never",
-                        "spanNulls": false,
-                        "stacking": {
-                            "group": "A",
-                            "mode": "none"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
-                        }
-                    },
-                    "mappings": [],
-                    "min": 0,
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [
-                            {
-                                "color": "green",
-                                "value": null
-                            }
-                        ]
-                    },
-                    "unit": "KBs"
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 7,
-                "w": 12,
-                "x": 12,
-                "y": 10
-            },
-            "id": 6,
-            "options": {
-                "legend": {
-                    "calcs": [
-                        "mean",
-                        "max"
-                    ],
-                    "displayMode": "table",
-                    "placement": "bottom",
-                    "showLegend": true
-                },
-                "tooltip": {
-                    "mode": "multi",
-                    "sort": "desc"
-                }
-            },
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "prometheus",
-                        "uid": "${datasource}"
-                    },
-                    "editorMode": "code",
-                    "expr": "sum(rate(container_network_transmit_bytes_total{name=~\"inference-arena-.*\"}[30s])) by (name) / 1024",
-                    "legendFormat": "{{name}}",
-                    "range": true,
-                    "refId": "A"
-                }
-            ],
-            "title": "Network Transmit Rate",
-            "type": "timeseries"
-        },
-        {
-            "collapsed": false,
-            "gridPos": {
-                "h": 1,
-                "w": 24,
-                "x": 0,
-                "y": 17
+                "y": 21
             },
             "id": 7,
             "panels": [],
-            "title": "Infrastructure Services",
+            "title": "Infrastructure Status",
             "type": "row"
         },
         {
@@ -468,7 +285,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
             },
-            "description": "Current status of infrastructure services",
+            "description": "Current status of telemetry services",
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -511,7 +328,7 @@
                 "h": 4,
                 "w": 24,
                 "x": 0,
-                "y": 18
+                "y": 22
             },
             "id": 8,
             "options": {
@@ -553,7 +370,7 @@
                     "refId": "B"
                 }
             ],
-            "title": "Service Status",
+            "title": "Telemetry Health",
             "type": "stat"
         }
     ],
@@ -561,7 +378,7 @@
     "schemaVersion": 38,
     "tags": [
         "inference-arena",
-        "infrastructure",
+        "triton",
         "thesis"
     ],
     "templating": {
@@ -610,8 +427,8 @@
         ]
     },
     "timezone": "browser",
-    "title": "Inference Arena - Infrastructure",
-    "uid": "inference-arena-infra",
+    "title": "Inference Arena - Triton",
+    "uid": "inference-arena-triton",
     "version": 1,
     "weekStart": ""
 }
