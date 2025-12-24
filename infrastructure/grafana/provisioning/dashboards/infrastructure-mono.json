@@ -132,7 +132,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "sum(rate(container_cpu_usage_seconds_total{container_id=\"7239fe2d5554\"}[30s])) * 100",
+                    "expr": "sum(rate(container_cpu_usage_seconds_total{container_id=\"a4258fa3423a\"}[30s])) * 100",
                     "legendFormat": "monolithic",
                     "range": true,
                     "refId": "A"
@@ -236,7 +236,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "sum(container_memory_usage_bytes{container_id=\"7239fe2d5554\"}) / 1024 / 1024",
+                    "expr": "sum(container_memory_usage_bytes{container_id=\"a4258fa3423a\"}) / 1024 / 1024",
                     "legendFormat": "monolithic",
                     "range": true,
                     "refId": "A"

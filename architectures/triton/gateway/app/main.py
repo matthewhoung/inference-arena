@@ -1,10 +1,10 @@
-"""FastAPI application for monolithic inference service.
+"""FastAPI application for Triton gateway service.
 
-This module provides the HTTP API for the monolithic architecture:
-- POST /predict: Run detection + classification on an image
+This module provides the HTTP API for the Triton architecture:
+- POST /predict: Run detection + classification via Triton
 - GET /health: Service health check
 
-Models are downloaded from MinIO on startup and loaded into memory.
+Pipeline is orchestrated by the gateway, with inference delegated to Triton.
 
 Author: Matthew Hong
 """
@@ -17,12 +17,14 @@ from pathlib import Path
 from fastapi import FastAPI, File, HTTPException, UploadFile
 
 from .config import get_settings
-from .inference import InferencePipeline
 from .logger import request_id_var, setup_logging
 from .models import HealthResponse, PredictResponse
+from .pipeline import TritonInferencePipeline
+from .triton_client import TritonInferenceClient
 
 # Global pipeline (initialized during lifespan)
-pipeline: InferencePipeline | None = None
+pipeline: TritonInferencePipeline | None = None
+triton_client: TritonInferenceClient | None = None
 logger = logging.getLogger(__name__)
 
 
@@ -31,69 +33,63 @@ async def lifespan(app: FastAPI):
     """Application lifespan manager.
 
     Handles startup and shutdown:
-    - Startup: Setup logging, verify models, initialize pipeline
-    - Shutdown: Cleanup resources
-
-    Models are pre-downloaded by init container to /app/models volume.
+    - Startup: Setup logging, initialize Triton client, wait for ready, init pipeline
+    - Shutdown: Close Triton connection, cleanup resources
 
     Args:
         app: FastAPI application instance
     """
-    global pipeline
+    global pipeline, triton_client
     settings = get_settings()
 
     # Setup JSON structured logging
     setup_logging(settings.LOG_LEVEL)
-    logger.info("Starting monolithic service", extra={"port": settings.PORT})
+    logger.info("Starting Triton gateway", extra={"port": settings.PORT})
 
-    # Verify models exist (downloaded by init container)
-    models_dir = Path(settings.MODELS_DIR)
-    yolo_path = models_dir / "yolov5n.onnx"
-    mobilenet_path = models_dir / "mobilenetv2.onnx"
-    mobilenet_data_path = models_dir / "mobilenetv2.onnx.data"
+    # Initialize Triton client
+    logger.info(f"Connecting to Triton at {settings.TRITON_GRPC_ENDPOINT}")
+    triton_client = TritonInferenceClient(settings.TRITON_GRPC_ENDPOINT)
 
-    # Check all required model files
-    missing_files = []
-    if not yolo_path.exists():
-        missing_files.append(str(yolo_path))
-    if not mobilenet_path.exists():
-        missing_files.append(str(mobilenet_path))
-    if not mobilenet_data_path.exists():
-        missing_files.append(str(mobilenet_data_path))
+    # Wait for Triton server to be ready
+    logger.info("Waiting for Triton server...")
+    triton_client.wait_for_server_ready(timeout=settings.TRITON_TIMEOUT_SECONDS)
 
-    if missing_files:
-        error_msg = f"Missing model files (should be downloaded by init container): {', '.join(missing_files)}"
-        logger.error(error_msg)
-        raise RuntimeError(error_msg)
-
-    logger.info(f"Models verified at {models_dir}")
-    logger.info(f"  - YOLOv5n: {yolo_path.stat().st_size / (1024*1024):.2f} MB")
-    logger.info(f"  - MobileNetV2: {mobilenet_path.stat().st_size / (1024*1024):.2f} MB")
-    logger.info(f"  - MobileNetV2 data: {mobilenet_data_path.stat().st_size / (1024*1024):.2f} MB")
+    # Verify models are loaded
+    try:
+        yolo_metadata = triton_client.get_model_metadata("yolov5n")
+        mobilenet_metadata = triton_client.get_model_metadata("mobilenetv2")
+        logger.info(f"Triton models loaded: yolov5n (v{yolo_metadata['versions']}), "
+                   f"mobilenetv2 (v{mobilenet_metadata['versions']})")
+    except Exception as e:
+        logger.error(f"Failed to verify Triton models: {e}")
+        raise
 
     # Load ImageNet labels
-    labels_file = Path("/app/shared/data/imagenet_labels.txt")
+    labels_file = Path(settings.LABELS_FILE)
     if not labels_file.exists():
         # Fallback for local development
         labels_file = (
             Path(__file__).parent.parent.parent.parent / "src/shared/data/imagenet_labels.txt"
         )
+        logger.warning(f"Labels file not found at {settings.LABELS_FILE}, using fallback: {labels_file}")
 
     # Initialize inference pipeline
     logger.info("Initializing inference pipeline")
-    pipeline = InferencePipeline(models_dir, labels_file)
-    logger.info("Service ready for requests")
+    pipeline = TritonInferencePipeline(triton_client, labels_file)
+    logger.info("Gateway ready for requests")
 
     yield
 
     # Cleanup
-    logger.info("Shutting down monolithic service")
+    logger.info("Shutting down Triton gateway")
+    if triton_client:
+        triton_client.close()
 
 
 # Create FastAPI app with lifespan
 app = FastAPI(
-    title="Monolithic Inference Service",
-    description="True monolithic architecture with in-process detection and classification",
+    title="Triton Gateway Service",
+    description="Gateway for Triton Inference Server orchestration (detection + classification)",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -101,12 +97,12 @@ app = FastAPI(
 
 @app.post("/predict", response_model=PredictResponse)
 async def predict(file: UploadFile = File(...)):
-    """Run detection and classification on uploaded image.
+    """Run detection and classification via Triton.
 
     Pipeline:
     1. Decode uploaded image
-    2. YOLOv5n object detection
-    3. MobileNetV2 classification for each detection
+    2. YOLOv5n object detection (via Triton gRPC)
+    3. MobileNetV2 classification for each detection (via Triton gRPC)
     4. Return results with timing breakdown
 
     Args:
@@ -131,7 +127,7 @@ async def predict(file: UploadFile = File(...)):
         # Read image bytes
         image_bytes = await file.read()
 
-        # Run inference
+        # Run inference pipeline
         results, timing = pipeline.predict(image_bytes)
 
         logger.info(

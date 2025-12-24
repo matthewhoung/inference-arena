@@ -37,7 +37,7 @@ echo ""
 if [ -f "$DASHBOARD_DIR/infrastructure-mono.json" ]; then
     if [ -n "$MONO_ID" ]; then
         echo "Updating Monolithic dashboard..."
-        sed -i "s/container_id=\"[a-f0-9]\{12\}\"/container_id=\"$MONO_ID\"/g" "$DASHBOARD_DIR/infrastructure-mono.json"
+        sed -i "s/container_id=\\\\\"[a-f0-9]\\{12\\}\\\\\"/container_id=\\\\\"$MONO_ID\\\\\"/g" "$DASHBOARD_DIR/infrastructure-mono.json"
         echo "Updated to container_id=\"$MONO_ID\""
     else
         echo "Monolithic container not running - dashboard not updated"
@@ -50,10 +50,10 @@ if [ -f "$DASHBOARD_DIR/infrastructure-micro.json" ]; then
         echo "Updating Microservices dashboard..."
 
         # Replace all occurrences of "000000000000" with micro-detect ID
-        sed -i "s/container_id=\"000000000000\"/container_id=\"$MICRO_DETECT_ID\"/g" "$DASHBOARD_DIR/infrastructure-micro.json"
+        sed -i "s/container_id=\\\\\"000000000000\\\\\"/container_id=\\\\\"$MICRO_DETECT_ID\\\\\"/g" "$DASHBOARD_DIR/infrastructure-micro.json"
 
         # Replace all occurrences of "111111111111" with micro-classify ID
-        sed -i "s/container_id=\"111111111111\"/container_id=\"$MICRO_CLASSIFY_ID\"/g" "$DASHBOARD_DIR/infrastructure-micro.json"
+        sed -i "s/container_id=\\\\\"111111111111\\\\\"/container_id=\\\\\"$MICRO_CLASSIFY_ID\\\\\"/g" "$DASHBOARD_DIR/infrastructure-micro.json"
 
         echo "Updated micro-detect: $MICRO_DETECT_ID"
         echo "Updated micro-classify: $MICRO_CLASSIFY_ID"
@@ -68,10 +68,10 @@ if [ -f "$DASHBOARD_DIR/infrastructure-triton.json" ]; then
         echo "Updating Triton dashboard..."
 
         # Replace all occurrences of "222222222222" with triton-gateway ID
-        sed -i "s/container_id=\"222222222222\"/container_id=\"$TRITON_GATEWAY_ID\"/g" "$DASHBOARD_DIR/infrastructure-triton.json"
+        sed -i "s/container_id=\\\\\"222222222222\\\\\"/container_id=\\\\\"$TRITON_GATEWAY_ID\\\\\"/g" "$DASHBOARD_DIR/infrastructure-triton.json"
 
         # Replace all occurrences of "333333333333" with triton-server ID
-        sed -i "s/container_id=\"333333333333\"/container_id=\"$TRITON_SERVER_ID\"/g" "$DASHBOARD_DIR/infrastructure-triton.json"
+        sed -i "s/container_id=\\\\\"333333333333\\\\\"/container_id=\\\\\"$TRITON_SERVER_ID\\\\\"/g" "$DASHBOARD_DIR/infrastructure-triton.json"
 
         echo "Updated triton-gateway: $TRITON_GATEWAY_ID"
         echo "Updated triton-server: $TRITON_SERVER_ID"
