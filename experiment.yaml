@@ -398,6 +398,19 @@ changelog:
     author: "Matthew Hong"
     impact: "Implementation only - no change to hypotheses or controlled variables"
 
+  - date: "2025-12-23"
+    version: "1.2.0"
+    change: "Implemented monolithic architecture and updated infrastructure monitoring to support all three architectures dynamically"
+    justification: |
+      Required for experimental setup and fair comparison across architectures:
+      1. Monolithic Implementation: Completed Docker containerization of monolithic inference service with YOLOv5n detection and MobileNetV2 classification pipeline
+      2. Dynamic Monitoring: Updated Grafana dashboard from hardcoded monolithic-only metrics to dynamic template variables supporting all architectures (monolithic, microservices, triton)
+      3. Resource Consistency: Monolithic container configured with 2 vCPU and 4GB memory as specified in controlled_variables.resources.monolithic
+      4. Fair Comparison: Universal dashboard enables side-by-side performance comparison across all architectures using the same monitoring infrastructure
+      5. Chapter 3 Documentation: Updated thesis methodology chapter to reflect implementation details and experimental setup
+    author: "Matthew Hong"
+    impact: "Implementation and documentation - no change to hypotheses or controlled variables"
+
   # Template for future changes:
   # - date: "YYYY-MM-DD"
   #   version: "1.x.x"

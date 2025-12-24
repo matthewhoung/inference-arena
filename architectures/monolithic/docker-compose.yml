@@ -1,0 +1,138 @@
+# =============================================================================
+# Monolithic Architecture - Docker Compose Configuration
+# =============================================================================
+#
+# This compose file deploys the monolithic inference service with:
+# - CPU-only inference (2 vCPU, 4GB memory limits)
+# - Connection to MinIO via backend network
+# - Automatic model download on startup
+# - Health checks and restart policies
+#
+# Prerequisites:
+#   1. Infrastructure must be running:
+#      docker compose -f infrastructure/docker-compose.infra.yml up -d
+#
+#   2. Models must be uploaded to MinIO (yolov5n, mobilenetv2)
+#
+# Usage:
+#   docker compose -f architectures/monolithic/docker-compose.yml up -d
+#
+# Monitoring:
+#   - Service: http://localhost:8100/health
+#   - Metrics: Scraped by cAdvisor (visible in Grafana)
+#
+# Author: Matthew Hong
+# Specification Reference: Ch3 Methodology §3.4.1 Monolithic Architecture
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # Monolithic Service
+  # ===========================================================================
+  # True monolithic architecture: detection + classification in single process
+  # ===========================================================================
+  monolithic:
+    build:
+      context: ../..
+      dockerfile: architectures/monolithic/Dockerfile
+    image: inference-arena-monolithic:latest
+    container_name: inference-arena-monolithic
+
+    # -------------------------------------------------------------------------
+    # Resource Constraints (CPU-only, matching experiment.yaml)
+    # -------------------------------------------------------------------------
+    # These limits ensure fair comparison across architectures:
+    # - 2 vCPU cores (matching CONTAINER_VCPU in .env)
+    # - 4GB memory limit (matching CONTAINER_MEMORY in .env)
+    # - No GPU access (CPU-only inference)
+    # -------------------------------------------------------------------------
+    deploy:
+      resources:
+        limits:
+          cpus: '${CONTAINER_VCPU:-2}'
+          memory: ${CONTAINER_MEMORY:-4096}M
+        reservations:
+          cpus: '${CONTAINER_VCPU:-2}'
+          memory: ${CONTAINER_MEMORY:-4096}M
+
+    # -------------------------------------------------------------------------
+    # Environment Configuration
+    # -------------------------------------------------------------------------
+    # Service connects to MinIO via backend network to download models
+    # -------------------------------------------------------------------------
+    environment:
+      # MinIO Configuration (internal endpoint via Docker network)
+      MINIO_ENDPOINT: ${MINIO_INTERNAL_ENDPOINT:-minio:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-models}
+      MINIO_SECURE: "false"
+
+      # Service Configuration
+      LOG_LEVEL: INFO
+      PORT: 8100
+      MODELS_DIR: /app/models
+
+      # Force CPU-only inference (no CUDA)
+      ORT_DISABLE_ALL_EPS_EXCEPT_CPU: "1"
+
+    # -------------------------------------------------------------------------
+    # Port Mapping
+    # -------------------------------------------------------------------------
+    ports:
+      - "8100:8100"
+
+    # -------------------------------------------------------------------------
+    # Volume Mounts
+    # -------------------------------------------------------------------------
+    # Cache downloaded models to avoid re-downloading on restart
+    # -------------------------------------------------------------------------
+    volumes:
+      - monolithic-models:/app/models
+
+    # -------------------------------------------------------------------------
+    # Network Configuration
+    # -------------------------------------------------------------------------
+    # Connects to shared backend network for MinIO access and cAdvisor metrics
+    # -------------------------------------------------------------------------
+    networks:
+      - backend-network
+
+    # -------------------------------------------------------------------------
+    # Health Check
+    # -------------------------------------------------------------------------
+    # Ensures service is ready before accepting traffic
+    # -------------------------------------------------------------------------
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8100/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+    # -------------------------------------------------------------------------
+    # Restart Policy
+    # -------------------------------------------------------------------------
+    # Note: Ensure infrastructure (MinIO) is running before starting this service:
+    #   docker compose -f infrastructure/docker-compose.infra.yml up -d
+    # -------------------------------------------------------------------------
+    restart: unless-stopped
+
+# =============================================================================
+# Networks
+# =============================================================================
+# Connect to external backend network created by infrastructure compose file
+# =============================================================================
+networks:
+  backend-network:
+    name: inference-arena-backend
+    external: true
+
+# =============================================================================
+# Volumes
+# =============================================================================
+# Persistent storage for downloaded models
+# =============================================================================
+volumes:
+  monolithic-models:
+    name: inference-arena-monolithic-models

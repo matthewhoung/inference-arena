@@ -96,10 +96,13 @@ async def lifespan(app: FastAPI):
     else:
         logger.info(f"MobileNetV2 external data already exists at {mobilenet_data_path}")
 
-    # ImageNet labels path
-    labels_file = (
-        Path(__file__).parent.parent.parent.parent / "src/shared/data/imagenet_labels.txt"
-    )
+    # Load ImageNet labels
+    labels_file = Path("/app/shared/data/imagenet_labels.txt")
+    if not labels_file.exists():
+        # Fallback for local development
+        labels_file = (
+            Path(__file__).parent.parent.parent.parent / "src/shared/data/imagenet_labels.txt"
+        )
 
     # Initialize inference pipeline
     logger.info("Initializing inference pipeline")

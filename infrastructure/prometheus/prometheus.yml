@@ -63,12 +63,29 @@ scrape_configs:
     scrape_timeout: 1s
     # Metrics path for cAdvisor
     metrics_path: /metrics
-    # Relabel to clean up container names
+    # Relabel to add container names and filter
     metric_relabel_configs:
-      # Keep only inference-arena containers and system metrics
-      - source_labels: [name]
-        regex: 'inference-arena-.*|^$'
+      # Extract container name from Docker labels (if available)
+      - source_labels: [container_label_com_docker_compose_service]
+        target_label: container_name
+        regex: (.+)
+        replacement: $1
+      # Fallback: extract short container ID from path for display
+      - source_labels: [id]
+        target_label: container_id
+        regex: '/docker/([a-f0-9]{12}).*'
+        replacement: $1
+      # Keep only Docker containers (exclude system cgroups)
+      - source_labels: [id]
+        regex: '/docker/.*'
         action: keep
+      # Filter: Keep only monolithic container for thesis (exclude infrastructure)
+      # Filters by ID pattern containing "91c02a3e" (update when container recreated)
+      # To see all containers, comment out lines 85-87
+      # DISABLED: Allow all containers for dynamic architecture monitoring
+      # - source_labels: [id]
+      #   regex: '.*/91c02a3ed6d5.*'
+      #   action: keep
       # Drop high-cardinality metrics we don't need
       - source_labels: [__name__]
         regex: 'container_tasks_state|container_memory_failures_total'
