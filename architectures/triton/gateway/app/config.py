@@ -1,8 +1,7 @@
 """Configuration module using pydantic-settings.
 
-This module provides environment variable management for the monolithic
-inference service. Uses pydantic-settings for automatic validation and
-.env file support.
+This module provides environment variable management for the Triton gateway
+service. Uses pydantic-settings for automatic validation and .env file support.
 
 Author: Matthew Hong
 """
@@ -15,17 +14,19 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Application settings loaded from environment variables.
 
-    Models are pre-downloaded by init container to MODELS_DIR.
-
     Attributes:
+        TRITON_GRPC_ENDPOINT: Triton server gRPC endpoint (host:port)
+        TRITON_TIMEOUT_SECONDS: Maximum wait time for Triton server ready
         LOG_LEVEL: Logging level (DEBUG, INFO, WARNING, ERROR)
         PORT: FastAPI server port
-        MODELS_DIR: Directory containing pre-downloaded models
+        LABELS_FILE: Path to ImageNet labels file
     """
 
+    TRITON_GRPC_ENDPOINT: str = "localhost:8001"
+    TRITON_TIMEOUT_SECONDS: int = 60
     LOG_LEVEL: str = "INFO"
-    PORT: int = 8100
-    MODELS_DIR: str = "/app/models"
+    PORT: int = 8300
+    LABELS_FILE: str = "/app/shared/data/imagenet_labels.txt"
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -51,7 +51,6 @@ RUN pip install --no-cache-dir uv && \
     "python-multipart>=0.0.6" \
     "httpx>=0.26.0" \
     "pydantic-settings>=2.0.0" \
-    "minio>=7.2.0" \
     "prometheus-client>=0.19.0"
 
 # Copy shared library code

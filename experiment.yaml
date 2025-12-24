@@ -411,6 +411,32 @@ changelog:
     author: "Matthew Hong"
     impact: "Implementation and documentation - no change to hypotheses or controlled variables"
 
+  - date: "2025-12-24"
+    version: "1.3.0"
+    change: "Standardized model loading strategy across all architectures using init containers and Docker volumes"
+    justification: |
+      CRITICAL for experimental validity and control variable consistency:
+      1. Confounding Variable Elimination: Previous implementation had different model loading strategies that would invalidate experimental results
+         - Monolithic: Downloaded models from MinIO during app startup (included in latency measurements)
+         - Triton: Downloaded models via init container before service start (excluded from measurements)
+      2. Standardized Approach: All architectures now use identical init container pattern
+         - Created init_monolith_models.py for monolithic architecture
+         - Updated docker-compose.yml with monolithic-init service
+         - Removed MinIO download logic from main.py (now expects pre-downloaded models)
+         - Models stored in Docker volumes shared between init and service containers
+      3. Control Variable Compliance: Ensures model loading overhead does not confound performance metrics across architectures
+      4. Experimental Integrity: Model initialization time is now excluded from all latency measurements consistently
+      5. Code Cleanup: Removed unused local model directories and MinIO dependencies from service containers
+    author: "Matthew Hong"
+    impact: "CRITICAL - Ensures experimental validity by standardizing controlled variables. No change to hypotheses."
+    files_modified:
+      - architectures/monolithic/init_monolith_models.py (created)
+      - architectures/monolithic/docker-compose.yml (added init container)
+      - architectures/monolithic/app/main.py (removed MinIO download, added verification)
+      - architectures/monolithic/app/config.py (removed MinIO settings)
+      - architectures/monolithic/Dockerfile (removed minio dependency)
+      - architectures/triton/init_triton_models.py (added symlink for external data files)
+
   # Template for future changes:
   # - date: "YYYY-MM-DD"
   #   version: "1.x.x"

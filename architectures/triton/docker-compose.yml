@@ -1,51 +1,53 @@
 # =============================================================================
-# Monolithic Architecture - Docker Compose Configuration
+# Triton Architecture - Docker Compose Configuration
 # =============================================================================
 #
-# This compose file deploys the monolithic inference service with:
-# - CPU-only inference (2 vCPU, 4GB memory limits)
-# - Connection to MinIO via backend network
-# - Automatic model download on startup
-# - Health checks and restart policies
+# This compose file deploys the Triton architecture with:
+# - Init container to download models from MinIO
+# - Triton Inference Server (2 vCPU, 4GB memory)
+# - Gateway service for HTTP orchestration (2 vCPU, 4GB memory)
 #
 # Prerequisites:
 #   1. Infrastructure must be running:
 #      docker compose -f infrastructure/docker-compose.infra.yml up -d
 #
-#   2. Models must be uploaded to MinIO (yolov5n, mobilenetv2)
+#   2. Models and config.pbtxt must be uploaded to MinIO:
+#      python infrastructure/minio/init_models.py --force
 #
 # Usage:
-#   docker compose -f architectures/monolithic/docker-compose.yml up -d
+#   docker compose -f architectures/triton/docker-compose.yml up -d
 #
 # Monitoring:
-#   - Service: http://localhost:8100/health
+#   - Gateway: http://localhost:8300/health
+#   - Triton HTTP: http://localhost:8000/v2/health/ready
+#   - Triton gRPC: localhost:8001
 #   - Metrics: Scraped by cAdvisor (visible in Grafana)
 #
 # Author: Matthew Hong
-# Specification Reference: Ch3 Methodology §3.4.1 Monolithic Architecture
+# Specification Reference: Ch3 Methodology §3.4.3 Triton Architecture
 # =============================================================================
 
 services:
   # ===========================================================================
   # Init Container - Download Models from MinIO
   # ===========================================================================
-  # Runs once at startup to populate the model directory volume
+  # Runs once at startup to populate the model repository volume
   # ===========================================================================
-  monolithic-init:
+  triton-init:
     image: python:3.11-slim
-    container_name: inference-arena-monolithic-init
+    container_name: inference-arena-triton-init
     command: >
       sh -c "
         pip install --no-cache-dir minio &&
-        python /scripts/init_monolith_models.py
+        python /scripts/init_triton_models.py
       "
 
     # -------------------------------------------------------------------------
     # Volumes
     # -------------------------------------------------------------------------
     volumes:
-      - monolithic-models:/app/models
-      - ./init_monolith_models.py:/scripts/init_monolith_models.py:ro
+      - triton-models:/models
+      - ./init_triton_models.py:/scripts/init_triton_models.py:ro
 
     # -------------------------------------------------------------------------
     # Environment Configuration
@@ -70,66 +72,52 @@ services:
     restart: "no"
 
   # ===========================================================================
-  # Monolithic Service
+  # Triton Inference Server
   # ===========================================================================
-  # True monolithic architecture: detection + classification in single process
+  # NVIDIA Triton Inference Server serving ONNX models
   # ===========================================================================
-  monolithic:
-    build:
-      context: ../..
-      dockerfile: architectures/monolithic/Dockerfile
-    image: inference-arena-monolithic:latest
-    container_name: inference-arena-monolithic
-
-    # -------------------------------------------------------------------------
-    # Resource Constraints (CPU-only, matching experiment.yaml)
-    # -------------------------------------------------------------------------
-    # These limits ensure fair comparison across architectures:
-    # - 2 vCPU cores (matching CONTAINER_VCPU in .env)
-    # - 4GB memory limit (matching CONTAINER_MEMORY in .env)
-    # - No GPU access (CPU-only inference)
-    # -------------------------------------------------------------------------
-    deploy:
-      resources:
-        limits:
-          cpus: '${CONTAINER_VCPU:-2}'
-          memory: ${CONTAINER_MEMORY:-4096}M
-        reservations:
-          cpus: '${CONTAINER_VCPU:-2}'
-          memory: ${CONTAINER_MEMORY:-4096}M
-
-    # -------------------------------------------------------------------------
-    # Environment Configuration
-    # -------------------------------------------------------------------------
-    # Models are pre-downloaded by init container to /app/models volume
-    # -------------------------------------------------------------------------
-    environment:
-      # Service Configuration
-      LOG_LEVEL: INFO
-      PORT: 8100
-      MODELS_DIR: /app/models
-
-      # Force CPU-only inference (no CUDA)
-      ORT_DISABLE_ALL_EPS_EXCEPT_CPU: "1"
+  triton-server:
+    image: nvcr.io/nvidia/tritonserver:24.08-py3
+    container_name: inference-arena-triton-server
+    command: tritonserver --model-repository=/models --log-verbose=1
 
     # -------------------------------------------------------------------------
     # Port Mapping
     # -------------------------------------------------------------------------
     ports:
-      - "8100:8100"
+      - "8000:8000"  # HTTP inference
+      - "8001:8001"  # gRPC inference
+      - "8002:8002"  # Prometheus metrics
 
     # -------------------------------------------------------------------------
-    # Volume Mounts
+    # Volumes
     # -------------------------------------------------------------------------
-    # Cache downloaded models to avoid re-downloading on restart
+    # Mount model repository from init container (read-only)
     # -------------------------------------------------------------------------
     volumes:
-      - monolithic-models:/app/models
+      - triton-models:/models:ro
+
+    # -------------------------------------------------------------------------
+    # Resource Constraints (CPU-only, matching experiment.yaml)
+    # -------------------------------------------------------------------------
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4096M
+        reservations:
+          cpus: '2'
+          memory: 4096M
+
+    # -------------------------------------------------------------------------
+    # Environment Configuration
+    # -------------------------------------------------------------------------
+    environment:
+      # Force CPU-only inference (no CUDA)
+      ORT_DISABLE_ALL_EPS_EXCEPT_CPU: "1"
 
     # -------------------------------------------------------------------------
     # Network Configuration
-    # -------------------------------------------------------------------------
-    # Connects to shared backend network for MinIO access and cAdvisor metrics
     # -------------------------------------------------------------------------
     networks:
       - backend-network
@@ -140,16 +128,87 @@ services:
     # Wait for init container to download models successfully
     # -------------------------------------------------------------------------
     depends_on:
-      monolithic-init:
+      triton-init:
         condition: service_completed_successfully
 
     # -------------------------------------------------------------------------
     # Health Check
     # -------------------------------------------------------------------------
-    # Ensures service is ready before accepting traffic
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v2/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+    # -------------------------------------------------------------------------
+    # Restart Policy
+    # -------------------------------------------------------------------------
+    restart: unless-stopped
+
+  # ===========================================================================
+  # Gateway Service
+  # ===========================================================================
+  # FastAPI service orchestrating detection → classification pipeline
+  # ===========================================================================
+  triton-gateway:
+    build:
+      context: ../..
+      dockerfile: architectures/triton/gateway/Dockerfile
+    image: inference-arena-triton-gateway:latest
+    container_name: inference-arena-triton-gateway
+
+    # -------------------------------------------------------------------------
+    # Port Mapping
+    # -------------------------------------------------------------------------
+    ports:
+      - "8300:8300"
+
+    # -------------------------------------------------------------------------
+    # Resource Constraints (matching experiment.yaml)
+    # -------------------------------------------------------------------------
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4096M
+        reservations:
+          cpus: '2'
+          memory: 4096M
+
+    # -------------------------------------------------------------------------
+    # Environment Configuration
+    # -------------------------------------------------------------------------
+    environment:
+      # Triton Configuration
+      TRITON_GRPC_ENDPOINT: triton-server:8001
+      TRITON_TIMEOUT_SECONDS: "60"
+
+      # Service Configuration
+      LOG_LEVEL: INFO
+      PORT: 8300
+      LABELS_FILE: /app/shared/data/imagenet_labels.txt
+
+    # -------------------------------------------------------------------------
+    # Network Configuration
+    # -------------------------------------------------------------------------
+    networks:
+      - backend-network
+
+    # -------------------------------------------------------------------------
+    # Startup Dependencies
+    # -------------------------------------------------------------------------
+    # Wait for Triton server to be healthy before starting
+    # -------------------------------------------------------------------------
+    depends_on:
+      triton-server:
+        condition: service_healthy
+
+    # -------------------------------------------------------------------------
+    # Health Check
     # -------------------------------------------------------------------------
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8100/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8300/health')"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -157,9 +216,6 @@ services:
 
     # -------------------------------------------------------------------------
     # Restart Policy
-    # -------------------------------------------------------------------------
-    # Note: Ensure infrastructure (MinIO) is running before starting this service:
-    #   docker compose -f infrastructure/docker-compose.infra.yml up -d
     # -------------------------------------------------------------------------
     restart: unless-stopped
 
@@ -176,8 +232,8 @@ networks:
 # =============================================================================
 # Volumes
 # =============================================================================
-# Persistent storage for downloaded models
+# Shared volume for Triton model repository
 # =============================================================================
 volumes:
-  monolithic-models:
-    name: inference-arena-monolithic-models
+  triton-models:
+    name: inference-arena-triton-models
