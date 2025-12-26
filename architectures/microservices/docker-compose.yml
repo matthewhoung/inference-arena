@@ -1,0 +1,168 @@
+# =============================================================================
+# Microservices Architecture - Docker Compose Configuration
+# =============================================================================
+#
+# Two-service architecture:
+#   - Detection Service (8200): FastAPI HTTP + gRPC client
+#   - Classification Service (8201): gRPC server only
+#
+# Flow: Client -> HTTP -> Detection -> gRPC -> Classification
+#
+# Key Features:
+#   - Init container downloads models from MinIO
+#   - Detection depends on Classification health
+#   - Resource limits: 2 vCPU, 4GB RAM per container (4 vCPU total)
+#   - Parallel classification via asyncio.gather (H1b requirement)
+#
+# Usage:
+#   # Start infrastructure first (from infrastructure/)
+#   docker compose -f docker-compose.infra.yml up -d
+#
+#   # Upload models (if not done)
+#   python infrastructure/minio/init_models.py
+#
+#   # Start microservices
+#   cd architectures/microservices
+#   docker compose up -d
+#
+# Author: Matthew Hong
+# =============================================================================
+
+services:
+  # ===========================================================================
+  # Init Container - Download Models from MinIO
+  # ===========================================================================
+  microservices-init:
+    image: python:3.11-slim
+    container_name: inference-arena-microservices-init
+    command: >
+      sh -c "
+        pip install --no-cache-dir minio &&
+        python /scripts/init_microservices_models.py
+      "
+    volumes:
+      - microservices-models:/app/models
+      - ./init_microservices_models.py:/scripts/init_microservices_models.py:ro
+    environment:
+      MINIO_INTERNAL_ENDPOINT: ${MINIO_INTERNAL_ENDPOINT:-minio:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-models}
+    networks:
+      - backend-network
+    restart: "no"
+
+  # ===========================================================================
+  # Classification Service (gRPC only, port 8201)
+  # ===========================================================================
+  classification:
+    build:
+      context: ../..
+      dockerfile: architectures/microservices/classification/Dockerfile
+    image: inference-arena-classification:latest
+    container_name: inference-arena-classification
+
+    deploy:
+      resources:
+        limits:
+          cpus: '${CONTAINER_VCPU:-2}'
+          memory: ${CONTAINER_MEMORY:-4096}M
+        reservations:
+          cpus: '${CONTAINER_VCPU:-2}'
+          memory: ${CONTAINER_MEMORY:-4096}M
+
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      PORT: 8201
+      MODELS_DIR: /app/models
+      LABELS_FILE: /app/shared/data/imagenet_labels.txt
+      # CPU-only inference
+      ORT_DISABLE_ALL_EPS_EXCEPT_CPU: "1"
+
+    # No port exposed externally - only accessible via gRPC from detection
+    expose:
+      - "8201"
+
+    volumes:
+      - microservices-models:/app/models:ro
+
+    networks:
+      - backend-network
+
+    depends_on:
+      microservices-init:
+        condition: service_completed_successfully
+
+    # gRPC health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import grpc; c=grpc.insecure_channel('localhost:8201'); grpc.channel_ready_future(c).result(timeout=5)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    restart: unless-stopped
+
+  # ===========================================================================
+  # Detection Service (HTTP + gRPC client, port 8200)
+  # ===========================================================================
+  detection:
+    build:
+      context: ../..
+      dockerfile: architectures/microservices/detection/Dockerfile
+    image: inference-arena-detection:latest
+    container_name: inference-arena-detection
+
+    deploy:
+      resources:
+        limits:
+          cpus: '${CONTAINER_VCPU:-2}'
+          memory: ${CONTAINER_MEMORY:-4096}M
+        reservations:
+          cpus: '${CONTAINER_VCPU:-2}'
+          memory: ${CONTAINER_MEMORY:-4096}M
+
+    environment:
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      PORT: 8200
+      MODELS_DIR: /app/models
+      CLASSIFICATION_GRPC_ENDPOINT: classification:8201
+      # CPU-only inference
+      ORT_DISABLE_ALL_EPS_EXCEPT_CPU: "1"
+
+    ports:
+      - "8200:8200"
+
+    volumes:
+      - microservices-models:/app/models:ro
+
+    networks:
+      - backend-network
+
+    depends_on:
+      classification:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8200/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+    restart: unless-stopped
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  backend-network:
+    name: inference-arena-backend
+    external: true
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  microservices-models:
+    name: inference-arena-microservices-models

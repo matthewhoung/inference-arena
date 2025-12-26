@@ -19,10 +19,10 @@ echo "🔍 Discovering container IDs..."
 
 # Get container IDs (12-char short hash)
 MONO_ID=$(docker ps --filter "name=inference-arena-monolithic" --format "{{.ID}}" 2>/dev/null || echo "")
-MICRO_DETECT_ID=$(docker ps --filter "name=micro-detect" --format "{{.ID}}" 2>/dev/null || echo "")
-MICRO_CLASSIFY_ID=$(docker ps --filter "name=micro-classify" --format "{{.ID}}" 2>/dev/null || echo "")
-TRITON_GATEWAY_ID=$(docker ps --filter "name=triton-gateway" --format "{{.ID}}" 2>/dev/null || echo "")
-TRITON_SERVER_ID=$(docker ps --filter "name=triton-server" --format "{{.ID}}" 2>/dev/null || echo "")
+MICRO_DETECT_ID=$(docker ps --filter "name=inference-arena-detection" --format "{{.ID}}" 2>/dev/null || echo "")
+MICRO_CLASSIFY_ID=$(docker ps --filter "name=inference-arena-classification" --format "{{.ID}}" 2>/dev/null || echo "")
+TRITON_GATEWAY_ID=$(docker ps --filter "name=inference-arena-triton-gateway" --format "{{.ID}}" 2>/dev/null || echo "")
+TRITON_SERVER_ID=$(docker ps --filter "name=inference-arena-triton-server" --format "{{.ID}}" 2>/dev/null || echo "")
 
 echo ""
 echo "Container ID Mapping:"
