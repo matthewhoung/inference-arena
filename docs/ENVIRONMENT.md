@@ -15,24 +15,32 @@ This guide explains how to configure the Inference Arena project using environme
 
 ## Quick Start
 
-### Option A: Automated Setup (Recommended)
+### Option A: Use Defaults (Recommended)
 
-Run the cross-platform Python setup script:
+For local development, the default credentials work out of the box:
 
 ```bash
-python scripts/setup_env.py
+make install      # Install dependencies
+make start-infra  # Start MinIO, Prometheus, Grafana
+```
+
+Default credentials: `minioadmin` / `admin` - fine for local testing.
+
+### Option B: Custom Configuration
+
+For production or custom passwords, run the setup script:
+
+```bash
+python scripts/setup/install.py
 ```
 
 The script will:
 - Guide you through configuration options (Development / Production / Custom)
 - Generate cryptographically secure passwords (Production mode)
 - Create `.env` from `.env.example`
-- Verify `.gitignore` excludes secrets
 - Work on Windows, macOS, and Linux
 
-**For thesis development:** Choose option 1 (Development) for quick local testing.
-
-### Option B: Manual Setup
+### Option C: Manual Setup
 
 1. **Copy the template:**
    - Copy `.env.example` to `.env` in the project root
@@ -159,7 +167,7 @@ For local development (your laptop):
 - Services only accessible from localhost
 
 For shared servers or cloud deployment:
-- Use production mode in `setup_env.py` (generates secure passwords)
+- Use production mode in `scripts/setup/install.py` (generates secure passwords)
 - Or manually set strong passwords (16+ characters, mixed case, numbers, symbols)
 
 ### 3. Rotate Credentials
@@ -335,14 +343,13 @@ docker compose -f infrastructure/docker-compose.infra.yml up -d --build
 
 **Development (local laptop):**
 ```bash
-python scripts/setup_env.py
-# Choose option 1: Development
-# Uses default passwords, localhost endpoints
+make install      # Just use defaults
+make start-infra
 ```
 
 **Production (shared server/cloud):**
 ```bash
-python scripts/setup_env.py
+python scripts/setup/install.py
 # Choose option 2: Production
 # Generates secure passwords, saves them for you to store in password manager
 ```

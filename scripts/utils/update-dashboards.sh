@@ -13,7 +13,10 @@
 
 set -e
 
-DASHBOARD_DIR="/home/hong/projects/inference-arena/infrastructure/grafana/provisioning/dashboards"
+# Get the directory where this script is located (portable path resolution)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+DASHBOARD_DIR="$PROJECT_ROOT/infrastructure/grafana/provisioning/dashboards"
 
 echo "🔍 Discovering container IDs..."
 

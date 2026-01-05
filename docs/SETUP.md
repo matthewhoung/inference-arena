@@ -4,177 +4,122 @@ Quick start guide for thesis committee members and collaborators.
 
 ## Prerequisites
 
-- **Python 3.11+** (Required for all project components)
-- **Docker & Docker Compose** (For infrastructure services)
-- **Git** (For version control)
-
-## Setup Steps
-
-### 1. Clone the Repository
+- **Python 3.11+**
+- **Docker & Docker Compose**
+- **[uv](https://docs.astral.sh/uv/)** - Modern Python package manager
 
 ```bash
+# Install uv (macOS/Linux)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+## Quick Setup (3 Commands)
+
+```bash
+# 1. Clone
 git clone https://github.com/matthewhoung/inference-arena.git
 cd inference-arena
+
+# 2. Install dependencies
+make install
+
+# 3. Run tests
+make test
 ```
 
-### 2. Install Python Dependencies
+That's it. You're ready to run experiments.
+
+## Run Experiments
 
 ```bash
-# Install project in development mode with test dependencies
-pip install -e ".[dev]"
+# Start infrastructure (MinIO, Prometheus, Grafana)
+make start-infra
+
+# Start an architecture
+make start-mono     # Architecture A: Monolithic
+make start-micro    # Architecture B: Microservices
+make start-triton   # Architecture C: Triton
+
+# Stop everything
+make stop-all
 ```
 
-This installs:
-- Core dependencies: `pyyaml`, `opencv-python`, `numpy`
-- Dev dependencies: `pytest`, `black`, `ruff`, `mypy`
-
-### 3. Configure Environment
-
-Run the cross-platform setup script:
-
-```bash
-python scripts/setup_env.py
-```
-
-**Choose configuration mode:**
-- **Development (1):** Quick setup with default passwords - great for testing
-- **Production (2):** Auto-generates secure passwords - use for actual experiments
-- **Custom (3):** Enter your own credentials
-
-The script creates `.env` from `.env.example` and ensures it's gitignored.
-
-### 4. Verify Configuration
-
-Check that experiment.yaml loads correctly:
-
-```bash
-python -c "from shared.config import get_config; print('✓ Config loaded successfully')"
-```
-
-Run tests to verify setup:
-
-```bash
-# Run all tests
-pytest
-
-# Or just config tests
-pytest tests/shared/test_config.py -v
-```
-
-### 5. Start Infrastructure Services
-
-```bash
-docker compose -f infrastructure/docker-compose.infra.yml up -d
-```
-
-Verify services are running:
-
-```bash
-docker ps
-```
-
-You should see 4 containers:
-- `inference-arena-minio` (port 9000, 9001)
-- `inference-arena-cadvisor` (port 8080)
-- `inference-arena-prometheus` (port 9090)
-- `inference-arena-grafana` (port 3000)
-
-### 6. Access Services
+## Service Endpoints
 
 | Service | URL | Default Credentials |
 |---------|-----|---------------------|
-| MinIO Console | http://localhost:9001 | minioadmin / minioadmin* |
-| Grafana | http://localhost:3000 | admin / admin* |
-| Prometheus | http://localhost:9090 | (no auth) |
-| cAdvisor | http://localhost:8080 | (no auth) |
+| MinIO Console | http://localhost:9001 | minioadmin / minioadmin |
+| Grafana | http://localhost:3000 | admin / admin |
+| Prometheus | http://localhost:9090 | - |
+| cAdvisor | http://localhost:8080 | - |
 
-*\*If you used production mode, check the output from `setup_env.py` for generated passwords*
+## Available Make Commands
+
+Run `make help` to see all commands:
+
+| Command | Description |
+|---------|-------------|
+| `make install` | Install all dependencies |
+| `make test` | Run all tests with coverage |
+| `make test-fast` | Run tests without slow markers |
+| `make lint` | Run linters (ruff + mypy) |
+| `make format` | Format code (black + ruff fix) |
+| `make start-infra` | Start infrastructure services |
+| `make start-mono` | Start monolithic architecture |
+| `make start-micro` | Start microservices architecture |
+| `make start-triton` | Start Triton architecture |
+| `make stop-all` | Stop all containers |
+| `make clean` | Remove caches and build artifacts |
 
 ## Project Structure
 
 ```
 inference-arena/
-├── experiment.yaml          # Single source of truth for experimental config
-├── .env.example             # Environment template (committed)
-├── .env                     # Your secrets (gitignored, created by setup script)
-├── pyproject.toml           # Python dependencies and project config
-├── src/
-│   └── shared/
-│       ├── config.py        # Config loader (reads experiment.yaml)
-│       ├── processing/      # Preprocessing pipelines
-│       └── model/           # Model registry and exporters
+├── experiment.yaml              # Single source of truth
+├── Makefile                     # Common commands
+├── pyproject.toml               # Python dependencies
+├── src/shared/
+│   ├── config.py                # Loads experiment.yaml
+│   ├── processing/              # Preprocessing pipelines
+│   ├── model/                   # Model registry
+│   └── triton/                  # Triton config & MinIO utilities
+├── architectures/
+│   ├── monolithic/              # Architecture A
+│   ├── microservices/           # Architecture B
+│   └── triton/                  # Architecture C
 ├── infrastructure/
-│   ├── docker-compose.infra.yml  # Infrastructure services
-│   └── minio/               # MinIO initialization scripts
-├── tests/                   # Comprehensive test suite
-└── scripts/
-    └── setup_env.py         # Environment setup utility
+│   ├── docker-compose.infra.yml # MinIO, Prometheus, Grafana
+│   ├── grafana/                 # Dashboards
+│   └── prometheus/              # Scrape config
+├── scripts/
+│   ├── setup/                   # Environment & proto setup
+│   ├── models/                  # Export & upload models
+│   └── utils/                   # Utilities
+└── tests/                       # 100+ tests
 ```
 
 ## Configuration Philosophy
 
-This project uses **two complementary configuration systems**:
-
 ### `experiment.yaml` - Scientific Configuration
-- **Purpose:** Reproducible experimental parameters
-- **Contents:** Model specs, preprocessing params, controlled variables, hypotheses
-- **Git Status:** ✅ Committed (version controlled)
-- **Who reads it:** Python code via `shared.config` module
+- Model specifications, preprocessing params, controlled variables
+- Pre-registered hypotheses and predictions
+- **Git-tracked** for reproducibility
 
 ### `.env` - Deployment Configuration
-- **Purpose:** Environment-specific secrets and ports
-- **Contents:** Passwords, endpoints, local overrides
-- **Git Status:** ❌ Never committed (in .gitignore)
-- **Who reads it:** Docker Compose and infrastructure scripts
+- Infrastructure credentials, port mappings
+- **Git-ignored** (secrets)
 
-**Key principle:** `experiment.yaml` defines **WHAT** you're testing, `.env` defines **WHERE** and **HOW** to run it.
-
-## Common Tasks
-
-### Run All Tests
-```bash
-pytest -v
-```
-
-### Run Specific Test Suite
-```bash
-pytest tests/shared/test_config.py -v
-pytest tests/shared/test_processing.py -v
-pytest tests/infrastructure/ -v -m integration  # requires Docker
-```
-
-### Validate experiment.yaml
-```bash
-python -c "from shared.config import validate_config; validate_config(); print('✓ Valid')"
-```
-
-### Check Code Quality
-```bash
-# Format code
-black src/ tests/
-
-# Lint
-ruff check src/ tests/
-
-# Type check
-mypy src/
-```
-
-### Stop Infrastructure
-```bash
-docker compose -f infrastructure/docker-compose.infra.yml down
-
-# Remove volumes (clean slate)
-docker compose -f infrastructure/docker-compose.infra.yml down -v
-```
+**Key principle:** `experiment.yaml` defines **WHAT** you're testing, `.env` defines **WHERE** to run it.
 
 ## Troubleshooting
 
-### "No module named 'yaml'" or "No module named 'shared'"
+### "No module named 'shared'"
 
 ```bash
-# Reinstall in editable mode
-pip install -e ".[dev]"
+make install
 ```
 
 ### Docker services won't start
@@ -185,52 +130,32 @@ docker info
 
 # View logs
 docker compose -f infrastructure/docker-compose.infra.yml logs
-
-# Restart services
-docker compose -f infrastructure/docker-compose.infra.yml restart
 ```
 
-### Tests failing after config changes
+### Port conflicts
 
-```bash
-# Reload Python to clear cached config
-python -c "from shared.config import reload_config; reload_config()"
-
-# Or just restart your Python interpreter
-```
-
-### Port conflicts (e.g., "port 9000 already in use")
-
-Edit `.env` to use different ports:
-```bash
-MINIO_API_PORT=9002
-GRAFANA_PORT=3001
-# etc.
-```
-
-Then restart services.
+Edit `.env` to use different ports, then restart services.
 
 ## For Thesis Committee Members
 
 This project demonstrates:
 
-1. **Reproducible Research:** All experimental parameters in version-controlled `experiment.yaml`
-2. **Pre-registered Hypotheses:** Hypotheses defined before data collection with changelog tracking
-3. **Single Source of Truth:** No hardcoded values; all preprocessing/model specs from config
-4. **Comprehensive Testing:** 100+ tests validating configuration consistency
-5. **Production-Grade Engineering:** Proper secrets management, monitoring, and infrastructure-as-code
+1. **Reproducible Research** - All parameters in version-controlled `experiment.yaml`
+2. **Pre-registered Hypotheses** - Defined before data collection
+3. **Single Source of Truth** - No hardcoded values
+4. **Comprehensive Testing** - 100+ tests
+5. **Production-Grade Engineering** - Monitoring, infrastructure-as-code
 
-To reproduce the experiments:
-1. Follow setup steps above
-2. Review `experiment.yaml` to see controlled variables and hypotheses
-3. Run experiment scripts (see methodology chapter in thesis)
+To reproduce experiments:
+1. Follow quick setup above
+2. Review `experiment.yaml` for controlled variables
+3. Run load tests (see thesis methodology chapter)
 
 ## Documentation
 
-- **[ENVIRONMENT.md](../ENVIRONMENT.md)** - Detailed environment configuration guide
-- **[experiment.yaml](../experiment.yaml)** - Full experimental specification with inline docs
-- **Test files** - Each test file has docstrings explaining what's being validated
+- **[ENVIRONMENT.md](ENVIRONMENT.md)** - Environment configuration details
+- **[experiment.yaml](../experiment.yaml)** - Full experimental specification
 
 ## Questions?
 
-See the thesis methodology chapter for detailed experimental design and rationale.
+See the thesis methodology chapter for detailed experimental design.

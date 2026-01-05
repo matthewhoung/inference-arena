@@ -18,29 +18,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.11
 
       - name: Install dependencies
-        run: |
-          pip install -e ".[dev]"
+        run: uv sync --extra dev
 
       - name: Check formatting with Black
-        run: |
-          black --check src/ tests/
-        continue-on-error: false
+        run: uv run black --check src/ tests/
 
       - name: Lint with Ruff
-        run: |
-          ruff check src/ tests/
-        continue-on-error: false
+        run: uv run ruff check src/ tests/
 
       - name: Type check with MyPy
-        run: |
-          mypy src/
+        run: uv run mypy src/
         continue-on-error: true
 
   # =============================================================================
@@ -57,31 +53,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+          enable-cache: true
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: |
-          pip install -e ".[dev,infra,model]"
-
-      - name: Run config tests
-        run: |
-          pytest tests/shared/test_config.py -v
-
-      - name: Run preprocessing tests
-        run: |
-          pytest tests/shared/test_processing.py -v
+        run: uv sync --extra dev --extra infra --extra model
 
       - name: Run all unit tests with coverage
         run: |
-          pytest tests/ -v \
+          uv run pytest tests/ -v \
             --cov=src/shared \
             --cov-report=term-missing \
             --cov-report=xml \
             --ignore=tests/infrastructure/test_integration.py
+
+      - name: Check coverage threshold (80%)
+        run: uv run coverage report --fail-under=80
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -101,27 +93,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.11
 
       - name: Install dependencies
-        run: |
-          pip install -e ".[dev,model]"
+        run: uv sync --extra dev --extra model
 
       - name: Validate experiment.yaml loads
         run: |
-          python -c "from shared.config import get_config; config = get_config(); print('✓ Config loaded successfully')"
+          uv run python -c "from shared.config import get_config; config = get_config(); print('✓ Config loaded successfully')"
 
       - name: Validate experiment.yaml schema
         run: |
-          python -c "from shared.config import validate_config; validate_config(); print('✓ Config validation passed')"
+          uv run python -c "from shared.config import validate_config; validate_config(); print('✓ Config validation passed')"
 
       - name: Check config consistency
-        run: |
-          pytest tests/shared/test_config.py::TestConfigIntegration -v
+        run: uv run pytest tests/shared/test_config.py::TestConfigIntegration -v
 
       - name: Verify no hardcoded preprocessing values
         run: |
@@ -167,7 +159,7 @@ jobs:
       - name: Check for hardcoded passwords
         run: |
           # Search for potential hardcoded passwords (case-insensitive)
-          if git grep -i "password.*=" -- "*.py" "*.yml" "*.yaml" | grep -v "\.env\.example\|ENVIRONMENT\.md\|SETUP\.md\|setup_env\.py" | grep -v "# " | grep -E "(minioadmin|admin)"; then
+          if git grep -i "password.*=" -- "*.py" "*.yml" "*.yaml" | grep -v "\.env\.example\|ENVIRONMENT\.md\|SETUP\.md\|install\.py" | grep -v "# " | grep -E "(minioadmin|admin)"; then
             echo "WARNING: Found potential hardcoded passwords (review manually)"
             # Don't fail, just warn
           fi
@@ -210,6 +202,37 @@ jobs:
             exit 1
           fi
           echo "✓ docker-compose properly uses environment variables"
+
+  # =============================================================================
+  # Docker Build Validation
+  # =============================================================================
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build monolithic image
+        run: |
+          docker build -f architectures/monolithic/Dockerfile -t inference-arena-monolithic:test .
+          echo "✓ Monolithic image built successfully"
+
+      - name: Build detection service image
+        run: |
+          docker build -f architectures/microservices/detection/Dockerfile -t inference-arena-detection:test .
+          echo "✓ Detection service image built successfully"
+
+      - name: Build classification service image
+        run: |
+          docker build -f architectures/microservices/classification/Dockerfile -t inference-arena-classification:test .
+          echo "✓ Classification service image built successfully"
+
+      - name: Build Triton gateway image
+        run: |
+          docker build -f architectures/triton/gateway/Dockerfile -t inference-arena-triton-gateway:test .
+          echo "✓ Triton gateway image built successfully"
 
   # =============================================================================
   # Documentation Checks
@@ -276,19 +299,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.11
 
       - name: Install dependencies
-        run: |
-          pip install -e ".[dev,model]"
+        run: uv sync --extra dev --extra model
 
       - name: Test preprocessing uses config
         run: |
-          python -c "
+          uv run python -c "
           from src.shared.processing.yolo_preprocess import YOLO_INPUT_SIZE
           from src.shared.processing.mobilenet_preprocess import MOBILENET_INPUT_SIZE
           from src.shared.config import get_controlled_variable
@@ -304,7 +328,7 @@ jobs:
 
       - name: Test infrastructure config matches compose
         run: |
-          python -c "
+          uv run python -c "
           from src.shared.config import get_infrastructure_config, get_controlled_variables
           import yaml
 
@@ -337,6 +361,7 @@ jobs:
       - validate-config
       - security
       - docker-validation
+      - docker-build
       - docs
       - single-source-of-truth
     runs-on: ubuntu-latest
@@ -350,6 +375,7 @@ jobs:
              [ "${{ needs.validate-config.result }}" != "success" ] || \
              [ "${{ needs.security.result }}" != "success" ] || \
              [ "${{ needs.docker-validation.result }}" != "success" ] || \
+             [ "${{ needs.docker-build.result }}" != "success" ] || \
              [ "${{ needs.docs.result }}" != "success" ] || \
              [ "${{ needs.single-source-of-truth.result }}" != "success" ]; then
             echo "❌ One or more CI jobs failed"

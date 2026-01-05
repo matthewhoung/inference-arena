@@ -7,14 +7,16 @@ The curation process:
 1. Run YOLOv5n inference on each COCO image
 2. Count detections above confidence threshold
 3. Select images with exactly 3-5 detections
-4. Sample 100 images to achieve target distribution (μ=4, σ≈0.8)
+4. Sample 100 images to achieve target distribution (μ=4, σ≈0.71)
 5. Generate manifest with statistics for reproducibility
 
 Controlling fan-out ensures that workload variance is not a
 confounding variable in the architectural comparison.
 
+All parameters are loaded from experiment.yaml (single source of truth).
+
 Author: Matthew Hong
-Specification Reference: Foundation Specification §5.2
+Specification Reference: experiment.yaml controlled_variables.dataset
 """
 
 import json
@@ -27,6 +29,7 @@ from pathlib import Path
 
 import numpy as np
 
+from shared.config import get_controlled_variable, get_model_config
 from shared.data.coco_dataset import (
     get_coco_image_paths,
     load_coco_image,
@@ -36,29 +39,52 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# Constants
+# Configuration from experiment.yaml
 # =============================================================================
 
-DEFAULT_TARGET_COUNT: int = 100
-"""Default number of images to curate."""
 
-DEFAULT_MIN_DETECTIONS: int = 3
-"""Minimum detections per image (inclusive)."""
+def _get_dataset_config() -> dict:
+    """Load dataset configuration from experiment.yaml."""
+    return get_controlled_variable("dataset", "sample_size"), get_controlled_variable(
+        "dataset", "detection_range"
+    ), get_controlled_variable("dataset", "target_distribution"), get_controlled_variable(
+        "dataset", "random_seed"
+    )
 
-DEFAULT_MAX_DETECTIONS: int = 5
-"""Maximum detections per image (inclusive)."""
 
-DEFAULT_CONFIDENCE_THRESHOLD: float = 0.25
-"""Minimum confidence score for valid detection (lowered for YOLOv8 format)."""
+def _get_yolo_thresholds() -> tuple[float, float]:
+    """Load YOLO thresholds from experiment.yaml."""
+    yolo_config = get_model_config("yolov5n")
+    return yolo_config.get("confidence_threshold", 0.5), yolo_config.get("iou_threshold", 0.45)
 
-DEFAULT_IOU_THRESHOLD: float = 0.45
-"""IoU threshold for NMS."""
 
-TARGET_MEAN_DETECTIONS: float = 4.0
-"""Target mean detections per image."""
+# Load defaults from experiment.yaml
+_sample_size, _detection_range, _target_dist, _random_seed = _get_dataset_config()
+_conf_threshold, _iou_threshold = _get_yolo_thresholds()
 
-TARGET_STD_DETECTIONS: float = 0.8
-"""Target standard deviation of detections."""
+DEFAULT_TARGET_COUNT: int = _sample_size
+"""Default number of images to curate (from experiment.yaml)."""
+
+DEFAULT_MIN_DETECTIONS: int = _detection_range["min"]
+"""Minimum detections per image (from experiment.yaml)."""
+
+DEFAULT_MAX_DETECTIONS: int = _detection_range["max"]
+"""Maximum detections per image (from experiment.yaml)."""
+
+DEFAULT_CONFIDENCE_THRESHOLD: float = _conf_threshold
+"""Minimum confidence score for valid detection (from experiment.yaml)."""
+
+DEFAULT_IOU_THRESHOLD: float = _iou_threshold
+"""IoU threshold for NMS (from experiment.yaml)."""
+
+TARGET_MEAN_DETECTIONS: float = _target_dist["mean"]
+"""Target mean detections per image (from experiment.yaml)."""
+
+TARGET_STD_DETECTIONS: float = _target_dist["std"]
+"""Target standard deviation of detections (from experiment.yaml)."""
+
+DEFAULT_RANDOM_SEED: int = _random_seed
+"""Random seed for reproducible sampling (from experiment.yaml)."""
 
 
 # =============================================================================
@@ -69,6 +95,8 @@ TARGET_STD_DETECTIONS: float = 0.8
 @dataclass
 class CurationConfig:
     """Configuration for dataset curation.
+
+    All defaults are loaded from experiment.yaml (single source of truth).
 
     Attributes:
         target_count: Number of images to curate
@@ -84,7 +112,7 @@ class CurationConfig:
     max_detections: int = DEFAULT_MAX_DETECTIONS
     confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD
     iou_threshold: float = DEFAULT_IOU_THRESHOLD
-    random_seed: int = 42
+    random_seed: int = DEFAULT_RANDOM_SEED
 
 
 @dataclass
