@@ -2,9 +2,12 @@
 
 **A Comparative Study of ML Model Serving Architectures: Monolithic vs Microservices vs NVIDIA Triton**
 
-[![CI](https://github.com/matthewhoung/inference-arena/workflows/CI/badge.svg)](https://github.com/matthewhoung/inference-arena/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/matthewhoung/inference-arena/actions/workflows/ci.yml/badge.svg)](https://github.com/matthewhoung/inference-arena/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/matthewhoung/inference-arena/branch/main/graph/badge.svg)](https://codecov.io/gh/matthewhoung/inference-arena)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 > Master's Thesis Project
 > Author: Matthew Hong
@@ -73,7 +76,7 @@ A two-stage computer vision pipeline with controlled fan-out:
 | Detection | YOLOv5n (ONNX) | 640×640 image | Bounding boxes |
 | Classification | MobileNetV2 (ONNX) | 224×224 crops | 1000-class probabilities |
 
-**Fan-out Factor:** Each image produces 3-5 detections (μ=4, σ≈0.8), curated from COCO val2017.
+**Fan-out Factor:** Each image produces 3-5 detections (μ=4, σ≈0.71), curated from COCO val2017.
 
 **All parameters defined in [experiment.yaml](experiment.yaml)** - the single source of truth for reproducibility.
 
@@ -83,52 +86,53 @@ A two-stage computer vision pipeline with controlled fan-out:
 
 ### Prerequisites
 
-- **Python 3.11+** (Required for all components)
-- **Docker & Docker Compose** (For infrastructure and architectures)
-- **Git** (For version control)
-
-### 1. Clone and Setup
+- **Python 3.11+**
+- **Docker & Docker Compose**
+- **[uv](https://docs.astral.sh/uv/)** - Modern Python package manager
 
 ```bash
+# Install uv (if not installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### Setup (3 Commands)
+
+```bash
+# 1. Clone
 git clone https://github.com/matthewhoung/inference-arena.git
 cd inference-arena
 
-# Install Python dependencies
-pip install -e ".[dev]"
+# 2. Install dependencies
+make install
+
+# 3. Run tests
+make test
 ```
 
-### 2. Configure Environment
+### Run Experiments
 
 ```bash
-# Run cross-platform setup script
-python scripts/setup_env.py
+# Start infrastructure (MinIO, Prometheus, Grafana)
+make start-infra
 
-# Choose option 1 (Development) for local testing
+# Start an architecture
+make start-mono     # Monolithic
+make start-micro    # Microservices
+make start-triton   # Triton
+
+# Stop everything
+make stop-all
 ```
 
-This creates `.env` from `.env.example` with your configuration.
+### Service Endpoints
 
-### 3. Start Infrastructure
+| Service | URL | Default Credentials |
+|---------|-----|---------------------|
+| MinIO Console | http://localhost:9001 | minioadmin / minioadmin |
+| Prometheus | http://localhost:9090 | - |
+| Grafana | http://localhost:3000 | admin / admin |
 
-```bash
-# Start MinIO, Prometheus, Grafana, cAdvisor
-docker compose -f infrastructure/docker-compose.infra.yml up -d
-
-# Verify services are running
-docker ps
-```
-
-### 4. Run Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=src/shared --cov-report=term-missing
-```
-
-**For detailed setup instructions, see [docs/SETUP.md](docs/SETUP.md)**
+**For detailed setup, see [docs/SETUP.md](docs/SETUP.md)**
 
 ---
 
@@ -137,26 +141,27 @@ pytest --cov=src/shared --cov-report=term-missing
 ```
 inference-arena/
 ├── experiment.yaml              # Single source of truth (all experimental params)
-├── .env.example                 # Environment template
+├── Makefile                     # Common commands (make help)
 ├── pyproject.toml               # Python dependencies
-├── src/
-│   └── shared/
-│       ├── config.py            # Loads experiment.yaml
-│       ├── processing/          # Preprocessing pipelines
-│       └── model/               # Model registry
-├── infrastructure/
-│   ├── docker-compose.infra.yml # MinIO, Prometheus, Grafana
-│   └── minio/                   # Model storage initialization
+├── src/shared/
+│   ├── config.py                # Loads experiment.yaml
+│   ├── processing/              # Preprocessing pipelines
+│   ├── model/                   # Model registry
+│   └── triton/                  # Triton config & MinIO utilities
 ├── architectures/
 │   ├── monolithic/              # Architecture A
 │   ├── microservices/           # Architecture B
 │   └── triton/                  # Architecture C
+├── infrastructure/
+│   ├── docker-compose.infra.yml # MinIO, Prometheus, Grafana
+│   ├── grafana/                 # Dashboards and provisioning
+│   └── prometheus/              # Scrape configuration
+├── scripts/
+│   ├── setup/                   # Environment & proto setup
+│   ├── models/                  # Export & upload models
+│   └── utils/                   # Dashboard utilities
 ├── tests/                       # 100+ tests
-├── docs/                        # Documentation
-│   ├── SETUP.md                 # Quick start guide
-│   └── ENVIRONMENT.md           # Configuration reference
-└── scripts/
-    └── setup_env.py             # Cross-platform setup utility
+└── docs/                        # Documentation
 ```
 
 ---
@@ -227,12 +232,12 @@ All architectures use **identical** configurations (defined in `experiment.yaml`
 
 This project demonstrates research best practices:
 
-✅ **Pre-registered Hypotheses** - All hypotheses defined before data collection
-✅ **Single Source of Truth** - All parameters in version-controlled `experiment.yaml`
-✅ **No Hardcoding** - Configuration values loaded from centralized config
-✅ **Comprehensive Testing** - 100+ tests validate configuration consistency
-✅ **Git Changelog** - All experiment.yaml changes tracked with rationale
-✅ **Cross-Platform** - Python-based setup works on Windows/Mac/Linux
+- ✅ **Pre-registered Hypotheses** - All hypotheses defined before data collection
+- ✅ **Single Source of Truth** - All parameters in version-controlled `experiment.yaml`
+- ✅ **No Hardcoding** - Configuration values loaded from centralized config
+- ✅ **Comprehensive Testing** - 100+ tests validate configuration consistency
+- ✅ **Git Changelog** - All experiment.yaml changes tracked with rationale
+- ✅ **Cross-Platform** - Python-based setup works on Windows/Mac/Linux
 
 ---
 
@@ -260,7 +265,7 @@ If you use this work, please cite:
   title={Characterizing ML Serving Architectures in CPU-Constrained Environments},
   author={Hong, Matthew},
   year={2025},
-  school={[Your University]},
+  school={[National Chung Hsing University]},
   type={Master's Thesis}
 }
 ```

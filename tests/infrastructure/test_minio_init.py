@@ -37,7 +37,7 @@ class TestTritonConfigGeneration:
 
     def test_generate_yolov5n_config(self) -> None:
         """Should generate valid config.pbtxt for YOLOv5n."""
-        from infrastructure.minio.triton_config import generate_config_pbtxt
+        from shared.triton.config import generate_config_pbtxt
 
         config = generate_config_pbtxt("yolov5n")
 
@@ -63,7 +63,7 @@ class TestTritonConfigGeneration:
 
     def test_generate_mobilenetv2_config(self) -> None:
         """Should generate valid config.pbtxt for MobileNetV2."""
-        from infrastructure.minio.triton_config import generate_config_pbtxt
+        from shared.triton.config import generate_config_pbtxt
 
         config = generate_config_pbtxt("mobilenetv2")
 
@@ -81,7 +81,7 @@ class TestTritonConfigGeneration:
 
     def test_generate_all_configs(self) -> None:
         """Should generate configs for all models."""
-        from infrastructure.minio.triton_config import generate_all_configs
+        from shared.triton.config import generate_all_configs
 
         configs = generate_all_configs()
 
@@ -94,7 +94,7 @@ class TestTritonConfigGeneration:
 
     def test_validate_config_pbtxt(self) -> None:
         """Should validate config.pbtxt content."""
-        from infrastructure.minio.triton_config import (
+        from shared.triton.config import (
             generate_config_pbtxt,
             validate_config_pbtxt,
         )
@@ -106,7 +106,7 @@ class TestTritonConfigGeneration:
 
     def test_invalid_config_detected(self) -> None:
         """Should detect invalid config content."""
-        from infrastructure.minio.triton_config import validate_config_pbtxt
+        from shared.triton.config import validate_config_pbtxt
 
         invalid_config = "this is not a valid config"
         errors = validate_config_pbtxt(invalid_config)
@@ -115,7 +115,7 @@ class TestTritonConfigGeneration:
 
     def test_format_dims(self) -> None:
         """Should format dimensions correctly."""
-        from infrastructure.minio.triton_config import _format_dims
+        from shared.triton.config import _format_dims
 
         dims = _format_dims([1, 3, 640, 640])
 
@@ -123,7 +123,7 @@ class TestTritonConfigGeneration:
 
     def test_save_config_pbtxt(self) -> None:
         """Should save config to disk."""
-        from infrastructure.minio.triton_config import save_config_pbtxt
+        from shared.triton.config import save_config_pbtxt
 
         with tempfile.TemporaryDirectory() as tmpdir:
             output_dir = Path(tmpdir)
@@ -168,7 +168,7 @@ class TestMinIORegistryMocked:
 
         with (
             patch(patch_target) as MockMinio,
-            patch("infrastructure.minio.init_models.MINIO_AVAILABLE", True),
+            patch("shared.triton.minio.MINIO_AVAILABLE", True),
         ):
             client = MagicMock()
             MockMinio.return_value = client
@@ -180,8 +180,8 @@ class TestMinIORegistryMocked:
             client.fput_object.return_value = None
             client.put_object.return_value = None
 
-            if "infrastructure.minio.init_models" in sys.modules:
-                importlib.reload(sys.modules["infrastructure.minio.init_models"])
+            if "shared.triton.minio" in sys.modules:
+                importlib.reload(sys.modules["shared.triton.minio"])
 
             yield client
 
@@ -196,7 +196,7 @@ class TestMinIORegistryMocked:
 
     def test_registry_initialization(self, mock_minio_client) -> None:
         """Should initialize with config from experiment.yaml."""
-        from infrastructure.minio.init_models import MinIOModelRegistry
+        from shared.triton.minio import MinIOModelRegistry
 
         registry = MinIOModelRegistry()
 
@@ -205,7 +205,7 @@ class TestMinIORegistryMocked:
 
     def test_ensure_bucket_creates_if_missing(self, mock_minio_client) -> None:
         """Should create bucket if it doesn't exist."""
-        from infrastructure.minio.init_models import MinIOModelRegistry
+        from shared.triton.minio import MinIOModelRegistry
 
         mock_minio_client.bucket_exists.return_value = False
 
@@ -216,7 +216,7 @@ class TestMinIORegistryMocked:
 
     def test_ensure_bucket_skips_if_exists(self, mock_minio_client) -> None:
         """Should skip bucket creation if exists."""
-        from infrastructure.minio.init_models import MinIOModelRegistry
+        from shared.triton.minio import MinIOModelRegistry
 
         mock_minio_client.bucket_exists.return_value = True
 
@@ -227,7 +227,7 @@ class TestMinIORegistryMocked:
 
     def test_compute_checksum(self, mock_minio_client, mock_model_file) -> None:
         """Should compute SHA256 checksum."""
-        from infrastructure.minio.init_models import MinIOModelRegistry
+        from shared.triton.minio import MinIOModelRegistry
 
         registry = MinIOModelRegistry()
         checksum = registry._compute_checksum(mock_model_file)
@@ -237,7 +237,7 @@ class TestMinIORegistryMocked:
 
     def test_generate_metadata(self, mock_minio_client, mock_model_file) -> None:
         """Should generate valid metadata."""
-        from infrastructure.minio.init_models import MinIOModelRegistry
+        from shared.triton.minio import MinIOModelRegistry
 
         registry = MinIOModelRegistry()
         metadata = registry._generate_metadata("yolov5n", mock_model_file)
@@ -330,7 +330,7 @@ class TestBucketStructure:
 
     def test_model_path_structure(self) -> None:
         """Model paths should follow Triton convention."""
-        from infrastructure.minio.init_models import MODEL_VERSION
+        from shared.triton.minio import MODEL_VERSION
 
         model_name = "yolov5n"
         expected_paths = [
@@ -345,7 +345,7 @@ class TestBucketStructure:
 
     def test_version_directory(self) -> None:
         """Version directory should be numeric."""
-        from infrastructure.minio.init_models import MODEL_VERSION
+        from shared.triton.minio import MODEL_VERSION
 
         assert isinstance(MODEL_VERSION, int)
         assert MODEL_VERSION >= 1
@@ -364,7 +364,7 @@ class TestMinIOIntegration:
     def registry(self):
         """Create registry connected to running MinIO."""
         try:
-            from infrastructure.minio.init_models import MinIOModelRegistry
+            from shared.triton.minio import MinIOModelRegistry
 
             registry = MinIOModelRegistry()
             registry.wait_for_minio()
