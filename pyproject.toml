@@ -141,7 +141,17 @@ markers = [
 [tool.coverage.run]
 source = ["src"]
 branch = true
-omit = ["*/tests/*", "*/__init__.py"]
+omit = [
+    "*/tests/*",
+    "*/__init__.py",
+    # Auto-generated protobuf files
+    "*/proto/*",
+    # Infrastructure code requiring MinIO (tested via integration tests)
+    "*/triton/*",
+    # Data modules requiring COCO dataset (tested via make data-verify)
+    "*/data/curator.py",
+    "*/data/coco_dataset.py",
+]
 
 [tool.coverage.report]
 exclude_lines = [
