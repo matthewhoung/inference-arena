@@ -14,10 +14,8 @@ Specification Reference: experiment.yaml, Ch3 Methodology §3.4.3
 """
 
 from pathlib import Path
-from typing import Dict, List
 
 from shared.config import get_model_config, get_model_names, get_triton_config
-
 
 # =============================================================================
 # Constants
@@ -80,7 +78,7 @@ def generate_config_pbtxt(model_name: str) -> str:
     input_dtype = DTYPE_MAP.get(input_spec.get("dtype", "float32"), "TYPE_FP32")
     output_dtype = DTYPE_MAP.get(output_spec.get("dtype", "float32"), "TYPE_FP32")
 
-    config = f'''# =============================================================================
+    config = f"""# =============================================================================
 # Triton Model Configuration: {model_name}
 # =============================================================================
 # Auto-generated from experiment.yaml
@@ -120,12 +118,12 @@ parameters [
     value: {{ string_value: "{inter_threads}" }}
   }}
 ]
-'''
+"""
 
     return config
 
 
-def _format_dims(shape: List[int]) -> str:
+def _format_dims(shape: list[int]) -> str:
     """Format shape list as Triton dims string.
 
     Args:
@@ -137,7 +135,7 @@ def _format_dims(shape: List[int]) -> str:
     return "[ " + ", ".join(str(d) for d in shape) + " ]"
 
 
-def generate_all_configs() -> Dict[str, str]:
+def generate_all_configs() -> dict[str, str]:
     """Generate config.pbtxt for all models.
 
     Returns:
@@ -177,7 +175,7 @@ def save_config_pbtxt(model_name: str, output_dir: Path) -> Path:
 # =============================================================================
 
 
-def validate_config_pbtxt(config_content: str) -> List[str]:
+def validate_config_pbtxt(config_content: str) -> list[str]:
     """Validate config.pbtxt content.
 
     Args:

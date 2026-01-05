@@ -45,10 +45,11 @@ logger = logging.getLogger(__name__)
 
 def _get_dataset_config() -> dict:
     """Load dataset configuration from experiment.yaml."""
-    return get_controlled_variable("dataset", "sample_size"), get_controlled_variable(
-        "dataset", "detection_range"
-    ), get_controlled_variable("dataset", "target_distribution"), get_controlled_variable(
-        "dataset", "random_seed"
+    return (
+        get_controlled_variable("dataset", "sample_size"),
+        get_controlled_variable("dataset", "detection_range"),
+        get_controlled_variable("dataset", "target_distribution"),
+        get_controlled_variable("dataset", "random_seed"),
     )
 
 

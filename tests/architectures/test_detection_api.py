@@ -6,12 +6,13 @@ Uses mocking to simulate the inference pipeline.
 Author: Matthew Hong
 """
 
-import pytest
-import sys
 import os
+import sys
 
 # Add architectures to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../..", "architectures/microservices/detection"))
+sys.path.insert(
+    0, os.path.join(os.path.dirname(__file__), "../..", "architectures/microservices/detection")
+)
 
 
 class TestHealthEndpoint:
@@ -32,10 +33,10 @@ class TestPredictEndpoint:
     def test_predict_response_schema(self):
         """Verify predict response matches expected schema."""
         from architectures.microservices.detection.app.models import (
-            PredictResponse,
-            DetectionWithClassification,
-            DetectionBox,
             Classification,
+            DetectionBox,
+            DetectionWithClassification,
+            PredictResponse,
         )
 
         classification = Classification(
@@ -110,9 +111,9 @@ class TestModelsSchema:
     def test_detection_with_classification(self):
         """Verify DetectionWithClassification includes nested models."""
         from architectures.microservices.detection.app.models import (
-            DetectionWithClassification,
-            DetectionBox,
             Classification,
+            DetectionBox,
+            DetectionWithClassification,
         )
 
         classification = Classification(

@@ -15,8 +15,8 @@ Author: Matthew Hong
 """
 
 from shared.triton.config import (
-    generate_config_pbtxt,
     generate_all_configs,
+    generate_config_pbtxt,
     save_config_pbtxt,
     validate_config_pbtxt,
 )

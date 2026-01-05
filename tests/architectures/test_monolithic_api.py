@@ -6,9 +6,8 @@ Uses mocking to simulate the inference pipeline.
 Author: Matthew Hong
 """
 
-import pytest
-import sys
 import os
+import sys
 
 # Add architectures to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../..", "architectures/monolithic"))
@@ -39,10 +38,10 @@ class TestPredictEndpoint:
     def test_predict_response_schema(self):
         """Verify predict response matches expected schema."""
         from architectures.monolithic.app.models import (
-            PredictResponse,
-            DetectionWithClassification,
-            DetectionBox,
             Classification,
+            DetectionBox,
+            DetectionWithClassification,
+            PredictResponse,
         )
 
         classification = Classification(

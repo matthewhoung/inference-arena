@@ -32,9 +32,9 @@ import hashlib
 import io
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from shared.config import (
     get_metadata,
@@ -91,6 +91,7 @@ if TENACITY_AVAILABLE:
 else:
     # Fallback: no retry
     def retry_on_connection(func):
+        """No-op decorator when tenacity is not available."""
         return func
 
 
@@ -116,12 +117,12 @@ class MinIOModelRegistry:
 
     def __init__(
         self,
-        endpoint: Optional[str] = None,
-        access_key: Optional[str] = None,
-        secret_key: Optional[str] = None,
+        endpoint: str | None = None,
+        access_key: str | None = None,
+        secret_key: str | None = None,
         secure: bool = False,
-        bucket: Optional[str] = None,
-        models_dir: Optional[Path] = None,
+        bucket: str | None = None,
+        models_dir: Path | None = None,
     ):
         """Initialize MinIO client.
 
@@ -134,16 +135,12 @@ class MinIOModelRegistry:
             models_dir: Local models directory (default: PROJECT_ROOT/models)
         """
         if not MINIO_AVAILABLE:
-            raise ImportError(
-                "minio package not installed. " "Install with: pip install minio"
-            )
+            raise ImportError("minio package not installed. " "Install with: pip install minio")
 
         # Load from experiment.yaml if not provided
         minio_config = get_minio_config()
 
-        self.endpoint = endpoint or minio_config.get(
-            "external_endpoint", "localhost:9000"
-        )
+        self.endpoint = endpoint or minio_config.get("external_endpoint", "localhost:9000")
         self.access_key = access_key or minio_config.get("access_key", "minioadmin")
         self.secret_key = secret_key or minio_config.get("secret_key", "minioadmin")
         self.secure = secure if secure is not None else minio_config.get("secure", False)
@@ -172,7 +169,7 @@ class MinIOModelRegistry:
             logger.info(f"Connected to MinIO at {self.endpoint}")
             return True
         except Exception as e:
-            raise ConnectionError(f"Cannot connect to MinIO: {e}")
+            raise ConnectionError(f"Cannot connect to MinIO: {e}") from e
 
     def ensure_bucket_exists(self) -> bool:
         """Create bucket if it doesn't exist.
@@ -193,7 +190,7 @@ class MinIOModelRegistry:
         model_name: str,
         model_path: Path,
         force: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Upload a model with Triton-compatible structure.
 
         Creates:
@@ -279,7 +276,7 @@ class MinIOModelRegistry:
 
         return result
 
-    def upload_all_models(self, force: bool = False) -> List[Dict[str, Any]]:
+    def upload_all_models(self, force: bool = False) -> list[dict[str, Any]]:
         """Upload all models from experiment.yaml.
 
         Args:
@@ -311,7 +308,7 @@ class MinIOModelRegistry:
 
         return results
 
-    def verify_models(self) -> Dict[str, Any]:
+    def verify_models(self) -> dict[str, Any]:
         """Verify that all models are correctly uploaded.
 
         Returns:
@@ -334,16 +331,10 @@ class MinIOModelRegistry:
             model_status["model_onnx"] = self._object_exists(
                 f"{model_name}/{MODEL_VERSION}/model.onnx"
             )
-            model_status["config_pbtxt"] = self._object_exists(
-                f"{model_name}/config.pbtxt"
-            )
-            model_status["metadata_json"] = self._object_exists(
-                f"{model_name}/metadata.json"
-            )
+            model_status["config_pbtxt"] = self._object_exists(f"{model_name}/config.pbtxt")
+            model_status["metadata_json"] = self._object_exists(f"{model_name}/metadata.json")
 
-            model_status["valid"] = all(
-                v for k, v in model_status.items() if k != "valid"
-            )
+            model_status["valid"] = all(v for k, v in model_status.items() if k != "valid")
             verification["models"][model_name] = model_status
 
             if not model_status["valid"]:
@@ -383,7 +374,7 @@ class MinIOModelRegistry:
                 sha256.update(chunk)
         return sha256.hexdigest()
 
-    def _generate_metadata(self, model_name: str, model_path: Path) -> Dict[str, Any]:
+    def _generate_metadata(self, model_name: str, model_path: Path) -> dict[str, Any]:
         """Generate metadata.json content for a model."""
         model_config = get_model_config(model_name)
         experiment_meta = get_metadata()
@@ -407,7 +398,7 @@ class MinIOModelRegistry:
             "source": model_config.get("source"),
             "checksum_sha256": self._compute_checksum(model_path),
             "file_size_bytes": model_path.stat().st_size,
-            "uploaded_at": datetime.now(timezone.utc).isoformat(),
+            "uploaded_at": datetime.now(UTC).isoformat(),
             "experiment_spec_version": get_spec_version(),
             "thesis_reference": f"experiment.yaml controlled_variables.models.{model_name}",
             "author": experiment_meta.get("author", "Unknown"),

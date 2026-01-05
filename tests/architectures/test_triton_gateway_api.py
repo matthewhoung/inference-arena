@@ -6,9 +6,8 @@ Uses mocking to simulate the Triton client.
 Author: Matthew Hong
 """
 
-import pytest
-import sys
 import os
+import sys
 
 # Add architectures to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../..", "architectures/triton/gateway"))
@@ -39,10 +38,10 @@ class TestPredictEndpoint:
     def test_predict_response_schema(self):
         """Verify predict response matches expected schema."""
         from architectures.triton.gateway.app.models import (
-            PredictResponse,
-            DetectionWithClassification,
-            DetectionBox,
             Classification,
+            DetectionBox,
+            DetectionWithClassification,
+            PredictResponse,
         )
 
         classification = Classification(
@@ -129,10 +128,10 @@ class TestModelsSchema:
     def test_predict_response_serialization(self):
         """Verify PredictResponse serializes correctly for JSON."""
         from architectures.triton.gateway.app.models import (
-            PredictResponse,
-            DetectionWithClassification,
-            DetectionBox,
             Classification,
+            DetectionBox,
+            DetectionWithClassification,
+            PredictResponse,
         )
 
         classification = Classification(

@@ -81,6 +81,8 @@ dev = [
     "black>=24.1.0",
     "ruff>=0.1.0",
     "mypy>=1.8.0",
+    # Required for architecture API schema tests
+    "pydantic>=2.0.0",
 ]
 
 # Analysis and visualization
