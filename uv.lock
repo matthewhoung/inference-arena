@@ -1222,6 +1222,7 @@ all = [
     { name = "locust" },
     { name = "matplotlib" },
     { name = "minio" },
+    { name = "ml-dtypes" },
     { name = "mypy" },
     { name = "onnx" },
     { name = "onnxruntime" },
@@ -1229,6 +1230,7 @@ all = [
     { name = "pandas" },
     { name = "prometheus-client" },
     { name = "protobuf" },
+    { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -1265,6 +1267,7 @@ data = [
 dev = [
     { name = "black" },
     { name = "mypy" },
+    { name = "pydantic" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -1283,6 +1286,7 @@ loadtest = [
     { name = "locust" },
 ]
 model = [
+    { name = "ml-dtypes" },
     { name = "onnx" },
     { name = "onnxruntime" },
     { name = "onnxscript" },
@@ -1303,6 +1307,7 @@ requires-dist = [
     { name = "locust", marker = "extra == 'loadtest'", specifier = ">=2.20.0" },
     { name = "matplotlib", marker = "extra == 'analysis'", specifier = ">=3.8.0" },
     { name = "minio", marker = "extra == 'infra'", specifier = ">=7.2.0" },
+    { name = "ml-dtypes", marker = "extra == 'model'", specifier = ">=0.4.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "numpy", specifier = ">=1.24.0" },
     { name = "onnx", marker = "extra == 'model'", specifier = ">=1.15.0,<1.17.0" },
@@ -1312,6 +1317,7 @@ requires-dist = [
     { name = "pandas", marker = "extra == 'analysis'", specifier = ">=2.1.0" },
     { name = "prometheus-client", marker = "extra == 'infra'", specifier = ">=0.19.0" },
     { name = "protobuf", marker = "extra == 'grpc'", specifier = ">=4.25.0" },
+    { name = "pydantic", marker = "extra == 'dev'", specifier = ">=2.0.0" },
     { name = "pydantic-settings", marker = "extra == 'api'", specifier = ">=2.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23.0" },
