@@ -24,18 +24,30 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from shared.config import get_controlled_variable
+
 logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# Constants
+# Constants (loaded from experiment.yaml)
 # =============================================================================
 
-COCO_VAL2017_URL: str = "http://images.cocodataset.org/zips/val2017.zip"
-"""URL for COCO val2017 images zip file."""
+def _get_coco_url() -> str:
+    """Get COCO download URL from experiment.yaml."""
+    return get_controlled_variable("dataset", "source_url")
 
-COCO_VAL2017_COUNT: int = 5000
-"""Expected number of images in val2017 dataset."""
+
+def _get_coco_count() -> int:
+    """Get expected COCO image count from experiment.yaml."""
+    return get_controlled_variable("dataset", "total_images")
+
+
+COCO_VAL2017_URL: str = _get_coco_url()
+"""URL for COCO val2017 images zip file (from experiment.yaml)."""
+
+COCO_VAL2017_COUNT: int = _get_coco_count()
+"""Expected number of images in val2017 dataset (from experiment.yaml)."""
 
 COCO_ZIP_SIZE_MB: float = 778.0
 """Approximate size of val2017.zip in megabytes."""

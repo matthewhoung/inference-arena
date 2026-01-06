@@ -289,7 +289,7 @@ controlled_variables:
       max: 5
     target_distribution:
       mean: 4.0
-      std: 0.71
+      std: 0.8
     random_seed: 42
     output_dir: "data/thesis_test_set"
     manifest_file: "manifest.json"
@@ -436,6 +436,17 @@ changelog:
       - architectures/monolithic/app/config.py (removed MinIO settings)
       - architectures/monolithic/Dockerfile (removed minio dependency)
       - architectures/triton/init_triton_models.py (added symlink for external data files)
+
+  - date: "2026-01-06"
+    version: "1.3.1"
+    change: "Corrected target_distribution.std from 0.71 to 0.8"
+    justification: |
+      Value alignment with thesis documentation:
+      1. Original 0.71 was an empirical artifact without clear justification
+      2. 0.8 represents approximately ±1 detection variance from mean (4.0)
+      3. Ensures consistency between experiment spec and thesis methodology chapter
+    author: "Matthew Hong"
+    impact: "Documentation correction - dataset already sampled, no re-sampling required"
 
   # Template for future changes:
   # - date: "YYYY-MM-DD"

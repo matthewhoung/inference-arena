@@ -7,7 +7,7 @@ The curation process:
 1. Run YOLOv5n inference on each COCO image
 2. Count detections above confidence threshold
 3. Select images with exactly 3-5 detections
-4. Sample 100 images to achieve target distribution (μ=4, σ≈0.71)
+4. Sample 100 images to achieve target distribution (μ=4, σ≈0.8)
 5. Generate manifest with statistics for reproducibility
 
 Controlling fan-out ensures that workload variance is not a
@@ -631,44 +631,44 @@ class DatasetCurator:
         self,
         candidates: dict[int, list[ImageRecord]],
     ) -> list[ImageRecord]:
-        """Sample images to achieve balanced distribution.
+        """Sample images to achieve target distribution.
 
-        Aims for approximately equal representation of each detection count
-        to achieve target mean of 4.0.
+        Calculates distribution based on target_std from experiment.yaml.
+        For detection range [3, 4, 5] with mean=4.0 and target_std:
+        - variance = std² = 2a/n where a = count at extremes (3 and 5)
+        - a = n * std² / 2, b = n - 2a (count at middle value 4)
         """
         np.random.seed(self.config.random_seed)
 
         selected = []
-        remaining = self.config.target_count
+        n = self.config.target_count
 
-        # Calculate target per bucket for mean=4
-        # For range [3, 4, 5], we want more 4s to center the mean
         detection_range = list(
             range(
                 self.config.min_detections,
                 self.config.max_detections + 1,
             )
         )
-        len(detection_range)
 
-        # Weight middle values more heavily for tighter std
-        weights = []
+        # Calculate distribution based on target std from experiment.yaml
+        # For symmetric distribution {a, b, a} around mean:
+        # variance = 2a/n, so a = n * variance / 2 = n * std² / 2
+        target_std = TARGET_STD_DETECTIONS
+        target_variance = target_std ** 2
+        extreme_count = int(round(n * target_variance / 2))
+
+        # Ensure we don't exceed total count
+        extreme_count = min(extreme_count, n // 2)
+        middle_count = n - 2 * extreme_count
+
+        # Build targets dict: {3: extreme, 4: middle, 5: extreme}
+        targets = {}
         mid = (self.config.min_detections + self.config.max_detections) / 2
         for d in detection_range:
-            # Higher weight for values closer to mean
-            weight = 1.0 / (1.0 + abs(d - mid))
-            weights.append(weight)
-
-        total_weight = sum(weights)
-        targets = {
-            d: int(remaining * w / total_weight)
-            for d, w in zip(detection_range, weights, strict=False)
-        }
-
-        # Adjust to hit exact target count
-        allocated = sum(targets.values())
-        if allocated < remaining:
-            targets[4] += remaining - allocated  # Add extra to middle
+            if d == mid:
+                targets[d] = middle_count
+            else:
+                targets[d] = extreme_count
 
         logger.info(f"  Sampling targets: {targets}")
 
