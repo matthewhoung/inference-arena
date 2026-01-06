@@ -654,7 +654,7 @@ class DatasetCurator:
         # For symmetric distribution {a, b, a} around mean:
         # variance = 2a/n, so a = n * variance / 2 = n * std² / 2
         target_std = TARGET_STD_DETECTIONS
-        target_variance = target_std ** 2
+        target_variance = target_std**2
         extreme_count = int(round(n * target_variance / 2))
 
         # Ensure we don't exceed total count

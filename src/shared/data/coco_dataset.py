@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 # Constants (loaded from experiment.yaml)
 # =============================================================================
 
+
 def _get_coco_url() -> str:
     """Get COCO download URL from experiment.yaml."""
     return get_controlled_variable("dataset", "source_url")
