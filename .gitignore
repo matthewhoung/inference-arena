@@ -74,6 +74,7 @@ architectures/triton/gateway/models/
 # Experiment results (generated)
 results/raw/
 results/processed/
+results/coverage_html/
 
 # Local Triton model repository (models copied here for local testing)
 architectures/triton/model_repository/*/1/model.onnx

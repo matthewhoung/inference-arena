@@ -8,11 +8,13 @@
 # Author: Matthew Hong
 # =============================================================================
 
-.PHONY: help install test test-fast test-cov lint format clean \
+.PHONY: help install test test-fast test-cov lint format clean clean-results clean-all \
         docker-build docker-build-mono docker-build-micro docker-build-triton \
-        start-infra start-mono start-micro start-triton stop-all \
+        start-infra stop-infra start-mono start-micro start-triton stop-all \
+        stop-mono stop-micro stop-triton \
         proto models-export models-init-minio models-generate-pbtxt \
-        data-download data-verify
+        data-download data-verify update-dashboards \
+        locust-quick locust-run locust-web locust-all locust-dry-run
 
 # Default target
 .DEFAULT_GOAL := help
@@ -50,6 +52,9 @@ help: ## Show this help message
 	@echo ""
 	@echo "$(YELLOW)Data:$(NC)"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(BLUE)%-20s$(NC) %s\n", $$1, $$2}' | grep -E "data"
+	@echo ""
+	@echo "$(YELLOW)Load Testing:$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(BLUE)%-20s$(NC) %s\n", $$1, $$2}' | grep -E "locust"
 
 # =============================================================================
 # Development
@@ -83,6 +88,17 @@ clean: ## Remove caches and build artifacts
 	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	rm -rf build/ dist/ .coverage htmlcov/ 2>/dev/null || true
+	@echo "$(GREEN)Caches cleaned$(NC)"
+
+clean-results: ## Remove experiment results (results/raw/, results/processed/)
+	rm -rf results/raw/*.csv results/raw/*.html 2>/dev/null || true
+	rm -rf results/processed/*.csv results/processed/*.json 2>/dev/null || true
+	rm -rf results/coverage_html/*.html results/coverage_html/*.js results/coverage_html/*.css 2>/dev/null || true
+	rm -rf results/coverage_html/*.png results/coverage_html/*.json 2>/dev/null || true
+	@echo "$(GREEN)Results cleaned$(NC)"
+
+clean-all: clean clean-results ## Remove all caches, artifacts, and results
+	@echo "$(GREEN)All cleaned$(NC)"
 
 proto: ## Generate gRPC protocol buffer files
 	python scripts/setup/generate-proto.py
@@ -178,3 +194,40 @@ data-download: ## Download COCO and curate thesis test dataset (100 images)
 
 data-verify: ## Verify data setup (COCO + thesis test set)
 	python scripts/setup/download-data.py --verify
+
+# =============================================================================
+# Load Testing
+# =============================================================================
+
+# Default values for load testing
+LOCUST_HOST ?= http://localhost:8100
+LOCUST_USERS ?= 10
+LOCUST_SPAWN_RATE ?= 3
+LOCUST_DURATION ?= 240s
+
+locust-quick: ## Quick load test (10 users, 30s) - requires running architecture
+	@echo "$(YELLOW)Running quick load test against $(LOCUST_HOST)$(NC)"
+	.venv/bin/locust -f experiments/locustfile.py --host=$(LOCUST_HOST) \
+		--headless -u 10 -r 3 -t 30s
+
+locust-run: ## Run load test with params (HOST, USERS, SPAWN_RATE, DURATION)
+	@echo "$(YELLOW)Running load test$(NC)"
+	@echo "  Host:       $(LOCUST_HOST)"
+	@echo "  Users:      $(LOCUST_USERS)"
+	@echo "  Spawn rate: $(LOCUST_SPAWN_RATE)/sec"
+	@echo "  Duration:   $(LOCUST_DURATION)"
+	.venv/bin/locust -f experiments/locustfile.py --host=$(LOCUST_HOST) \
+		--headless -u $(LOCUST_USERS) -r $(LOCUST_SPAWN_RATE) -t $(LOCUST_DURATION)
+
+locust-web: ## Start Locust with web UI (http://localhost:8089)
+	@echo "$(GREEN)Starting Locust Web UI$(NC)"
+	@echo "  Open: http://localhost:8089"
+	@echo "  Target: $(LOCUST_HOST)"
+	.venv/bin/locust -f experiments/locustfile.py --host=$(LOCUST_HOST)
+
+locust-all: ## Run full experiment matrix (all architectures, all load levels)
+	@echo "$(YELLOW)Running full experiment matrix$(NC)"
+	python experiments/run_experiments.py
+
+locust-dry-run: ## Preview experiment commands without running
+	python experiments/run_experiments.py --dry-run

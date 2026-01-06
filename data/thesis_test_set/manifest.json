@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "created": "2026-01-05T02:13:50.515975+00:00",
+  "created": "2026-01-06T02:43:19.857094+00:00",
   "source": "COCO val2017",
   "config": {
     "target_count": 100,
@@ -13,14 +13,14 @@
   "statistics": {
     "total_images": 100,
     "mean_detections": 4.0,
-    "std_detections": 0.71,
+    "std_detections": 0.8,
     "min_detections": 3,
     "max_detections": 5
   },
   "distribution": {
-    "3": 25,
-    "4": 50,
-    "5": 25
+    "3": 32,
+    "4": 36,
+    "5": 32
   },
   "images": [
     {
@@ -121,6 +121,34 @@
     },
     {
       "filename": "000000409630.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000038576.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000086956.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000396526.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000248111.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000493019.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000527220.jpg",
+      "detections": 3
+    },
+    {
+      "filename": "000000260470.jpg",
       "detections": 3
     },
     {
@@ -268,62 +296,6 @@
       "detections": 4
     },
     {
-      "filename": "000000168337.jpg",
-      "detections": 4
-    },
-    {
-      "filename": "000000504415.jpg",
-      "detections": 4
-    },
-    {
-      "filename": "000000065350.jpg",
-      "detections": 4
-    },
-    {
-      "filename": "000000216296.jpg",
-      "detections": 4
-    },
-    {
-      "filename": "000000037777.jpg",
-      "detections": 4
-    },
-    {
-      "filename": "000000461009.jpg",
-      "detections": 4
-    },
-    {
-      "filename": "000000476787.jpg",
-      "detections": 4
-    },
-    {
-      "filename": "000000263594.jpg",
-      "detections": 4
-    },
-    {
-      "filename": "000000044699.jpg",
-      "detections": 4
-    },
-    {
-      "filename": "000000440475.jpg",
-      "detections": 4
-    },
-    {
-      "filename": "000000458255.jpg",
-      "detections": 4
-    },
-    {
-      "filename": "000000254516.jpg",
-      "detections": 4
-    },
-    {
-      "filename": "000000311303.jpg",
-      "detections": 4
-    },
-    {
-      "filename": "000000322895.jpg",
-      "detections": 4
-    },
-    {
       "filename": "000000283070.jpg",
       "detections": 5
     },
@@ -421,6 +393,34 @@
     },
     {
       "filename": "000000047828.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000294695.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000414638.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000492077.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000079588.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000391144.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000162732.jpg",
+      "detections": 5
+    },
+    {
+      "filename": "000000433103.jpg",
       "detections": 5
     }
   ]
