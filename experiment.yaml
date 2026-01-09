@@ -470,6 +470,21 @@ changelog:
     author: "Matthew Hong"
     impact: "Experimental enhancement - enables secondary comparison graph (Triton baseline vs batched)"
 
+  - date: "2026-01-09"
+    version: "1.5.0"
+    change: "Refactored Triton Gateway architecture to use asynchronous I/O and parallel request fan-out"
+    justification: |
+      CRITICAL architectural correction required for internal validity of dynamic batching experiments:
+      1. Failure Analysis: Initial sequential implementation (v1.4.0) prevented request accumulation in Triton's scheduler, causing the dynamic batcher to wait uselessly (adding latency) without ever forming batches.
+      2. Architectural Parity: Aligns Triton Gateway I/O pattern with the Microservices architecture (which uses `asyncio.gather`), ensuring a fair "Optimized vs. Optimized" comparison.
+      3. Hypothesis Testing: The "Naive" sequential client artificially capped throughput at ~10 RPS regardless of server capacity. This refactor removes the client-side I/O bottleneck to properly test H1d (Saturation) and H2d (Efficiency).
+    author: "Matthew Hong"
+    impact: "Invalidates previous Triton performance baselines. Introduces 'Optimized Async' configuration as the standard for final RQ1/RQ4 analysis."
+    files_modified:
+      - architectures/triton/gateway/app/main.py (added async/await)
+      - architectures/triton/gateway/app/pipeline.py (implemented asyncio.gather for classification)
+      - architectures/triton/gateway/app/triton_client.py (migrated to tritonclient.grpc.aio)
+
   # Template for future changes:
   # - date: "YYYY-MM-DD"
   #   version: "1.x.x"
