@@ -71,10 +71,12 @@ architectures/monolithic/models/
 architectures/microservices/*/models/
 architectures/triton/gateway/models/
 
-# Experiment results (generated)
-results/raw/
+# Experiment results (generated - exclude before publication)
 results/processed/
 results/coverage_html/
+results/experiment/
+results/tmp/
+results/keyfindings
 
 # Local Triton model repository (models copied here for local testing)
 architectures/triton/model_repository/*/1/model.onnx

@@ -323,6 +323,35 @@ def get_triton_config() -> dict[str, Any]:
     return config.get("triton", {})
 
 
+def get_triton_batching_config() -> dict[str, Any]:
+    """Get Triton dynamic batching configuration.
+
+    Returns:
+        Batching configuration dictionary with keys:
+        - enabled: bool (default False)
+        - max_batch_size: int (default 8)
+        - preferred_batch_size: list[int]
+        - max_queue_delay_microseconds: int
+
+    Example:
+        >>> batching = get_triton_batching_config()
+        >>> batching["enabled"]
+        False
+        >>> batching["max_batch_size"]
+        8
+    """
+    triton = get_triton_config()
+    return triton.get(
+        "batching",
+        {
+            "enabled": False,
+            "max_batch_size": 8,
+            "preferred_batch_size": [4, 8],
+            "max_queue_delay_microseconds": 5000,
+        },
+    )
+
+
 # =============================================================================
 # Load Testing Configuration
 # =============================================================================

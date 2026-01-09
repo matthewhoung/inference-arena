@@ -194,6 +194,7 @@ def export_yolov5n(
     opset_version: int = ONNX_OPSET_VERSION,
     input_size: int = YOLO_INPUT_SIZE,
     force: bool = False,
+    dynamic_batch: bool = False,
 ) -> ExportResult:
     """Export YOLOv5n model to ONNX format.
 
@@ -205,6 +206,7 @@ def export_yolov5n(
         opset_version: ONNX opset version (default: 17)
         input_size: Input dimension (default: 640)
         force: Overwrite existing file if True
+        dynamic_batch: If True, export with dynamic batch dimension for Triton batching
 
     Returns:
         ExportResult with export details
@@ -228,9 +230,11 @@ def export_yolov5n(
     # Create output directory
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
+    batch_mode = "dynamic" if dynamic_batch else "static"
     logger.info(f"Exporting YOLOv5n to {output_path}")
     logger.info(f"  Opset version: {opset_version}")
     logger.info(f"  Input size: {input_size}x{input_size}")
+    logger.info(f"  Batch mode: {batch_mode}")
 
     try:
         # Try ultralytics first (preferred)
@@ -248,12 +252,13 @@ def export_yolov5n(
             model = YOLO("yolov5n.pt")
 
             # Export to ONNX
+            # dynamic=True enables dynamic batch dimension for Triton batching
             export_path = model.export(
                 format="onnx",
                 opset=opset_version,
                 imgsz=input_size,
                 batch=1,
-                dynamic=False,
+                dynamic=dynamic_batch,
                 simplify=True,
             )
 
@@ -277,6 +282,14 @@ def export_yolov5n(
         # Create dummy input
         dummy_input = torch.randn(1, 3, input_size, input_size)
 
+        # Set dynamic axes for batch dimension if requested
+        dynamic_axes = None
+        if dynamic_batch:
+            dynamic_axes = {
+                "images": {0: "batch"},
+                "output0": {0: "batch"},
+            }
+
         # Export
         torch.onnx.export(
             model,
@@ -285,7 +298,7 @@ def export_yolov5n(
             opset_version=opset_version,
             input_names=["images"],
             output_names=["output0"],
-            dynamic_axes=None,
+            dynamic_axes=dynamic_axes,
         )
 
     # Verify export
@@ -325,6 +338,7 @@ def export_mobilenetv2(
     opset_version: int = ONNX_OPSET_VERSION,
     input_size: int = MOBILENET_INPUT_SIZE,
     force: bool = False,
+    dynamic_batch: bool = False,
 ) -> ExportResult:
     """Export MobileNetV2 model to ONNX format.
 
@@ -336,6 +350,7 @@ def export_mobilenetv2(
         opset_version: ONNX opset version (default: 17)
         input_size: Input dimension (default: 224)
         force: Overwrite existing file if True
+        dynamic_batch: If True, export with dynamic batch dimension for Triton batching
 
     Returns:
         ExportResult with export details
@@ -361,9 +376,11 @@ def export_mobilenetv2(
     # Create output directory
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
+    batch_mode = "dynamic" if dynamic_batch else "static"
     logger.info(f"Exporting MobileNetV2 to {output_path}")
     logger.info(f"  Opset version: {opset_version}")
     logger.info(f"  Input size: {input_size}x{input_size}")
+    logger.info(f"  Batch mode: {batch_mode}")
 
     import torch
     import torchvision.models as models
@@ -376,7 +393,18 @@ def export_mobilenetv2(
     # Create dummy input
     dummy_input = torch.randn(1, 3, input_size, input_size)
 
+    # Set dynamic axes for batch dimension if requested
+    dynamic_axes = None
+    export_params = True
+    if dynamic_batch:
+        dynamic_axes = {
+            "input": {0: "batch"},
+            "output": {0: "batch"},
+        }
+
     # Export to ONNX
+    # Use dynamo=False to ensure the legacy exporter is used, which properly
+    # supports dynamic_axes. The newer torch.export pathway may not honor it.
     logger.info("  Exporting to ONNX...")
     torch.onnx.export(
         model,
@@ -385,7 +413,10 @@ def export_mobilenetv2(
         opset_version=opset_version,
         input_names=["input"],
         output_names=["output"],
-        dynamic_axes=None,
+        dynamic_axes=dynamic_axes,
+        export_params=export_params,
+        do_constant_folding=True,
+        dynamo=False,  # Force legacy exporter for proper dynamic_axes support
     )
 
     # Verify export

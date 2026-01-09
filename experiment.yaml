@@ -372,6 +372,15 @@ triton:
     intra_op_thread_count: "2"
     inter_op_thread_count: "1"
 
+  # Dynamic batching configuration
+  # When enabled, Triton batches multiple requests for improved throughput
+  # Default: disabled (max_batch_size: 0) to measure baseline sequential overhead
+  batching:
+    enabled: false
+    max_batch_size: 8
+    preferred_batch_size: [4, 8]
+    max_queue_delay_microseconds: 5000
+
 # =============================================================================
 # Changelog
 # =============================================================================
@@ -447,6 +456,19 @@ changelog:
       3. Ensures consistency between experiment spec and thesis methodology chapter
     author: "Matthew Hong"
     impact: "Documentation correction - dataset already sampled, no re-sampling required"
+
+  - date: "2026-01-08"
+    version: "1.4.0"
+    change: "Added Triton dynamic batching configuration for comparative analysis"
+    justification: |
+      Advisor recommendation for thesis completeness:
+      1. Problem Statement addresses trade-offs in CPU-constrained environments
+      2. Triton's key advantage is parallelized batching - testing without it invites reviewer criticism
+      3. Two-phase evaluation: baseline overhead (batching disabled) vs parallelization gain (batching enabled)
+      4. Proactively answers: "We evaluated baseline overhead first, then measured specific gain from batching"
+      Configuration: max_batch_size=8, preferred_batch_size=[4,8], max_queue_delay=5000us
+    author: "Matthew Hong"
+    impact: "Experimental enhancement - enables secondary comparison graph (Triton baseline vs batched)"
 
   # Template for future changes:
   # - date: "YYYY-MM-DD"

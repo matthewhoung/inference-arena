@@ -91,11 +91,11 @@
                             },
                             {
                                 "color": "yellow",
-                                "value": 80
+                                "value": 140
                             },
                             {
                                 "color": "red",
-                                "value": 95
+                                "value": 180
                             }
                         ]
                     },
@@ -132,7 +132,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "sum(rate(container_cpu_usage_seconds_total{container_id=\"0f6e56d11ffb\"}[30s])) * 100",
+                    "expr": "sum(rate(container_cpu_usage_seconds_total{container_id=\"c6fe94c1b1a1\"}[30s])) * 100",
                     "legendFormat": "micro-detect",
                     "range": true,
                     "refId": "A"
@@ -143,7 +143,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "sum(rate(container_cpu_usage_seconds_total{container_id=\"abed7e874e17\"}[30s])) * 100",
+                    "expr": "sum(rate(container_cpu_usage_seconds_total{container_id=\"bd27131e8f84\"}[30s])) * 100",
                     "legendFormat": "micro-classify",
                     "range": true,
                     "refId": "B"
@@ -247,7 +247,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "sum(container_memory_usage_bytes{container_id=\"0f6e56d11ffb\"}) / 1024 / 1024",
+                    "expr": "sum(container_memory_usage_bytes{container_id=\"c6fe94c1b1a1\"}) / 1024 / 1024",
                     "legendFormat": "micro-detect",
                     "range": true,
                     "refId": "A"
@@ -258,7 +258,7 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "sum(container_memory_usage_bytes{container_id=\"abed7e874e17\"}) / 1024 / 1024",
+                    "expr": "sum(container_memory_usage_bytes{container_id=\"bd27131e8f84\"}) / 1024 / 1024",
                     "legendFormat": "micro-classify",
                     "range": true,
                     "refId": "B"
