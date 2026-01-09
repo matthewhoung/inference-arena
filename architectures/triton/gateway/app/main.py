@@ -56,23 +56,10 @@ async def lifespan(app: FastAPI):
 
     # Wait for Triton server to be ready
     logger.info("Waiting for Triton server...")
-    triton_client.wait_for_server_ready(timeout=settings.TRITON_TIMEOUT_SECONDS)
+    await triton_client.wait_for_server_ready(timeout=settings.TRITON_TIMEOUT_SECONDS)
 
-    # Verify models are loaded
-    # Use batched model names if TRITON_BATCHING is enabled
-    yolo_model = "yolov5n_batched" if TRITON_BATCHING else "yolov5n"
-    mobilenet_model = "mobilenetv2_batched" if TRITON_BATCHING else "mobilenetv2"
     batching_status = "batching enabled" if TRITON_BATCHING else "batching disabled"
     logger.info(f"Batching mode: {batching_status}")
-
-    try:
-        yolo_metadata = triton_client.get_model_metadata(yolo_model)
-        mobilenet_metadata = triton_client.get_model_metadata(mobilenet_model)
-        logger.info(f"Triton models loaded: {yolo_model} (v{yolo_metadata['versions']}), "
-                   f"{mobilenet_model} (v{mobilenet_metadata['versions']})")
-    except Exception as e:
-        logger.error(f"Failed to verify Triton models: {e}")
-        raise
 
     # Load ImageNet labels
     labels_file = Path(settings.LABELS_FILE)
@@ -93,7 +80,7 @@ async def lifespan(app: FastAPI):
     # Cleanup
     logger.info("Shutting down Triton gateway")
     if triton_client:
-        triton_client.close()
+        await triton_client.close()
 
 
 # Create FastAPI app with lifespan
@@ -138,7 +125,7 @@ async def predict(file: UploadFile = File(...)):
         image_bytes = await file.read()
 
         # Run inference pipeline
-        results, timing = pipeline.predict(image_bytes)
+        results, timing = await pipeline.predict(image_bytes)
 
         logger.info(
             "Predict complete",

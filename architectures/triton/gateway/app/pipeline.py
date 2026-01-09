@@ -11,6 +11,7 @@ Author: Matthew Hong
 
 import logging
 import time
+import asyncio
 from pathlib import Path
 import numpy as np
 
@@ -99,7 +100,7 @@ class TritonInferencePipeline:
         logger.info(f"Loaded {len(labels)} ImageNet class labels")
         return labels
 
-    def predict(
+    async def predict(
         self,
         image_bytes: bytes,
     ) -> tuple[list[dict], dict[str, float]]:
@@ -139,7 +140,7 @@ class TritonInferencePipeline:
         yolo_result = self.yolo_preprocessor(image)
 
         # Run YOLO inference via Triton gRPC
-        yolo_output = self.triton_client.infer_yolo(yolo_result.tensor)
+        yolo_output = await self.triton_client.infer_yolo(yolo_result.tensor)
 
         # Parse detections (NMS)
         detections_letterbox = parse_yolo_output(
@@ -160,45 +161,49 @@ class TritonInferencePipeline:
         timing["detection_ms"] = (t_det_end - t_det_start) * 1000
 
         # ====================================================================
-        # Classification
+        # Classification (Fan-Out / Parallel)
         # ====================================================================
         t_cls_start = time.perf_counter()
         results = []
 
-        for det in detections_orig:
-            # Extract crop from detection bounding box
-            crop = extract_crop(image, det)
+        if len(detections_orig) > 0:
+            # 1. Prepare all crops
+            crops = []
+            dets_for_classification = []
+            
+            for det in detections_orig:
+                crop = extract_crop(image, det)
+                preprocessed = self.mobilenet_preprocessor(crop)
+                crops.append(preprocessed.tensor)
+                dets_for_classification.append(det)
 
-            # Preprocess for MobileNet
-            mobilenet_result = self.mobilenet_preprocessor(crop)
+            # 2. Launch all inference tasks in parallel
+            # This is the "Magic Fix" that allows Batching to work
+            tasks = [
+                self.triton_client.infer_mobilenet(crop_tensor) 
+                for crop_tensor in crops
+            ]
+            
+            cls_outputs = await asyncio.gather(*tasks)
 
-            # Run classification inference via Triton gRPC
-            cls_output = self.triton_client.infer_mobilenet(
-                mobilenet_result.tensor
-            )
+            # 3. Process results
+            for det, cls_output in zip(dets_for_classification, cls_outputs):
+                class_id = int(np.argmax(cls_output[0]))
+                confidence = float(cls_output[0, class_id])
+                class_name = self.labels[class_id]
 
-            # Get top-1 class
-            class_id = int(np.argmax(cls_output[0]))
-            confidence = float(cls_output[0, class_id])
-            class_name = self.labels[class_id]
-
-            results.append(
-                {
+                results.append({
                     "detection": {
-                        "x1": float(det[0]),
-                        "y1": float(det[1]),
-                        "x2": float(det[2]),
-                        "y2": float(det[3]),
-                        "confidence": float(det[4]),
-                        "class_id": int(det[5]),
+                        "x1": float(det[0]), "y1": float(det[1]),
+                        "x2": float(det[2]), "y2": float(det[3]),
+                        "confidence": float(det[4]), "class_id": int(det[5]),
                     },
                     "classification": {
                         "class_id": class_id,
                         "class_name": class_name,
                         "confidence": confidence,
                     },
-                }
-            )
+                })
 
         t_cls_end = time.perf_counter()
         timing["classification_ms"] = (t_cls_end - t_cls_start) * 1000
