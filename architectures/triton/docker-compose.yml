@@ -57,6 +57,8 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MINIO_BUCKET: ${MINIO_BUCKET:-models}
+      # Batching toggle: when true, downloads batched model variants
+      TRITON_BATCHING: ${TRITON_BATCHING:-false}
 
     # -------------------------------------------------------------------------
     # Network Configuration
@@ -183,6 +185,9 @@ services:
       # Triton Configuration
       TRITON_GRPC_ENDPOINT: triton-server:8001
       TRITON_TIMEOUT_SECONDS: "60"
+
+      # Batching toggle: when true, uses batched model names for inference
+      TRITON_BATCHING: ${TRITON_BATCHING:-false}
 
       # Service Configuration
       LOG_LEVEL: INFO

@@ -4,15 +4,22 @@ This module provides a high-level interface to communicate with Triton
 Inference Server via gRPC. Handles connection management, inference requests,
 and error handling.
 
+When TRITON_BATCHING=true, uses batched model variants (yolov5n_batched,
+mobilenetv2_batched) which have dynamic batching enabled.
+
 Author: Matthew Hong
 """
 
 import logging
+import os
 import time
 import numpy as np
 import tritonclient.grpc as grpcclient
 
 logger = logging.getLogger(__name__)
+
+# Batching configuration from environment
+TRITON_BATCHING = os.getenv("TRITON_BATCHING", "false").lower() == "true"
 
 
 class TritonInferenceClient:
@@ -96,9 +103,12 @@ class TritonInferenceClient:
         # Prepare output
         outputs = [grpcclient.InferRequestedOutput("output0")]
 
+        # Select model based on batching configuration
+        model_name = "yolov5n_batched" if TRITON_BATCHING else "yolov5n"
+
         # Run inference
         response = self.client.infer(
-            model_name="yolov5n",
+            model_name=model_name,
             inputs=inputs,
             outputs=outputs,
         )
@@ -134,9 +144,12 @@ class TritonInferenceClient:
         # Prepare output
         outputs = [grpcclient.InferRequestedOutput("output")]
 
+        # Select model based on batching configuration
+        model_name = "mobilenetv2_batched" if TRITON_BATCHING else "mobilenetv2"
+
         # Run inference
         response = self.client.infer(
-            model_name="mobilenetv2",
+            model_name=model_name,
             inputs=inputs,
             outputs=outputs,
         )

@@ -70,9 +70,16 @@ infra = [
     "prometheus-client>=0.19.0",
 ]
 
-# Load testing
+# Load testing (basic)
 loadtest = [
     "locust>=2.20.0",
+]
+
+# Experiment framework (runner, metrics, results)
+experiment = [
+    "locust>=2.20.0",
+    "click>=8.0.0",
+    "prometheus-api-client>=0.5.0",
 ]
 
 # Development and testing
@@ -98,7 +105,7 @@ analysis = [
 
 # All dependencies
 all = [
-    "inference-arena[model,data,grpc,api,infra,loadtest,dev,analysis]",
+    "inference-arena[model,data,grpc,api,infra,experiment,dev,analysis]",
 ]
 
 [project.urls]

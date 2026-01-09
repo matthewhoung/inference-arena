@@ -190,6 +190,7 @@ class MinIOModelRegistry:
         model_name: str,
         model_path: Path,
         force: bool = False,
+        batching_enabled: bool = False,
     ) -> dict[str, Any]:
         """Upload a model with Triton-compatible structure.
 
@@ -199,9 +200,10 @@ class MinIOModelRegistry:
             {bucket}/{model_name}/metadata.json
 
         Args:
-            model_name: Model identifier (e.g., "yolov5n")
+            model_name: Model identifier (e.g., "yolov5n" or "yolov5n_batched")
             model_path: Path to local ONNX file
             force: Overwrite existing files
+            batching_enabled: If True, generates batching-enabled config.pbtxt
 
         Returns:
             Upload result with checksums and paths
@@ -212,6 +214,7 @@ class MinIOModelRegistry:
         result = {
             "model_name": model_name,
             "local_path": str(model_path),
+            "batching_enabled": batching_enabled,
             "uploads": [],
             "skipped": [],
         }
@@ -253,10 +256,11 @@ class MinIOModelRegistry:
         # 2. Upload config.pbtxt
         config_object_name = f"{model_name}/config.pbtxt"
         if force or not self._object_exists(config_object_name):
-            config_content = generate_config_pbtxt(model_name)
+            config_content = generate_config_pbtxt(model_name, batching_enabled)
             self._upload_string(config_object_name, config_content, "text/plain")
             result["uploads"].append(config_object_name)
-            logger.info(f"  Uploaded: {config_object_name}")
+            batching_status = "(batched)" if batching_enabled else "(non-batched)"
+            logger.info(f"  Uploaded: {config_object_name} {batching_status}")
         else:
             result["skipped"].append(config_object_name)
             logger.info(f"  Skipped (exists): {config_object_name}")
@@ -276,11 +280,15 @@ class MinIOModelRegistry:
 
         return result
 
-    def upload_all_models(self, force: bool = False) -> list[dict[str, Any]]:
+    def upload_all_models(
+        self, force: bool = False, include_batched: bool = False
+    ) -> list[dict[str, Any]]:
         """Upload all models from experiment.yaml.
 
         Args:
             force: Overwrite existing files
+            include_batched: If True, also uploads batched variants (model_name_batched)
+                            using dynamic batch models (*_dynamic.onnx)
 
         Returns:
             List of upload results
@@ -288,7 +296,7 @@ class MinIOModelRegistry:
         results = []
 
         for model_name in get_model_names():
-            # Construct expected local path
+            # Construct expected local path for static batch model
             model_path = self.models_dir / f"{model_name}.onnx"
 
             if not model_path.exists():
@@ -302,9 +310,34 @@ class MinIOModelRegistry:
                 )
                 continue
 
+            # Upload non-batched variant (uses static batch model)
             logger.info(f"Uploading {model_name}...")
             result = self.upload_model(model_name, model_path, force=force)
             results.append(result)
+
+            # Upload batched variant if requested
+            # Uses dynamic batch model (*_dynamic.onnx) for Triton batching support
+            if include_batched:
+                batched_name = f"{model_name}_batched"
+                # Dynamic batch model path: yolov5n_dynamic.onnx, mobilenetv2_dynamic.onnx
+                dynamic_model_path = self.models_dir / f"{model_name}_dynamic.onnx"
+
+                if not dynamic_model_path.exists():
+                    logger.warning(f"Dynamic batch model not found: {dynamic_model_path}")
+                    logger.warning("  Run: python scripts/models/export.py --dynamic-batch")
+                    results.append(
+                        {
+                            "model_name": batched_name,
+                            "error": f"File not found: {dynamic_model_path}",
+                        }
+                    )
+                    continue
+
+                logger.info(f"Uploading {batched_name} (from {dynamic_model_path.name})...")
+                result = self.upload_model(
+                    batched_name, dynamic_model_path, force=force, batching_enabled=True
+                )
+                results.append(result)
 
         return results
 
@@ -376,7 +409,9 @@ class MinIOModelRegistry:
 
     def _generate_metadata(self, model_name: str, model_path: Path) -> dict[str, Any]:
         """Generate metadata.json content for a model."""
-        model_config = get_model_config(model_name)
+        # Strip "_batched" suffix to get base model name for config lookup
+        base_model_name = model_name.replace("_batched", "")
+        model_config = get_model_config(base_model_name)
         experiment_meta = get_metadata()
 
         return {
@@ -400,6 +435,6 @@ class MinIOModelRegistry:
             "file_size_bytes": model_path.stat().st_size,
             "uploaded_at": datetime.now(UTC).isoformat(),
             "experiment_spec_version": get_spec_version(),
-            "thesis_reference": f"experiment.yaml controlled_variables.models.{model_name}",
+            "thesis_reference": f"experiment.yaml controlled_variables.models.{base_model_name}",
             "author": experiment_meta.get("author", "Unknown"),
         }

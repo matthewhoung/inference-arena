@@ -107,35 +107,41 @@ def export_models(
     force: bool = False,
     yolo_only: bool = False,
     mobilenet_only: bool = False,
+    dynamic_batch: bool = False,
 ) -> bool:
     """
     Export models to ONNX format.
-    
+
     Args:
         force: Overwrite existing files
         yolo_only: Export only YOLOv5n
         mobilenet_only: Export only MobileNetV2
-    
+        dynamic_batch: Export with dynamic batch dimension (for Triton batching)
+
     Returns:
         True if all exports successful
     """
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    
+
     success = True
     results = {}
-    
+
+    # Determine file suffix based on batch mode
+    suffix = "_dynamic" if dynamic_batch else ""
+    batch_desc = " (dynamic batch)" if dynamic_batch else ""
+
     # Export YOLOv5n
     if not mobilenet_only:
-        print("\n→ Exporting YOLOv5n...")
+        print(f"\n→ Exporting YOLOv5n{batch_desc}...")
         try:
-            yolo_path = MODELS_DIR / "yolov5n.onnx"
-            
+            yolo_path = MODELS_DIR / f"yolov5n{suffix}.onnx"
+
             if yolo_path.exists() and not force:
                 print("  ⊘ Already exists (use --force to overwrite)")
                 # Still verify it's valid
                 verification = verify_onnx_model(yolo_path)
                 if verification["valid"]:
-                    results["yolov5n"] = ExportResult(
+                    results[f"yolov5n{suffix}"] = ExportResult(
                         model_path=yolo_path,
                         checksum=compute_checksum(yolo_path),
                         opset_version=verification["opset_version"],
@@ -144,9 +150,11 @@ def export_models(
                         file_size_mb=yolo_path.stat().st_size / (1024 * 1024),
                     )
             else:
-                results["yolov5n"] = export_yolov5n(yolo_path, force=force)
+                results[f"yolov5n{suffix}"] = export_yolov5n(
+                    yolo_path, force=force, dynamic_batch=dynamic_batch
+                )
                 print("Export successful")
-                
+
         except ImportError as e:
             print(f"Missing dependency: {e}")
             print("    Install with: pip install torch ultralytics")
@@ -154,19 +162,19 @@ def export_models(
         except Exception as e:
             print(f"Export failed: {e}")
             success = False
-    
+
     # Export MobileNetV2
     if not yolo_only:
-        print("\n→ Exporting MobileNetV2...")
+        print(f"\n→ Exporting MobileNetV2{batch_desc}...")
         try:
-            mobilenet_path = MODELS_DIR / "mobilenetv2.onnx"
-            
+            mobilenet_path = MODELS_DIR / f"mobilenetv2{suffix}.onnx"
+
             if mobilenet_path.exists() and not force:
                 print("  ⊘ Already exists (use --force to overwrite)")
                 # Still verify it's valid
                 verification = verify_onnx_model(mobilenet_path)
                 if verification["valid"]:
-                    results["mobilenetv2"] = ExportResult(
+                    results[f"mobilenetv2{suffix}"] = ExportResult(
                         model_path=mobilenet_path,
                         checksum=compute_checksum(mobilenet_path),
                         opset_version=verification["opset_version"],
@@ -175,9 +183,11 @@ def export_models(
                         file_size_mb=mobilenet_path.stat().st_size / (1024 * 1024),
                     )
             else:
-                results["mobilenetv2"] = export_mobilenetv2(mobilenet_path, force=force)
+                results[f"mobilenetv2{suffix}"] = export_mobilenetv2(
+                    mobilenet_path, force=force, dynamic_batch=dynamic_batch
+                )
                 print("Export successful")
-                
+
         except ImportError as e:
             print(f"Missing dependency: {e}")
             print("    Install with: pip install torch torchvision")
@@ -185,24 +195,28 @@ def export_models(
         except Exception as e:
             print(f"Export failed: {e}")
             success = False
-    
+
     # Print summary
     if results:
         print("\n" + "-" * 60)
         print("Export Summary:")
         for name, result in results.items():
             print_result(name, result)
-    
+
     # Write checksums file
     if results:
-        checksums_path = MODELS_DIR / "checksums.txt"
+        checksums_file = f"checksums{suffix}.txt"
+        checksums_path = MODELS_DIR / checksums_file
         with open(checksums_path, "w") as f:
             f.write("# Model checksums for reproducibility\n")
-            f.write(f"# ONNX opset version: {ONNX_OPSET_VERSION}\n\n")
+            f.write(f"# ONNX opset version: {ONNX_OPSET_VERSION}\n")
+            if dynamic_batch:
+                f.write("# Batch mode: dynamic (for Triton batching)\n")
+            f.write("\n")
             for name, result in results.items():
                 f.write(f"{result.model_path.name}: sha256:{result.checksum}\n")
         print(f"\n  Checksums saved to: {checksums_path}")
-    
+
     return success
 
 
@@ -219,13 +233,14 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python scripts/export_models.py               # Export all models
-  python scripts/export_models.py --force       # Re-export even if exists
-  python scripts/export_models.py --verify      # Verify existing models only
-  python scripts/export_models.py --yolo-only   # Export only YOLOv5n
+  python scripts/models/export.py                  # Export all models (static batch)
+  python scripts/models/export.py --force          # Re-export even if exists
+  python scripts/models/export.py --verify         # Verify existing models only
+  python scripts/models/export.py --yolo-only      # Export only YOLOv5n
+  python scripts/models/export.py --dynamic-batch  # Export with dynamic batch (for Triton batching)
         """,
     )
-    
+
     parser.add_argument(
         "--force",
         action="store_true",
@@ -247,20 +262,26 @@ Examples:
         help="Export only MobileNetV2",
     )
     parser.add_argument(
+        "--dynamic-batch",
+        action="store_true",
+        help="Export with dynamic batch dimension (for Triton batching). "
+             "Creates yolov5n_dynamic.onnx and mobilenetv2_dynamic.onnx",
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         default=None,
         help=f"Output directory (default: {MODELS_DIR})",
     )
-    
+
     args = parser.parse_args()
-    
+
     # Update output dir if specified
     if args.output_dir is not None:
         MODELS_DIR = args.output_dir
-    
+
     print_header()
-    
+
     if args.verify:
         success = verify_existing_models()
     else:
@@ -268,8 +289,9 @@ Examples:
             force=args.force,
             yolo_only=args.yolo_only,
             mobilenet_only=args.mobilenet_only,
+            dynamic_batch=args.dynamic_batch,
         )
-    
+
     print()
     print("=" * 60)
     if success:
@@ -278,7 +300,7 @@ Examples:
         print("Operations failed")
     print("=" * 60)
     print()
-    
+
     return 0 if success else 1
 
 

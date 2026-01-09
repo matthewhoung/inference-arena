@@ -5,6 +5,9 @@ Download models and config.pbtxt from MinIO to Triton model repository.
 This script runs as an init container before Triton server starts.
 Downloads all required model files from MinIO to the shared volume.
 
+When TRITON_BATCHING=true is set, downloads batched model variants
+(yolov5n_batched, mobilenetv2_batched) instead of non-batched variants.
+
 Author: Matthew Hong
 """
 
@@ -20,6 +23,9 @@ ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
 SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
 BUCKET = os.getenv("MINIO_BUCKET", "models")
 MODEL_REPO = Path("/models")
+
+# Batching configuration
+TRITON_BATCHING = os.getenv("TRITON_BATCHING", "false").lower() == "true"
 
 
 def download_model(client: Minio, model_name: str) -> None:
@@ -58,12 +64,23 @@ def download_model(client: Minio, model_name: str) -> None:
         size_mb = local_data_path.stat().st_size / (1024 * 1024)
         print(f"  ✓ Downloaded {model_data} ({size_mb:.2f} MB)")
 
-        # Create symlink with model-specific name for ONNX internal references
-        # E.g., mobilenetv2.onnx.data -> model.onnx.data
-        symlink_path = model_dir / f"{model_name}.onnx.data"
+        # Create symlink with the name that the ONNX file internally references
+        # For batched models using dynamic export:
+        #   mobilenetv2_batched uses mobilenetv2_dynamic.onnx -> refs mobilenetv2_dynamic.onnx.data
+        # For non-batched models using static export:
+        #   mobilenetv2 uses mobilenetv2.onnx -> refs mobilenetv2.onnx.data
+        base_model_name = model_name.replace("_batched", "")
+        if "_batched" in model_name:
+            # Dynamic batch model references {base}_dynamic.onnx.data
+            symlink_name = f"{base_model_name}_dynamic.onnx.data"
+        else:
+            # Static batch model references {base}.onnx.data
+            symlink_name = f"{base_model_name}.onnx.data"
+
+        symlink_path = model_dir / symlink_name
         if not symlink_path.exists():
             symlink_path.symlink_to("model.onnx.data")
-            print(f"  ✓ Created symlink: {model_name}.onnx.data -> model.onnx.data")
+            print(f"  ✓ Created symlink: {symlink_name} -> model.onnx.data")
     except S3Error:
         # Not all models have external data - this is OK
         print(f"  ℹ No external data file for {model_name}")
@@ -90,6 +107,7 @@ def main() -> int:
     print(f"MinIO Endpoint: {MINIO_ENDPOINT}")
     print(f"Bucket: {BUCKET}")
     print(f"Target Directory: {MODEL_REPO}")
+    print(f"Batching Mode: {'ENABLED' if TRITON_BATCHING else 'DISABLED'}")
     print("="*60)
 
     # Connect to MinIO
@@ -110,8 +128,14 @@ def main() -> int:
         print(f"✗ Failed to connect to MinIO: {e}")
         return 1
 
-    # Download models
-    models = ["yolov5n", "mobilenetv2"]
+    # Download models - use batched variants if TRITON_BATCHING is enabled
+    if TRITON_BATCHING:
+        models = ["yolov5n_batched", "mobilenetv2_batched"]
+        print("\n[INFO] Using batched model variants (dynamic batching enabled)")
+    else:
+        models = ["yolov5n", "mobilenetv2"]
+        print("\n[INFO] Using non-batched model variants (dynamic batching disabled)")
+
     for model_name in models:
         try:
             download_model(client, model_name)
@@ -136,7 +160,8 @@ def main() -> int:
 
     print("\n" + "="*60)
     print("Init container completed successfully")
-    print("Triton server can now start")
+    batching_status = "(batching enabled)" if TRITON_BATCHING else "(batching disabled)"
+    print(f"Triton server can now start {batching_status}")
     print("="*60 + "\n")
 
     return 0

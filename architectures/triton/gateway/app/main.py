@@ -10,6 +10,7 @@ Author: Matthew Hong
 """
 
 import logging
+import os
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -26,6 +27,9 @@ from .triton_client import TritonInferenceClient
 pipeline: TritonInferencePipeline | None = None
 triton_client: TritonInferenceClient | None = None
 logger = logging.getLogger(__name__)
+
+# Batching configuration from environment
+TRITON_BATCHING = os.getenv("TRITON_BATCHING", "false").lower() == "true"
 
 
 @asynccontextmanager
@@ -55,11 +59,17 @@ async def lifespan(app: FastAPI):
     triton_client.wait_for_server_ready(timeout=settings.TRITON_TIMEOUT_SECONDS)
 
     # Verify models are loaded
+    # Use batched model names if TRITON_BATCHING is enabled
+    yolo_model = "yolov5n_batched" if TRITON_BATCHING else "yolov5n"
+    mobilenet_model = "mobilenetv2_batched" if TRITON_BATCHING else "mobilenetv2"
+    batching_status = "batching enabled" if TRITON_BATCHING else "batching disabled"
+    logger.info(f"Batching mode: {batching_status}")
+
     try:
-        yolo_metadata = triton_client.get_model_metadata("yolov5n")
-        mobilenet_metadata = triton_client.get_model_metadata("mobilenetv2")
-        logger.info(f"Triton models loaded: yolov5n (v{yolo_metadata['versions']}), "
-                   f"mobilenetv2 (v{mobilenet_metadata['versions']})")
+        yolo_metadata = triton_client.get_model_metadata(yolo_model)
+        mobilenet_metadata = triton_client.get_model_metadata(mobilenet_model)
+        logger.info(f"Triton models loaded: {yolo_model} (v{yolo_metadata['versions']}), "
+                   f"{mobilenet_model} (v{mobilenet_metadata['versions']})")
     except Exception as e:
         logger.error(f"Failed to verify Triton models: {e}")
         raise

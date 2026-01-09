@@ -77,8 +77,8 @@ body:
     id: results_file
     attributes:
       label: "Results File"
-      description: "Path to CSV output"
-      placeholder: "results/raw/monolithic_10users_run1.csv"
+      description: "Path to JSON output"
+      placeholder: "results/experiment/runs/monolithic_users10_run1_YYYYMMDD.json"
 
   - type: textarea
     id: observations

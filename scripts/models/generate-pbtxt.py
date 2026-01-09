@@ -5,14 +5,20 @@ This CLI tool generates NVIDIA Triton Inference Server configuration files
 based on model specifications defined in experiment.yaml.
 
 Usage:
-    # Generate all configs to stdout
+    # Generate all configs to stdout (non-batched)
     python scripts/models/generate-pbtxt.py --print
+
+    # Generate batching-enabled configs
+    python scripts/models/generate-pbtxt.py --print --batched
 
     # Generate specific model config
     python scripts/models/generate-pbtxt.py --model yolov5n --print
 
     # Save configs to directory
     python scripts/models/generate-pbtxt.py --output-dir models/triton
+
+    # Generate both non-batched and batched configs
+    python scripts/models/generate-pbtxt.py --all-variants --output-dir models/triton
 
 Author: Matthew Hong
 """
@@ -61,14 +67,38 @@ def main() -> int:
         action="store_true",
         help="Validate generated configs",
     )
+    parser.add_argument(
+        "--batched",
+        action="store_true",
+        help="Generate batching-enabled config (model names will have _batched suffix)",
+    )
+    parser.add_argument(
+        "--all-variants",
+        action="store_true",
+        dest="all_variants",
+        help="Generate both non-batched and batched variants for all models",
+    )
 
     args = parser.parse_args()
 
     # Determine models to process
-    if args.model == "all":
-        models = ["yolov5n", "mobilenetv2"]
+    base_models = ["yolov5n", "mobilenetv2"] if args.model == "all" else [args.model]
+
+    # Build list of (model_name, batching_enabled) tuples
+    configs_to_generate = []
+    if args.all_variants:
+        # Generate both variants for each model
+        for model in base_models:
+            configs_to_generate.append((model, False))
+            configs_to_generate.append((f"{model}_batched", True))
+    elif args.batched:
+        # Generate batched variants only
+        for model in base_models:
+            configs_to_generate.append((f"{model}_batched", True))
     else:
-        models = [args.model]
+        # Generate non-batched variants only (default)
+        for model in base_models:
+            configs_to_generate.append((model, False))
 
     # Default output directory
     if args.output_dir is None:
@@ -76,8 +106,8 @@ def main() -> int:
 
     exit_code = 0
 
-    for model_name in models:
-        config = generate_config_pbtxt(model_name)
+    for model_name, batching_enabled in configs_to_generate:
+        config = generate_config_pbtxt(model_name, batching_enabled)
 
         if args.validate:
             errors = validate_config_pbtxt(config)
@@ -87,17 +117,20 @@ def main() -> int:
                     print(f"  - {error}")
                 exit_code = 1
                 continue
-            print(f"[OK] {model_name}: validation passed")
+            batching_status = "(batched)" if batching_enabled else "(non-batched)"
+            print(f"[OK] {model_name}: validation passed {batching_status}")
 
         if args.print_config:
             print()
             print("=" * 60)
-            print(f"# {model_name}/config.pbtxt")
+            batching_status = "BATCHED" if batching_enabled else "NON-BATCHED"
+            print(f"# {model_name}/config.pbtxt [{batching_status}]")
             print("=" * 60)
             print(config)
         elif not args.validate:
-            output_path = save_config_pbtxt(model_name, args.output_dir)
-            print(f"[OK] Generated: {output_path}")
+            output_path = save_config_pbtxt(model_name, args.output_dir, batching_enabled)
+            batching_status = "(batched)" if batching_enabled else "(non-batched)"
+            print(f"[OK] Generated: {output_path} {batching_status}")
 
     return exit_code
 

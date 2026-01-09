@@ -1,0 +1,5 @@
+# Model checksums for reproducibility
+# ONNX opset version: 17
+# Batch mode: dynamic (for Triton batching)
+
+mobilenetv2_dynamic.onnx: sha256:60c5fa935a9e3a4f9aac1bb39562435211b4b90b8115919ceeced8b15ffe1e28

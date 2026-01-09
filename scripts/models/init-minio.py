@@ -111,6 +111,12 @@ def main() -> int:
         default=None,
         help="MinIO endpoint (default: from experiment.yaml)",
     )
+    parser.add_argument(
+        "--include-batched",
+        action="store_true",
+        dest="include_batched",
+        help="Also upload batched model variants (model_name_batched) for dynamic batching experiments",
+    )
 
     args = parser.parse_args()
 
@@ -148,7 +154,11 @@ def main() -> int:
 
         # Upload all models
         logger.info("Uploading models...")
-        results = registry.upload_all_models(force=args.force)
+        if args.include_batched:
+            logger.info("Including batched variants for dynamic batching experiments")
+        results = registry.upload_all_models(
+            force=args.force, include_batched=args.include_batched
+        )
 
         # Summary
         print()
