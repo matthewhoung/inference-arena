@@ -21,7 +21,7 @@
 #   - Gateway: http://localhost:8300/health
 #   - Triton HTTP: http://localhost:8000/v2/health/ready
 #   - Triton gRPC: localhost:8001
-#   - Metrics: Scraped by cAdvisor (visible in Grafana)
+#   - Metrics: Scraped by OTel Collector (visible in Grafana)
 #
 # Author: Matthew Hong
 # Specification Reference: Ch3 Methodology §3.4.3 Triton Architecture
@@ -102,14 +102,11 @@ services:
     # -------------------------------------------------------------------------
     # Resource Constraints (CPU-only, matching experiment.yaml)
     # -------------------------------------------------------------------------
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 4096M
-        reservations:
-          cpus: '2'
-          memory: 4096M
+    # Note: Using service-level limits for non-Swarm enforcement
+    # -------------------------------------------------------------------------
+    cpus: '${CONTAINER_VCPU:-2}'
+    mem_limit: ${CONTAINER_MEMORY:-4096}M
+    mem_reservation: ${CONTAINER_MEMORY:-4096}M
 
     # -------------------------------------------------------------------------
     # Environment Configuration
@@ -169,14 +166,11 @@ services:
     # -------------------------------------------------------------------------
     # Resource Constraints (matching experiment.yaml)
     # -------------------------------------------------------------------------
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 4096M
-        reservations:
-          cpus: '2'
-          memory: 4096M
+    # Note: Using service-level limits for non-Swarm enforcement
+    # -------------------------------------------------------------------------
+    cpus: '${CONTAINER_VCPU:-2}'
+    mem_limit: ${CONTAINER_MEMORY:-4096}M
+    mem_reservation: ${CONTAINER_MEMORY:-4096}M
 
     # -------------------------------------------------------------------------
     # Environment Configuration

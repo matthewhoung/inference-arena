@@ -203,7 +203,7 @@ def print_next_steps() -> None:
     print("  MinIO Console:  http://localhost:9001")
     print("  Prometheus:     http://localhost:9090")
     print("  Grafana:        http://localhost:3000")
-    print("  cAdvisor:       http://localhost:8080\n")
+    print("  OTel Collector: http://localhost:8889/metrics\n")
 
     print(f"{Colors.BLUE}For more information, see ENVIRONMENT.md{Colors.NC}\n")
 

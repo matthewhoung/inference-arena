@@ -29,7 +29,6 @@ _minio_api_port = _infra_config["minio"]["external_endpoint"].split(":")[
     -1
 ]  # Extract port from "localhost:9000"
 _monitoring_config = get_controlled_variables("monitoring")
-_cadvisor_port = str(_monitoring_config["cadvisor"]["port"])
 
 
 # =============================================================================
@@ -148,7 +147,7 @@ class TestComposeStructure:
 class TestRequiredServices:
     """Test that all required infrastructure services are defined."""
 
-    REQUIRED_SERVICES = ["minio", "cadvisor", "prometheus", "grafana"]
+    REQUIRED_SERVICES = ["minio", "otel-collector", "prometheus", "grafana"]
 
     def test_all_services_exist(self, compose_config: dict[str, Any]) -> None:
         """All required services should be defined."""
@@ -232,44 +231,32 @@ class TestMinIOService:
 
 
 # =============================================================================
-# cAdvisor Service Tests
+# OpenTelemetry Collector Service Tests
 # =============================================================================
 
 
-class TestCAdvisorService:
-    """Test cAdvisor service configuration."""
+class TestOtelCollectorService:
+    """Test OpenTelemetry Collector service configuration."""
 
-    def test_cadvisor_image_version(self, compose_config: dict[str, Any]) -> None:
-        """cAdvisor should use a pinned version."""
-        cadvisor = compose_config["services"]["cadvisor"]
-        assert "cadvisor" in cadvisor["image"].lower()
-        assert "latest" not in cadvisor["image"].lower()
+    def test_otel_collector_image_version(self, compose_config: dict[str, Any]) -> None:
+        """OTel Collector should use a pinned version."""
+        otel = compose_config["services"]["otel-collector"]
+        assert "otel" in otel["image"].lower() or "opentelemetry" in otel["image"].lower()
+        assert "latest" not in otel["image"].lower()
 
-    def test_cadvisor_port(self, compose_config: dict[str, Any]) -> None:
-        """cAdvisor should expose configured port."""
-        cadvisor = compose_config["services"]["cadvisor"]
-        ports = cadvisor.get("ports", [])
-        port_mappings = [str(p) for p in ports]
-        # Use port from config (experiment.yaml)
-        assert any(
-            _cadvisor_port in p for p in port_mappings
-        ), f"cAdvisor port {_cadvisor_port} not exposed"
-
-    def test_cadvisor_required_volumes(self, compose_config: dict[str, Any]) -> None:
-        """cAdvisor should have required host volume mounts."""
-        cadvisor = compose_config["services"]["cadvisor"]
-        volumes = cadvisor.get("volumes", [])
+    def test_otel_collector_config_mount(self, compose_config: dict[str, Any]) -> None:
+        """OTel Collector should mount configuration file."""
+        otel = compose_config["services"]["otel-collector"]
+        volumes = otel.get("volumes", [])
         volume_str = " ".join(str(v) for v in volumes)
+        assert "otel" in volume_str.lower(), "OTel Collector config not mounted"
 
-        # cAdvisor needs these mounts to read container stats
-        assert "/var/run" in volume_str, "cAdvisor needs /var/run mount"
-        assert "/sys" in volume_str, "cAdvisor needs /sys mount"
-        assert "/var/lib/docker" in volume_str, "cAdvisor needs /var/lib/docker mount"
-
-    def test_cadvisor_privileged(self, compose_config: dict[str, Any]) -> None:
-        """cAdvisor should run privileged for full access."""
-        cadvisor = compose_config["services"]["cadvisor"]
-        assert cadvisor.get("privileged") is True, "cAdvisor should be privileged"
+    def test_otel_collector_docker_socket(self, compose_config: dict[str, Any]) -> None:
+        """OTel Collector should have Docker socket access for container metrics."""
+        otel = compose_config["services"]["otel-collector"]
+        volumes = otel.get("volumes", [])
+        volume_str = " ".join(str(v) for v in volumes)
+        assert "/var/run/docker.sock" in volume_str, "OTel Collector needs Docker socket"
 
 
 # =============================================================================
@@ -301,15 +288,15 @@ class TestPrometheusService:
         volume_str = " ".join(str(v) for v in volumes)
         assert "prometheus.yml" in volume_str, "Prometheus config not mounted"
 
-    def test_prometheus_depends_on_cadvisor(self, compose_config: dict[str, Any]) -> None:
-        """Prometheus should depend on cAdvisor."""
+    def test_prometheus_depends_on_otel(self, compose_config: dict[str, Any]) -> None:
+        """Prometheus should depend on OTel Collector."""
         prometheus = compose_config["services"]["prometheus"]
         depends_on = prometheus.get("depends_on", {})
         # Can be list or dict
         if isinstance(depends_on, list):
-            assert "cadvisor" in depends_on
+            assert "otel-collector" in depends_on
         else:
-            assert "cadvisor" in depends_on
+            assert "otel-collector" in depends_on
 
 
 # =============================================================================
@@ -387,7 +374,7 @@ class TestNetworks:
         assert "backend-network" in networks, "MinIO should be on backend-network"
 
     def test_prometheus_on_both_networks(self, compose_config: dict[str, Any]) -> None:
-        """Prometheus should be on both networks to scrape cAdvisor and serve Grafana."""
+        """Prometheus should be on both networks to scrape OTel Collector and serve Grafana."""
         prometheus = compose_config["services"]["prometheus"]
         networks = prometheus.get("networks", [])
         assert "infra-network" in networks, "Prometheus should be on infra-network"
@@ -408,24 +395,28 @@ class TestPrometheusConfig:
         scrape_interval = global_config.get("scrape_interval", "")
         assert scrape_interval == "1s", f"Scrape interval should be 1s, got {scrape_interval}"
 
-    def test_cadvisor_job_exists(self, prometheus_config: dict[str, Any]) -> None:
-        """cAdvisor scrape job should be configured."""
+    def test_otel_job_exists(self, prometheus_config: dict[str, Any]) -> None:
+        """OTel Collector scrape job should be configured."""
         scrape_configs = prometheus_config.get("scrape_configs", [])
         job_names = [c.get("job_name") for c in scrape_configs]
-        assert "cadvisor" in job_names, "cAdvisor job not configured"
+        assert "otel-collector" in job_names, "OTel Collector job not configured"
 
-    def test_cadvisor_target(self, prometheus_config: dict[str, Any]) -> None:
-        """cAdvisor target should point to correct host:port."""
+    def test_otel_target(self, prometheus_config: dict[str, Any]) -> None:
+        """OTel Collector target should point to correct host:port."""
         scrape_configs = prometheus_config.get("scrape_configs", [])
-        cadvisor_config = next((c for c in scrape_configs if c.get("job_name") == "cadvisor"), None)
-        assert cadvisor_config is not None
+        otel_config = next(
+            (c for c in scrape_configs if c.get("job_name") == "otel-collector"), None
+        )
+        assert otel_config is not None
 
-        static_configs = cadvisor_config.get("static_configs", [])
+        static_configs = otel_config.get("static_configs", [])
         targets = []
         for sc in static_configs:
             targets.extend(sc.get("targets", []))
 
-        assert any("cadvisor:8080" in t for t in targets), "cAdvisor target should be cadvisor:8080"
+        assert any(
+            "otel-collector:8889" in t for t in targets
+        ), "OTel target should be otel-collector:8889"
 
 
 # =============================================================================

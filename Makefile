@@ -17,11 +17,11 @@
 .PHONY: help setup reset \
         install test test-fast lint format clean clean-results clean-all \
         docker-build docker-build-mono docker-build-micro docker-build-triton docker-prune \
-        start-infra stop-infra start-mono start-micro start-triton \
+        start-infra stop-infra logs-otel start-mono start-micro start-triton \
         stop-mono stop-micro stop-triton stop-all \
         proto models-export models-init-minio models-init-minio-batched models-setup models-verify \
         data-download data-curate data-verify \
-        update-dashboards restart-grafana refresh-dashboards \
+        restart-grafana \
         test-quick test-arch test-matrix test-dry-run test-web
 
 # Default target
@@ -73,7 +73,7 @@ help: ## Show this help message
 	@echo ""
 	@echo "$(YELLOW)🏗️  Setup & Infrastructure:$(NC)"
 	@echo "  $(BLUE)make install$(NC)      Install Python dependencies (uv sync)"
-	@echo "  $(BLUE)make start-infra$(NC)  Start MinIO, Prometheus, Grafana, cAdvisor"
+	@echo "  $(BLUE)make start-infra$(NC)  Start MinIO, Prometheus, Grafana, OTel Collector"
 	@echo "  $(BLUE)make stop-infra$(NC)   Stop infrastructure containers"
 	@echo ""
 	@echo "$(YELLOW)🐳 Architectures:$(NC)"
@@ -180,7 +180,7 @@ health: ## Check health of all running services
 	@curl -s http://localhost:9000/minio/health/live > /dev/null 2>&1 && echo "  ✅ MinIO" || echo "  ❌ MinIO"
 	@curl -s http://localhost:9090/-/healthy > /dev/null 2>&1 && echo "  ✅ Prometheus" || echo "  ❌ Prometheus"
 	@curl -s http://localhost:3000/api/health > /dev/null 2>&1 && echo "  ✅ Grafana" || echo "  ❌ Grafana"
-	@curl -s http://localhost:8080/metrics > /dev/null 2>&1 && echo "  ✅ cAdvisor" || echo "  ❌ cAdvisor"
+	@curl -s http://localhost:13133/health > /dev/null 2>&1 && echo "  ✅ OTel Collector" || echo "  ❌ OTel Collector"
 	@echo ""
 	@echo "$(BLUE)Architectures:$(NC)"
 	@curl -s http://localhost:8100/health > /dev/null 2>&1 && echo "  ✅ Monolithic (8100)" || echo "  ❌ Monolithic (8100)"
@@ -262,15 +262,18 @@ docker-prune: ## Prune unused Docker resources (images, containers, volumes)
 # 🏢 Infrastructure Services
 # =============================================================================
 
-start-infra: ## Start infrastructure (MinIO, Prometheus, Grafana, cAdvisor)
+start-infra: ## Start infrastructure (MinIO, Prometheus, Grafana, OTel Collector)
 	docker compose -f infrastructure/docker-compose.infra.yml up -d
 	@echo ""
 	@echo "$(GREEN)Infrastructure started$(NC)"
-	@echo "  MinIO Console: http://localhost:9001 (minioadmin/minioadmin)"
-	@echo "  Prometheus:    http://localhost:9090"
-	@echo "  Grafana:       http://localhost:3000 (admin/admin)"
-	@echo "  cAdvisor:      http://localhost:8080"
+	@echo "  MinIO Console:   http://localhost:9001 (minioadmin/minioadmin)"
+	@echo "  Prometheus:      http://localhost:9090"
+	@echo "  Grafana:         http://localhost:3000 (admin/admin)"
+	@echo "  OTel Collector:  http://localhost:13133/health"
 	@echo ""
+
+logs-otel: ## Show OTel Collector logs
+	docker logs -f inference-arena-otel-collector
 
 stop-infra: ## Stop infrastructure containers
 	docker compose -f infrastructure/docker-compose.infra.yml down
@@ -283,17 +286,14 @@ stop-infra: ## Stop infrastructure containers
 start-mono: ## Start monolithic architecture
 	cd architectures/monolithic && docker compose up -d
 	@echo "$(GREEN)Monolithic started$(NC) - http://localhost:8100"
-	@sleep 2 && $(VENV)/python scripts/utils/update-dashboards.py 2>/dev/null || true
 
 start-micro: ## Start microservices architecture
 	cd architectures/microservices && docker compose up -d
 	@echo "$(GREEN)Microservices started$(NC) - http://localhost:8200"
-	@sleep 2 && $(VENV)/python scripts/utils/update-dashboards.py 2>/dev/null || true
 
-start-triton: ## Start Triton architecture
+start-triton: ## Start Triton architecture(TRITON_BATCHING=true make start-triton to enable batching)
 	cd architectures/triton && docker compose up -d
 	@echo "$(GREEN)Triton started$(NC) - http://localhost:8300"
-	@sleep 2 && $(VENV)/python scripts/utils/update-dashboards.py 2>/dev/null || true
 
 stop-mono: ## Stop monolithic architecture
 	cd architectures/monolithic && docker compose down
@@ -343,15 +343,13 @@ data-verify: ## Verify data setup (COCO + thesis test set)
 # =============================================================================
 # 📈 Grafana Dashboards
 # =============================================================================
-
-update-dashboards: ## Update Grafana dashboards with current container IDs
-	$(VENV)/python scripts/utils/update-dashboards.py
+# NOTE: With OTel Collector, dashboards use static container_name labels.
+# Manual dashboard updates are no longer needed after container restarts.
+# =============================================================================
 
 restart-grafana: ## Restart Grafana to reload dashboard changes
 	docker restart inference-arena-grafana
 	@echo "$(GREEN)Grafana restarted$(NC) - http://localhost:3000"
-
-refresh-dashboards: update-dashboards restart-grafana ## Update dashboards AND restart Grafana
 
 # =============================================================================
 # 🧪 Load Testing (ARCH=mono|micro|triton, USERS=10, RUNS=1)

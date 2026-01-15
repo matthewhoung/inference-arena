@@ -387,6 +387,64 @@ def get_concurrent_user_levels() -> list[int]:
 
 
 # =============================================================================
+# Container Names (Single Source of Truth)
+# =============================================================================
+
+
+def get_container_names(architecture: str | None = None) -> dict[str, list[str]] | list[str]:
+    """Get container names for architectures from experiment.yaml.
+
+    Container names are the single source of truth for:
+    - Prometheus metric queries (using container.name label)
+    - Grafana dashboard queries
+    - prometheus_client.py resource metrics
+
+    Args:
+        architecture: Optional architecture name ("monolithic", "microservices", "triton").
+                     If None, returns all architectures.
+
+    Returns:
+        If architecture specified: List of container names for that architecture
+        If None: Dictionary mapping architecture -> list of container names
+
+    Raises:
+        KeyError: If architecture not found
+
+    Example:
+        >>> get_container_names("monolithic")
+        ['inference-arena-monolithic']
+        >>> get_container_names("microservices")
+        ['inference-arena-detection', 'inference-arena-classification']
+        >>> get_container_names()
+        {'monolithic': [...], 'microservices': [...], 'triton': [...]}
+    """
+    container_names = get_controlled_variables("container_names")
+
+    if architecture is None:
+        return container_names
+
+    if architecture not in container_names:
+        available = list(container_names.keys())
+        raise KeyError(f"Architecture '{architecture}' not found. Available: {available}")
+
+    return container_names[architecture]
+
+
+def get_monitoring_config() -> dict[str, Any]:
+    """Get monitoring configuration including OTel Collector settings.
+
+    Returns:
+        Monitoring configuration dictionary
+
+    Example:
+        >>> monitoring = get_monitoring_config()
+        >>> monitoring["otel_collector"]["port"]
+        8889
+    """
+    return get_controlled_variables("monitoring")
+
+
+# =============================================================================
 # Metadata
 # =============================================================================
 

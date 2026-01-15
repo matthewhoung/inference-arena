@@ -19,7 +19,7 @@ import os
 from pathlib import Path
 
 # Import from shared config (single source of truth)
-from shared.config import get_concurrent_user_levels, get_load_testing_config
+from shared.config import get_concurrent_user_levels, get_container_names, get_load_testing_config
 
 # =============================================================================
 # Architecture Configuration
@@ -40,11 +40,40 @@ COMPOSE_FILES: dict[str, Path] = {
     "triton": PROJECT_ROOT / "architectures" / "triton" / "docker-compose.yml",
 }
 
-# Container names for Prometheus queries (from docker-compose service names)
+# =============================================================================
+# Container Names (from experiment.yaml single source of truth)
+# =============================================================================
+
+
+def get_architecture_container_names(architecture: str) -> list[str]:
+    """Get full container names for an architecture from experiment.yaml.
+
+    These are the actual Docker container names used for Prometheus queries
+    with the container_name label.
+
+    Args:
+        architecture: Architecture name ("monolithic", "microservices", "triton")
+
+    Returns:
+        List of full container names (e.g., ["inference-arena-monolithic"])
+    """
+    try:
+        return get_container_names(architecture)
+    except Exception:
+        # Fallback to hardcoded values if config unavailable
+        _fallback = {
+            "monolithic": ["inference-arena-monolithic"],
+            "microservices": ["inference-arena-detection", "inference-arena-classification"],
+            "triton": ["inference-arena-triton-server", "inference-arena-triton-gateway"],
+        }
+        return _fallback.get(architecture, [])
+
+
+# Legacy compatibility dict - use get_architecture_container_names() instead
+# Maps architecture to list of container names for Prometheus queries
 CONTAINER_NAMES: dict[str, list[str]] = {
-    "monolithic": ["monolithic"],
-    "microservices": ["detection", "classification"],
-    "triton": ["triton-server", "triton-gateway"],
+    arch: get_architecture_container_names(arch)
+    for arch in ["monolithic", "microservices", "triton"]
 }
 
 # =============================================================================
