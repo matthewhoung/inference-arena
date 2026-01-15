@@ -124,13 +124,14 @@ Collects time-series metrics from containers.
 
 **Note:** 1-second scrape interval matches thesis latency analysis requirements.
 
-### cAdvisor (Container Metrics)
+### OpenTelemetry Collector (Container Metrics)
 
 Exports container CPU, memory, and network metrics to Prometheus.
+Replaces cAdvisor with better WSL2 support for network I/O metrics.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `CADVISOR_PORT` | `8080` | Metrics endpoint port |
+| `OTEL_PROMETHEUS_PORT` | `8889` | Prometheus metrics endpoint port |
 
 ### Resource Limits
 
@@ -365,20 +366,6 @@ MINIO_ROOT_PASSWORD=minioadmin
 MINIO_ROOT_USER=matthew_local
 MINIO_ROOT_PASSWORD=my-secure-local-password-12345
 ```
-
----
-
-## Checklist for Thesis Defense
-
-- [ ] `.env.example` is committed and up-to-date
-- [ ] `.env` is in `.gitignore` (never committed)
-- [ ] All default passwords have been changed (if using production mode)
-- [ ] Resource limits match `experiment.yaml`
-- [ ] Port configuration is documented
-- [ ] Can reproduce setup from `.env.example` alone
-- [ ] No secrets in git history (`git log -p | grep password` shows nothing from `.env`)
-
----
 
 ## For Thesis Documentation
 

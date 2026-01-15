@@ -62,14 +62,13 @@ services:
     image: inference-arena-classification:latest
     container_name: inference-arena-classification
 
-    deploy:
-      resources:
-        limits:
-          cpus: '${CONTAINER_VCPU:-2}'
-          memory: ${CONTAINER_MEMORY:-4096}M
-        reservations:
-          cpus: '${CONTAINER_VCPU:-2}'
-          memory: ${CONTAINER_MEMORY:-4096}M
+    # -------------------------------------------------------------------------
+    # Resource Constraints
+    # Note: Using service-level limits for non-Swarm enforcement
+    # -------------------------------------------------------------------------
+    cpus: '${CONTAINER_VCPU:-2}'
+    mem_limit: ${CONTAINER_MEMORY:-4096}M
+    mem_reservation: ${CONTAINER_MEMORY:-4096}M
 
     environment:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -113,14 +112,13 @@ services:
     image: inference-arena-detection:latest
     container_name: inference-arena-detection
 
-    deploy:
-      resources:
-        limits:
-          cpus: '${CONTAINER_VCPU:-2}'
-          memory: ${CONTAINER_MEMORY:-4096}M
-        reservations:
-          cpus: '${CONTAINER_VCPU:-2}'
-          memory: ${CONTAINER_MEMORY:-4096}M
+    # -------------------------------------------------------------------------
+    # Resource Constraints
+    # Note: Using service-level limits for non-Swarm enforcement
+    # -------------------------------------------------------------------------
+    cpus: '${CONTAINER_VCPU:-2}'
+    mem_limit: ${CONTAINER_MEMORY:-4096}M
+    mem_reservation: ${CONTAINER_MEMORY:-4096}M
 
     environment:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}

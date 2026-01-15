@@ -12,7 +12,7 @@ Test Categories:
 - Service startup: Services come up healthy
 - Connectivity: Services respond on expected ports
 - MinIO: Bucket operations work
-- Prometheus: Scraping cAdvisor
+- Prometheus: Scraping OTel Collector
 
 Run with: pytest tests/infrastructure/test_integration.py -v -m integration
 
@@ -28,7 +28,7 @@ from pathlib import Path
 import pytest
 import requests
 
-from shared.config import get_controlled_variables, get_infrastructure_config
+from shared.config import get_infrastructure_config
 
 # =============================================================================
 # Constants (Loaded from experiment.yaml where available)
@@ -41,12 +41,10 @@ HEALTH_CHECK_INTERVAL = 2  # seconds
 # Service URLs derived from experiment.yaml infrastructure config
 _infra_config = get_infrastructure_config()
 _minio_endpoint = _infra_config["minio"]["external_endpoint"]
-_monitoring_config = get_controlled_variables("monitoring")
-_cadvisor_port = _monitoring_config["cadvisor"]["port"]
 
 MINIO_API_URL = f"http://{_minio_endpoint}"
 MINIO_CONSOLE_URL = "http://localhost:9001"  # MinIO console port (not in config yet)
-CADVISOR_URL = f"http://localhost:{_cadvisor_port}"
+OTEL_COLLECTOR_URL = "http://localhost:8889"  # OTel Collector Prometheus metrics endpoint
 PROMETHEUS_URL = "http://localhost:9090"  # Prometheus port (not in config yet)
 GRAFANA_URL = "http://localhost:3000"  # Grafana port (not in config yet)
 
@@ -135,7 +133,7 @@ def _wait_for_services() -> None:
     """Wait for all services to respond."""
     services = [
         ("MinIO", f"{MINIO_API_URL}/minio/health/live"),
-        ("cAdvisor", f"{CADVISOR_URL}/healthz"),
+        ("OTel Collector", f"{OTEL_COLLECTOR_URL}/metrics"),
         ("Prometheus", f"{PROMETHEUS_URL}/-/healthy"),
         ("Grafana", f"{GRAFANA_URL}/api/health"),
     ]
@@ -175,9 +173,9 @@ class TestServiceConnectivity:
         # Console returns redirect or login page
         assert response.status_code in [200, 302, 307]
 
-    def test_cadvisor_responds(self, infrastructure_services: None) -> None:
-        """cAdvisor should respond on port 8080."""
-        response = requests.get(f"{CADVISOR_URL}/healthz", timeout=5)
+    def test_otel_collector_responds(self, infrastructure_services: None) -> None:
+        """OTel Collector should respond on port 8889."""
+        response = requests.get(f"{OTEL_COLLECTOR_URL}/metrics", timeout=5)
         assert response.status_code == 200
 
     def test_prometheus_responds(self, infrastructure_services: None) -> None:
@@ -255,22 +253,22 @@ class TestPrometheusMetrics:
         active_targets = data["data"]["activeTargets"]
         assert len(active_targets) > 0, "No active scrape targets"
 
-    def test_prometheus_scrapes_cadvisor(self, infrastructure_services: None) -> None:
-        """Prometheus should successfully scrape cAdvisor."""
+    def test_prometheus_scrapes_otel(self, infrastructure_services: None) -> None:
+        """Prometheus should successfully scrape OTel Collector."""
         # Wait a bit for scraping to occur
         time.sleep(3)
 
         response = requests.get(f"{PROMETHEUS_URL}/api/v1/targets", timeout=5)
         data = response.json()
 
-        cadvisor_target = None
+        otel_target = None
         for target in data["data"]["activeTargets"]:
-            if target.get("labels", {}).get("job") == "cadvisor":
-                cadvisor_target = target
+            if target.get("labels", {}).get("job") == "otel-collector":
+                otel_target = target
                 break
 
-        assert cadvisor_target is not None, "cAdvisor target not found"
-        assert cadvisor_target["health"] == "up", "cAdvisor target not healthy"
+        assert otel_target is not None, "OTel Collector target not found"
+        assert otel_target["health"] == "up", "OTel Collector target not healthy"
 
     def test_prometheus_has_container_metrics(self, infrastructure_services: None) -> None:
         """Prometheus should have container CPU metrics."""
@@ -328,7 +326,7 @@ class TestNetworkConnectivity:
     """Test network isolation and connectivity."""
 
     def test_containers_on_backend_network(self, infrastructure_services: None) -> None:
-        """MinIO and cAdvisor should be on backend network."""
+        """MinIO and OTel Collector should be on backend network."""
         result = subprocess.run(
             ["docker", "network", "inspect", "inference-arena-backend"],
             capture_output=True,
@@ -343,8 +341,8 @@ class TestNetworkConnectivity:
 
         assert any("minio" in name for name in container_names), "MinIO not on backend network"
         assert any(
-            "cadvisor" in name for name in container_names
-        ), "cAdvisor not on backend network"
+            "otel" in name for name in container_names
+        ), "OTel Collector not on backend network"
 
     def test_grafana_on_infra_network(self, infrastructure_services: None) -> None:
         """Grafana should be on infra network."""

@@ -1,0 +1,270 @@
+{
+    "annotations": {
+        "list": []
+    },
+    "description": "Welcome to Inference Arena - ML Serving Architecture Benchmark",
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "id": null,
+    "links": [],
+    "liveNow": false,
+    "panels": [
+        {
+            "gridPos": {
+                "h": 4,
+                "w": 24,
+                "x": 0,
+                "y": 0
+            },
+            "id": 1,
+            "options": {
+                "code": {
+                    "language": "plaintext",
+                    "showLineNumbers": false,
+                    "showMiniMap": false
+                },
+                "content": "# Inference Arena\n\n**ML Serving Architecture Benchmark** - Compare Monolithic, Microservices, and Triton architectures under load.\n\nSelect an architecture below to view real-time CPU, Memory, and Network I/O metrics.",
+                "mode": "markdown"
+            },
+            "pluginVersion": "10.2.2",
+            "title": "",
+            "transparent": true,
+            "type": "text"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "description": "Current status of infrastructure services",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [
+                        {
+                            "options": {
+                                "0": {
+                                    "color": "red",
+                                    "index": 1,
+                                    "text": "DOWN"
+                                },
+                                "1": {
+                                    "color": "green",
+                                    "index": 0,
+                                    "text": "UP"
+                                }
+                            },
+                            "type": "value"
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "red",
+                                "value": null
+                            },
+                            {
+                                "color": "green",
+                                "value": 1
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 3,
+                "w": 24,
+                "x": 0,
+                "y": 4
+            },
+            "id": 2,
+            "options": {
+                "colorMode": "background",
+                "graphMode": "none",
+                "justifyMode": "center",
+                "orientation": "horizontal",
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "pluginVersion": "10.2.2",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "editorMode": "code",
+                    "expr": "up{job=\"otel-collector\"}",
+                    "legendFormat": "OTel Collector",
+                    "range": true,
+                    "refId": "A"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "editorMode": "code",
+                    "expr": "up{job=\"prometheus\"}",
+                    "legendFormat": "Prometheus",
+                    "range": true,
+                    "refId": "B"
+                }
+            ],
+            "title": "Infrastructure Status",
+            "type": "stat"
+        },
+        {
+            "gridPos": {
+                "h": 2,
+                "w": 24,
+                "x": 0,
+                "y": 7
+            },
+            "id": 3,
+            "options": {
+                "code": {
+                    "language": "plaintext",
+                    "showLineNumbers": false,
+                    "showMiniMap": false
+                },
+                "content": "## Select Architecture Dashboard",
+                "mode": "markdown"
+            },
+            "pluginVersion": "10.2.2",
+            "title": "",
+            "transparent": true,
+            "type": "text"
+        },
+        {
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 9
+            },
+            "id": 4,
+            "options": {
+                "code": {
+                    "language": "plaintext",
+                    "showLineNumbers": false,
+                    "showMiniMap": false
+                },
+                "content": "### Monolithic\n\n**Single container** running both detection and classification in one process.\n\n- Port: `8100`\n- Container: `inference-arena-monolithic`\n\n[**Open Monolithic Dashboard**](/d/inference-arena-mono/inference-arena-monolithic)",
+                "mode": "markdown"
+            },
+            "pluginVersion": "10.2.2",
+            "title": "",
+            "type": "text"
+        },
+        {
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 8,
+                "y": 9
+            },
+            "id": 5,
+            "options": {
+                "code": {
+                    "language": "plaintext",
+                    "showLineNumbers": false,
+                    "showMiniMap": false
+                },
+                "content": "### Microservices\n\n**Two containers** with separate detection and classification services.\n\n- Port: `8200`\n- Containers:\n  - `inference-arena-detection`\n  - `inference-arena-classification`\n\n[**Open Microservices Dashboard**](/d/inference-arena-micro/inference-arena-microservices)",
+                "mode": "markdown"
+            },
+            "pluginVersion": "10.2.2",
+            "title": "",
+            "type": "text"
+        },
+        {
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 16,
+                "y": 9
+            },
+            "id": 6,
+            "options": {
+                "code": {
+                    "language": "plaintext",
+                    "showLineNumbers": false,
+                    "showMiniMap": false
+                },
+                "content": "### Triton\n\n**NVIDIA Triton Inference Server** with gateway orchestration.\n\n- Port: `8300`\n- Containers:\n  - `inference-arena-triton-server`\n  - `inference-arena-triton-gateway`\n\n[**Open Triton Dashboard**](/d/inference-arena-triton/inference-arena-triton)",
+                "mode": "markdown"
+            },
+            "pluginVersion": "10.2.2",
+            "title": "",
+            "type": "text"
+        },
+        {
+            "gridPos": {
+                "h": 2,
+                "w": 24,
+                "x": 0,
+                "y": 17
+            },
+            "id": 7,
+            "options": {
+                "code": {
+                    "language": "plaintext",
+                    "showLineNumbers": false,
+                    "showMiniMap": false
+                },
+                "content": "---\n**Quick Start:** `make start-mono` | `make start-micro` | `make start-triton` &nbsp;&nbsp;|&nbsp;&nbsp; **Load Test:** `make test-quick ARCH=mono`",
+                "mode": "markdown"
+            },
+            "pluginVersion": "10.2.2",
+            "title": "",
+            "transparent": true,
+            "type": "text"
+        }
+    ],
+    "refresh": "30s",
+    "schemaVersion": 38,
+    "tags": ["inference-arena", "home"],
+    "templating": {
+        "list": [
+            {
+                "current": {
+                    "selected": false,
+                    "text": "Prometheus",
+                    "value": "prometheus"
+                },
+                "hide": 2,
+                "includeAll": false,
+                "label": "Datasource",
+                "multi": false,
+                "name": "datasource",
+                "options": [],
+                "query": "prometheus",
+                "queryValue": "",
+                "refresh": 1,
+                "regex": "",
+                "skipUrlSync": false,
+                "type": "datasource"
+            }
+        ]
+    },
+    "time": {
+        "from": "now-15m",
+        "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "Inference Arena - Home",
+    "uid": "inference-arena-home",
+    "version": 1,
+    "weekStart": ""
+}

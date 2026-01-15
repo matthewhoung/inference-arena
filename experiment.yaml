@@ -324,13 +324,33 @@ controlled_variables:
     prometheus:
       scrape_interval: "1s"
       retention_days: 15
-    cadvisor:
-      port: 8080
+    otel_collector:
+      port: 8889
+      health_port: 13133
+      receiver: docker_stats
     metrics:
-      - container_cpu_usage_seconds_total
-      - container_memory_usage_bytes
-      - container_network_receive_bytes_total
-      - container_network_transmit_bytes_total
+      - container.cpu.usage.total
+      - container.cpu.percent
+      - container.memory.usage.total
+      - container.memory.percent
+      - container.network.io.usage.rx_bytes
+      - container.network.io.usage.tx_bytes
+
+  # ---------------------------------------------------------------------------
+  # Container Names (Single Source of Truth)
+  # ---------------------------------------------------------------------------
+  # These container names MUST match the container_name in docker-compose files.
+  # Used by prometheus_client.py and Grafana dashboards for metric queries.
+  # ---------------------------------------------------------------------------
+  container_names:
+    monolithic:
+      - inference-arena-monolithic
+    microservices:
+      - inference-arena-detection
+      - inference-arena-classification
+    triton:
+      - inference-arena-triton-server
+      - inference-arena-triton-gateway
 
 # =============================================================================
 # Infrastructure Configuration
@@ -352,7 +372,7 @@ infrastructure:
     
   images:
     minio: "minio/minio:RELEASE.2024-01-18T22-51-28Z"
-    cadvisor: "gcr.io/cadvisor/cadvisor:v0.49.1"
+    otel_collector: "otel/opentelemetry-collector-contrib:0.92.0"
     prometheus: "prom/prometheus:v2.48.0"
     grafana: "grafana/grafana:10.2.2"
     triton: "nvcr.io/nvidia/tritonserver:24.08-py3"
@@ -484,6 +504,29 @@ changelog:
       - architectures/triton/gateway/app/main.py (added async/await)
       - architectures/triton/gateway/app/pipeline.py (implemented asyncio.gather for classification)
       - architectures/triton/gateway/app/triton_client.py (migrated to tritonclient.grpc.aio)
+
+  - date: "2026-01-14"
+    version: "1.6.0"
+    change: "Migrated from cAdvisor to OpenTelemetry Collector for container metrics collection"
+    justification: |
+      Three critical improvements for thesis experiments:
+      1. Static Container Identification: OTel docker_stats receiver provides container.name labels,
+         eliminating the need for dynamic container_id lookups that break when containers restart.
+      2. WSL2 Network I/O: docker_stats receiver correctly reads network metrics in WSL2,
+         where cAdvisor's direct cgroup access fails.
+      3. Reduced Maintenance: Grafana dashboards now use static container.name queries,
+         eliminating manual dashboard updates after every container restart.
+    author: "Matthew Hong"
+    impact: "Infrastructure change - all metric queries updated to use OTel metric names"
+    files_modified:
+      - experiment.yaml (added container_names section, updated monitoring config)
+      - infrastructure/docker-compose.infra.yml (replaced cAdvisor with OTel Collector)
+      - infrastructure/otel/otel-collector-config.yaml (new file)
+      - infrastructure/prometheus/prometheus.yml (updated scrape config)
+      - src/shared/config.py (added get_container_names function)
+      - experiments/config.py (imports container names from experiment.yaml)
+      - experiments/results/prometheus_client.py (updated metrics, removed ID lookup)
+      - infrastructure/grafana/provisioning/dashboards/*.json (static container.name queries)
 
   # Template for future changes:
   # - date: "YYYY-MM-DD"

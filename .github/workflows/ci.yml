@@ -334,7 +334,6 @@ jobs:
           import yaml
 
           infra = get_infrastructure_config()
-          monitoring = get_controlled_variables('monitoring')
 
           # Load docker-compose to verify alignment
           with open('infrastructure/docker-compose.infra.yml') as f:
@@ -344,9 +343,8 @@ jobs:
           minio_ports = compose['services']['minio']['ports']
           assert any('MINIO_API_PORT' in str(p) for p in minio_ports), 'MinIO port not parameterized'
 
-          # Check cAdvisor port is parameterized
-          cadvisor_ports = compose['services']['cadvisor']['ports']
-          assert any('CADVISOR_PORT' in str(p) for p in cadvisor_ports), 'cAdvisor port not parameterized'
+          # Check OTel Collector service exists
+          assert 'otel-collector' in compose['services'], 'OTel Collector service not found'
 
           print('✓ Infrastructure config properly parameterized')
           "

@@ -267,14 +267,13 @@ def main(
             for arch in archs:
                 _stop_architecture(arch)
 
-    # Export summaries
+    # Export summaries (regenerate from ALL existing runs, not just current)
     if all_results:
         click.echo()
         click.echo("=" * 70)
         click.echo("EXPORTING RESULTS")
         click.echo("=" * 70)
-        csv_path = exporter.export_summary_csv(all_results)
-        json_path = exporter.export_aggregated_json(all_results)
+        csv_path, json_path = exporter.regenerate_summaries()
         click.echo(f"  CSV summary:  {csv_path}")
         click.echo(f"  Aggregated:   {json_path}")
 

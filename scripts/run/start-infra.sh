@@ -3,7 +3,7 @@
 # Start Infrastructure - Inference Arena
 # =============================================================================
 #
-# Starts the infrastructure services: MinIO, Prometheus, Grafana, cAdvisor.
+# Starts the infrastructure services: MinIO, Prometheus, Grafana, OTel Collector.
 #
 # Usage: ./start-infra.sh
 #
@@ -27,7 +27,7 @@ echo ""
 echo "Services:"
 echo "  MinIO API:      http://localhost:9000"
 echo "  MinIO Console:  http://localhost:9001"
-echo "  cAdvisor:       http://localhost:8080"
+echo "  OTel Collector: http://localhost:8889/metrics"
 echo "  Prometheus:     http://localhost:9090"
 echo "  Grafana:        http://localhost:3000"
 echo ""

@@ -3,13 +3,13 @@
 # =============================================================================
 #
 # Scrape configuration for container metrics collection.
-# 
+#
 # Scrape Interval: 1 second
 #   - Required for accurate latency analysis during 180-second measurement phases
-#   - Aligns with methodology specification (Ch3 §3.4.5 Table 3.4)
+#   - Aligns with methodology specification (Ch3 - Container Metrics Collection)
 #
 # Targets:
-#   - cAdvisor: Container CPU, memory, network metrics
+#   - OpenTelemetry Collector: Container CPU, memory, network metrics
 #
 # Author: Matthew Hong
 # =============================================================================
@@ -18,10 +18,10 @@ global:
   # 1-second scrape interval for fine-grained metrics
   # Required for accurate P99 latency correlation with resource usage
   scrape_interval: 1s
-  
+
   # Evaluation interval for alerting rules (if any)
   evaluation_interval: 1s
-  
+
   # Attach these labels to any time series or alerts
   external_labels:
     project: 'inference-arena'
@@ -42,54 +42,35 @@ scrape_configs:
     scrape_interval: 15s
 
   # ---------------------------------------------------------------------------
-  # cAdvisor - Container Metrics
+  # OpenTelemetry Collector - Container Metrics
   # ---------------------------------------------------------------------------
-  # Collects metrics from all Docker containers including:
-  #   - container_cpu_usage_seconds_total
-  #   - container_memory_usage_bytes
-  #   - container_network_receive_bytes_total
-  #   - container_network_transmit_bytes_total
+  # Scrapes container metrics from OTel Collector's Prometheus exporter.
+  #
+  # Metrics available (from docker_stats receiver):
+  #   - container_cpu_percent: CPU usage percentage (gauge)
+  #   - container_cpu_usage_total: CPU usage in nanoseconds (counter)
+  #   - container_memory_usage_total: Memory usage in bytes (gauge)
+  #   - container_memory_percent: Memory usage percentage (gauge)
+  #   - container_network_io_usage_rx_bytes: Network receive bytes (counter)
+  #   - container_network_io_usage_tx_bytes: Network transmit bytes (counter)
+  #
+  # All metrics include container_name label for static queries.
+  # Example: container_cpu_percent{container_name="inference-arena-monolithic"}
   #
   # Key queries for thesis analysis:
-  #   CPU%: rate(container_cpu_usage_seconds_total{name=~".*"}[1m]) * 100
-  #   Memory MB: container_memory_usage_bytes{name=~".*"} / 1024 / 1024
+  #   CPU%: container_cpu_percent{container_name="inference-arena-monolithic"}
+  #   Memory MB: container_memory_usage_total{container_name="..."} / 1024 / 1024
+  #   Network RX: rate(container_network_io_usage_rx_bytes{container_name="..."}[1m])
   # ---------------------------------------------------------------------------
-  - job_name: 'cadvisor'
+  - job_name: 'otel-collector'
     static_configs:
-      - targets: ['cadvisor:8080']
+      - targets: ['otel-collector:8889']
     # 1-second interval for precise resource tracking during experiments
     scrape_interval: 1s
     # Timeout must be <= scrape_interval
     scrape_timeout: 1s
-    # Metrics path for cAdvisor
-    metrics_path: /metrics
-    # Relabel to add container names and filter
-    metric_relabel_configs:
-      # Extract container name from Docker labels (if available)
-      - source_labels: [container_label_com_docker_compose_service]
-        target_label: container_name
-        regex: (.+)
-        replacement: $1
-      # Fallback: extract short container ID from path for display
-      - source_labels: [id]
-        target_label: container_id
-        regex: '/docker/([a-f0-9]{12}).*'
-        replacement: $1
-      # Keep only Docker containers (exclude system cgroups)
-      - source_labels: [id]
-        regex: '/docker/.*'
-        action: keep
-      # Filter: Keep only monolithic container for thesis (exclude infrastructure)
-      # Filters by ID pattern containing "91c02a3e" (update when container recreated)
-      # To see all containers, comment out lines 85-87
-      # DISABLED: Allow all containers for dynamic architecture monitoring
-      # - source_labels: [id]
-      #   regex: '.*/91c02a3ed6d5.*'
-      #   action: keep
-      # Drop high-cardinality metrics we don't need
-      - source_labels: [__name__]
-        regex: 'container_tasks_state|container_memory_failures_total'
-        action: drop
+    # Honor the labels from OTel Collector (including container_name)
+    honor_labels: true
 
   # ---------------------------------------------------------------------------
   # Architecture Services (Dynamic Discovery)

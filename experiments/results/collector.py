@@ -225,14 +225,21 @@ class ResultsCollector:
             # Aggregate across containers
             cpu_values = []
             memory_values = []
+            network_rx_values = []
+            network_tx_values = []
 
             for name, metrics in container_metrics.items():
                 if metrics["cpu"]["avg_percent"] > 0:
                     cpu_values.append(metrics["cpu"]["avg_percent"])
                 if metrics["memory"]["avg_mb"] > 0:
                     memory_values.append(metrics["memory"]["avg_mb"])
+                # Network I/O (RX = receive, TX = transmit)
+                if metrics["network"]["rx_bytes_per_sec"] > 0:
+                    network_rx_values.append(metrics["network"]["rx_bytes_per_sec"])
+                if metrics["network"]["tx_bytes_per_sec"] > 0:
+                    network_tx_values.append(metrics["network"]["tx_bytes_per_sec"])
 
-            # Calculate totals
+            # Calculate totals (sum across all containers)
             result = {
                 "containers": container_metrics,
                 "totals": {
@@ -254,6 +261,12 @@ class ResultsCollector:
                         if container_metrics
                         else 0.0
                     ),
+                    "network_rx_bytes_per_sec": (
+                        round(sum(network_rx_values), 2) if network_rx_values else 0.0
+                    ),
+                    "network_tx_bytes_per_sec": (
+                        round(sum(network_tx_values), 2) if network_tx_values else 0.0
+                    ),
                 },
             }
 
@@ -268,6 +281,8 @@ class ResultsCollector:
                     "cpu_max_percent": 0.0,
                     "memory_avg_mb": 0.0,
                     "memory_max_mb": 0.0,
+                    "network_rx_bytes_per_sec": 0.0,
+                    "network_tx_bytes_per_sec": 0.0,
                 },
                 "error": str(e),
             }
@@ -311,5 +326,8 @@ class ResultsCollector:
         row["cpu_max_percent"] = totals.get("cpu_max_percent", 0.0)
         row["memory_avg_mb"] = totals.get("memory_avg_mb", 0.0)
         row["memory_max_mb"] = totals.get("memory_max_mb", 0.0)
+        # Network I/O (RX = receive, TX = transmit)
+        row["network_rx_bytes_per_sec"] = totals.get("network_rx_bytes_per_sec", 0.0)
+        row["network_tx_bytes_per_sec"] = totals.get("network_tx_bytes_per_sec", 0.0)
 
         return row
