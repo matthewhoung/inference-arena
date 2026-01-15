@@ -54,7 +54,7 @@ make stop-all
 | MinIO Console | http://localhost:9001 | minioadmin / minioadmin |
 | Grafana | http://localhost:3000 | admin / admin |
 | Prometheus | http://localhost:9090 | - |
-| cAdvisor | http://localhost:8080 | - |
+| OTel Collector | http://localhost:8889/metrics | - |
 
 ## Available Make Commands
 
@@ -96,8 +96,7 @@ inference-arena/
 │   └── prometheus/              # Scrape config
 ├── scripts/
 │   ├── setup/                   # Environment & proto setup
-│   ├── models/                  # Export & upload models
-│   └── utils/                   # Utilities
+│   └── models/                  # Export & upload models
 └── tests/                       # 100+ tests
 ```
 

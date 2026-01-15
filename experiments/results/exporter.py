@@ -6,11 +6,19 @@ results to JSON and CSV formats for analysis.
 Output Structure:
     results/experiment/
     ├── runs/
-    │   ├── monolithic_users10_run1_20260106T120000.json
-    │   ├── monolithic_users10_run2_20260106T121500.json
-    │   └── ...
-    ├── experiment_summary_20260106.csv
-    └── experiment_aggregated_20260106.json
+    │   ├── mono/
+    │   │   ├── users_1/
+    │   │   │   ├── run_001.json
+    │   │   │   ├── run_002.json
+    │   │   │   └── run_003.json
+    │   │   ├── users_5/
+    │   │   └── ...
+    │   ├── micro/
+    │   │   └── ...
+    │   └── triton/
+    │       └── ...
+    ├── summary.csv
+    └── aggregate.json
 
 Usage:
     from experiments.results import ResultsExporter
@@ -33,6 +41,13 @@ from ..config import DEFAULT_OUTPUT_DIR
 
 logger = logging.getLogger(__name__)
 
+# Architecture name mapping for folder structure (short names for cleaner paths)
+ARCH_FOLDER_NAMES: dict[str, str] = {
+    "monolithic": "mono",
+    "microservices": "micro",
+    "triton": "triton",
+}
+
 # CSV column order
 CSV_COLUMNS = [
     "architecture",
@@ -53,6 +68,8 @@ CSV_COLUMNS = [
     "cpu_max_percent",
     "memory_avg_mb",
     "memory_max_mb",
+    "network_rx_bytes_per_sec",
+    "network_tx_bytes_per_sec",
 ]
 
 
@@ -93,7 +110,7 @@ class ResultsExporter:
     def export_run(self, result: dict[str, Any]) -> Path:
         """Export a single run result to JSON.
 
-        File naming: {arch}_users{N}_run{R}_{timestamp}.json
+        File structure: runs/{arch}/users_{N}/run_{RRR}.json
 
         Args:
             result: Result dictionary from ResultsCollector.collect()
@@ -101,14 +118,20 @@ class ResultsExporter:
         Returns:
             Path to the exported JSON file
         """
-        # Generate filename
         arch = result["architecture"]
         users = result["concurrent_users"]
         run = result["run_number"]
-        timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
 
-        filename = f"{arch}_users{users}_run{run}_{timestamp}.json"
-        filepath = self.runs_dir / filename
+        # Use short folder name if mapped, otherwise use original
+        arch_folder = ARCH_FOLDER_NAMES.get(arch, arch)
+
+        # Create nested directory structure
+        run_dir = self.runs_dir / arch_folder / f"users_{users}"
+        run_dir.mkdir(parents=True, exist_ok=True)
+
+        # Simple filename with zero-padded run number
+        filename = f"run_{run:03d}.json"
+        filepath = run_dir / filename
 
         # Write JSON with pretty formatting
         with open(filepath, "w") as f:
@@ -126,14 +149,13 @@ class ResultsExporter:
 
         Args:
             results: List of result dictionaries
-            filename: Custom filename (optional)
+            filename: Custom filename (optional, defaults to summary.csv)
 
         Returns:
             Path to the exported CSV file
         """
         if not filename:
-            date_str = datetime.now().strftime("%Y%m%d")
-            filename = f"experiment_summary_{date_str}.csv"
+            filename = "summary.csv"
 
         filepath = self.output_dir / filename
 
@@ -142,6 +164,9 @@ class ResultsExporter:
 
         collector = ResultsCollector()
         rows = [collector.to_csv_row(r) for r in results]
+
+        # Sort rows by architecture, users, run_number for consistent ordering
+        rows.sort(key=lambda r: (r["architecture"], r["concurrent_users"], r["run_number"]))
 
         # Write CSV
         with open(filepath, "w", newline="") as f:
@@ -161,14 +186,13 @@ class ResultsExporter:
 
         Args:
             results: List of result dictionaries
-            filename: Custom filename (optional)
+            filename: Custom filename (optional, defaults to aggregate.json)
 
         Returns:
             Path to the exported JSON file
         """
         if not filename:
-            date_str = datetime.now().strftime("%Y%m%d")
-            filename = f"experiment_aggregated_{date_str}.json"
+            filename = "aggregate.json"
 
         filepath = self.output_dir / filename
 
@@ -244,6 +268,17 @@ class ResultsExporter:
                     r["server_latency"]["p99_ms"] for r in runs if r.get("server_latency")
                 ]
 
+                # Network I/O (RX = receive, TX = transmit)
+                network_rx = []
+                network_tx = []
+                for r in runs:
+                    resources = r.get("resources") or {}
+                    totals = resources.get("totals") or {}
+                    if totals.get("network_rx_bytes_per_sec", 0) > 0:
+                        network_rx.append(totals["network_rx_bytes_per_sec"])
+                    if totals.get("network_tx_bytes_per_sec", 0) > 0:
+                        network_tx.append(totals["network_tx_bytes_per_sec"])
+
                 aggregated["architectures"][arch][users] = {
                     "runs": len(runs),
                     "throughput": {
@@ -264,6 +299,12 @@ class ResultsExporter:
                         "mean_ms": round(self._mean(server_p99s), 2),
                         "std_ms": round(self._std(server_p99s), 2),
                         "values": server_p99s,
+                    },
+                    "network_io": {
+                        "rx_mean_bytes_per_sec": round(self._mean(network_rx), 2),
+                        "tx_mean_bytes_per_sec": round(self._mean(network_tx), 2),
+                        "rx_values": network_rx,
+                        "tx_values": network_tx,
                     },
                 }
 
@@ -288,18 +329,30 @@ class ResultsExporter:
     def get_existing_results(self) -> list[dict[str, Any]]:
         """Load all existing run results from runs directory.
 
+        Traverses the nested structure: runs/{arch}/users_{N}/run_*.json
+
         Returns:
-            List of result dictionaries
+            List of result dictionaries sorted by architecture, users, run_number
         """
         results = []
 
-        for filepath in sorted(self.runs_dir.glob("*.json")):
+        # Recursively find all JSON files in runs directory
+        for filepath in sorted(self.runs_dir.glob("**/run_*.json")):
             try:
                 with open(filepath) as f:
                     result = json.load(f)
                 results.append(result)
             except Exception as e:
                 logger.warning(f"Failed to load {filepath}: {e}")
+
+        # Sort by architecture, users, run_number for consistent ordering
+        results.sort(
+            key=lambda r: (
+                r.get("architecture", ""),
+                r.get("concurrent_users", 0),
+                r.get("run_number", 0),
+            )
+        )
 
         logger.info(f"Loaded {len(results)} existing results")
         return results

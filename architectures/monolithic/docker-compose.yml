@@ -19,7 +19,7 @@
 #
 # Monitoring:
 #   - Service: http://localhost:8100/health
-#   - Metrics: Scraped by cAdvisor (visible in Grafana)
+#   - Metrics: Scraped by OTel Collector (visible in Grafana)
 #
 # Author: Matthew Hong
 # Specification Reference: Ch3 Methodology §3.4.1 Monolithic Architecture
@@ -88,15 +88,11 @@ services:
     # - 2 vCPU cores (matching CONTAINER_VCPU in .env)
     # - 4GB memory limit (matching CONTAINER_MEMORY in .env)
     # - No GPU access (CPU-only inference)
+    # Note: Using service-level limits for non-Swarm enforcement
     # -------------------------------------------------------------------------
-    deploy:
-      resources:
-        limits:
-          cpus: '${CONTAINER_VCPU:-2}'
-          memory: ${CONTAINER_MEMORY:-4096}M
-        reservations:
-          cpus: '${CONTAINER_VCPU:-2}'
-          memory: ${CONTAINER_MEMORY:-4096}M
+    cpus: '${CONTAINER_VCPU:-2}'
+    mem_limit: ${CONTAINER_MEMORY:-4096}M
+    mem_reservation: ${CONTAINER_MEMORY:-4096}M
 
     # -------------------------------------------------------------------------
     # Environment Configuration
@@ -129,7 +125,7 @@ services:
     # -------------------------------------------------------------------------
     # Network Configuration
     # -------------------------------------------------------------------------
-    # Connects to shared backend network for MinIO access and cAdvisor metrics
+    # Connects to shared backend network for MinIO access and OTel metrics
     # -------------------------------------------------------------------------
     networks:
       - backend-network

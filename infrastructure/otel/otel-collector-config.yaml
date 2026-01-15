@@ -1,0 +1,136 @@
+# =============================================================================
+# OpenTelemetry Collector Configuration - Inference Arena
+# =============================================================================
+#
+# Replaces cAdvisor for container metrics collection with key benefits:
+# - container.name labels for static Grafana dashboards
+# - Network I/O metrics work in WSL2
+# - 1-second collection interval for thesis accuracy
+#
+# Receiver: docker_stats (connects to Docker socket)
+# Exporter: Prometheus (scraped by Prometheus server)
+#
+# Author: Matthew Hong
+# Specification Reference: Ch3 Methodology - Container Metrics Collection
+# =============================================================================
+
+receivers:
+  # ---------------------------------------------------------------------------
+  # Docker Stats Receiver
+  # ---------------------------------------------------------------------------
+  # Collects container metrics via Docker API (not cgroups directly)
+  # This approach works correctly in WSL2 where cAdvisor fails for network I/O
+  # ---------------------------------------------------------------------------
+  docker_stats:
+    # Endpoint for Docker daemon
+    endpoint: unix:///var/run/docker.sock
+
+    # Collection interval (matches Prometheus scrape interval for thesis accuracy)
+    collection_interval: 1s
+
+    # Timeout for Docker API calls
+    timeout: 20s
+
+    # Docker API version (required for newer Docker versions)
+    api_version: "1.44"
+
+    # Metrics to collect (all enabled by default)
+    # See: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/dockerstatsreceiver
+
+processors:
+  # ---------------------------------------------------------------------------
+  # Batch Processor
+  # ---------------------------------------------------------------------------
+  # Groups metrics for efficient export
+  # ---------------------------------------------------------------------------
+  batch:
+    timeout: 1s
+    send_batch_size: 100
+    send_batch_max_size: 200
+
+  # ---------------------------------------------------------------------------
+  # Resource Processor
+  # ---------------------------------------------------------------------------
+  # Add project labels for identification in Prometheus
+  # ---------------------------------------------------------------------------
+  resource:
+    attributes:
+      - key: project
+        value: inference-arena
+        action: upsert
+      - key: environment
+        value: thesis-experiment
+        action: upsert
+
+  # ---------------------------------------------------------------------------
+  # Filter Processor
+  # ---------------------------------------------------------------------------
+  # Keep only inference-arena architecture containers (exclude infrastructure)
+  # This reduces noise from MinIO, Prometheus, Grafana, etc.
+  # ---------------------------------------------------------------------------
+  filter:
+    metrics:
+      include:
+        match_type: regexp
+        resource_attributes:
+          - key: container.name
+            value: "inference-arena-(monolithic|detection|classification|triton-server|triton-gateway)"
+
+exporters:
+  # ---------------------------------------------------------------------------
+  # Prometheus Exporter
+  # ---------------------------------------------------------------------------
+  # Exposes metrics in Prometheus format for scraping
+  # Endpoint: http://otel-collector:8889/metrics
+  # ---------------------------------------------------------------------------
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    # No namespace prefix - use metric names as-is
+    namespace: ""
+    # Convert OTel resource attributes to Prometheus labels
+    # This enables queries like: container_cpu_percent{container_name="..."}
+    resource_to_telemetry_conversion:
+      enabled: true
+
+  # ---------------------------------------------------------------------------
+  # Debug Exporter (Development Only)
+  # ---------------------------------------------------------------------------
+  # Uncomment for troubleshooting metric collection
+  # ---------------------------------------------------------------------------
+  # debug:
+  #   verbosity: detailed
+  #   sampling_initial: 5
+  #   sampling_thereafter: 100
+
+extensions:
+  # ---------------------------------------------------------------------------
+  # Health Check Extension
+  # ---------------------------------------------------------------------------
+  # Endpoint: http://otel-collector:13133/health
+  # Used by Docker health check and monitoring
+  # ---------------------------------------------------------------------------
+  health_check:
+    endpoint: 0.0.0.0:13133
+    path: "/health"
+
+  # ---------------------------------------------------------------------------
+  # zPages Extension (Debug UI)
+  # ---------------------------------------------------------------------------
+  # Endpoint: http://otel-collector:55679/debug/tracez
+  # Provides debug information about the collector
+  # ---------------------------------------------------------------------------
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+service:
+  extensions: [health_check, zpages]
+
+  pipelines:
+    metrics:
+      receivers: [docker_stats]
+      processors: [filter, resource, batch]
+      exporters: [prometheus]
+
+  telemetry:
+    logs:
+      level: info

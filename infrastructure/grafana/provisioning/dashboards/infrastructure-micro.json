@@ -132,8 +132,8 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "sum(rate(container_cpu_usage_seconds_total{container_id=\"c6fe94c1b1a1\"}[30s])) * 100",
-                    "legendFormat": "micro-detect",
+                    "expr": "container_cpu_utilization_ratio{container_name=\"inference-arena-detection\"}",
+                    "legendFormat": "detection",
                     "range": true,
                     "refId": "A"
                 },
@@ -143,8 +143,8 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "sum(rate(container_cpu_usage_seconds_total{container_id=\"bd27131e8f84\"}[30s])) * 100",
-                    "legendFormat": "micro-classify",
+                    "expr": "container_cpu_utilization_ratio{container_name=\"inference-arena-classification\"}",
+                    "legendFormat": "classification",
                     "range": true,
                     "refId": "B"
                 }
@@ -247,8 +247,8 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "sum(container_memory_usage_bytes{container_id=\"c6fe94c1b1a1\"}) / 1024 / 1024",
-                    "legendFormat": "micro-detect",
+                    "expr": "container_memory_usage_total_bytes{container_name=\"inference-arena-detection\"} / 1024 / 1024",
+                    "legendFormat": "detection",
                     "range": true,
                     "refId": "A"
                 },
@@ -258,8 +258,8 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "sum(container_memory_usage_bytes{container_id=\"bd27131e8f84\"}) / 1024 / 1024",
-                    "legendFormat": "micro-classify",
+                    "expr": "container_memory_usage_total_bytes{container_name=\"inference-arena-classification\"} / 1024 / 1024",
+                    "legendFormat": "classification",
                     "range": true,
                     "refId": "B"
                 }
@@ -268,12 +268,141 @@
             "type": "timeseries"
         },
         {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+            },
+            "description": "Network I/O for microservices containers (bytes per second)",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisBorderShow": false,
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "Bytes/sec",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 10,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "insertNulls": false,
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "never",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "min": 0,
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "Bps"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 21
+            },
+            "id": 9,
+            "options": {
+                "legend": {
+                    "calcs": [
+                        "mean",
+                        "max"
+                    ],
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "editorMode": "code",
+                    "expr": "rate(container_network_io_usage_rx_bytes_total{container_name=\"inference-arena-detection\"}[1m])",
+                    "legendFormat": "detection RX",
+                    "range": true,
+                    "refId": "A"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "editorMode": "code",
+                    "expr": "rate(container_network_io_usage_tx_bytes_total{container_name=\"inference-arena-detection\"}[1m])",
+                    "legendFormat": "detection TX",
+                    "range": true,
+                    "refId": "B"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "editorMode": "code",
+                    "expr": "rate(container_network_io_usage_rx_bytes_total{container_name=\"inference-arena-classification\"}[1m])",
+                    "legendFormat": "classification RX",
+                    "range": true,
+                    "refId": "C"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "editorMode": "code",
+                    "expr": "rate(container_network_io_usage_tx_bytes_total{container_name=\"inference-arena-classification\"}[1m])",
+                    "legendFormat": "classification TX",
+                    "range": true,
+                    "refId": "D"
+                }
+            ],
+            "title": "Network I/O - Microservices",
+            "type": "timeseries"
+        },
+        {
             "collapsed": false,
             "gridPos": {
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 21
+                "y": 31
             },
             "id": 7,
             "panels": [],
@@ -328,7 +457,7 @@
                 "h": 4,
                 "w": 24,
                 "x": 0,
-                "y": 22
+                "y": 32
             },
             "id": 8,
             "options": {
@@ -353,8 +482,8 @@
                         "uid": "${datasource}"
                     },
                     "editorMode": "code",
-                    "expr": "up{job=\"cadvisor\"}",
-                    "legendFormat": "cAdvisor",
+                    "expr": "up{job=\"otel-collector\"}",
+                    "legendFormat": "OTel Collector",
                     "range": true,
                     "refId": "A"
                 },
