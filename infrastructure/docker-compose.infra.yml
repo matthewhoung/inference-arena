@@ -73,7 +73,7 @@ services:
   #   - No privileged mode required
   # ===========================================================================
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
+    image: otel/opentelemetry-collector-contrib:0.115.0
     container_name: inference-arena-otel-collector
     command: ["--config=/etc/otel-collector-config.yaml"]
     # Add container to docker group for socket access
