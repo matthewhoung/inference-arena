@@ -8,14 +8,12 @@ Author: Matthew Hong
 """
 
 import asyncio
-import io
 import logging
 from typing import Optional
 
 import grpc
 import grpc.aio
 import numpy as np
-from PIL import Image
 
 from shared.proto import inference_pb2, inference_pb2_grpc
 
@@ -96,16 +94,17 @@ class ClassificationClient:
         if self.stub is None:
             raise RuntimeError("Client not connected. Call connect() first.")
 
-        # Encode crop as JPEG bytes for efficient transmission
-        image = Image.fromarray(crop)
-        buffer = io.BytesIO()
-        image.save(buffer, format="JPEG", quality=95)
-        image_bytes = buffer.getvalue()
+        # Send raw RGB bytes (lossless transport, no JPEG compression)
+        # Ensure array is contiguous for proper serialization
+        crop_contiguous = np.ascontiguousarray(crop)
+        height, width = crop_contiguous.shape[:2]
 
-        # Build request
+        # Build request with raw bytes and dimensions
         request = inference_pb2.ClassificationRequest(
             request_id=request_id,
-            image_crop=image_bytes,
+            image_crop=crop_contiguous.tobytes(),
+            crop_height=height,
+            crop_width=width,
         )
 
         # Add source box if provided

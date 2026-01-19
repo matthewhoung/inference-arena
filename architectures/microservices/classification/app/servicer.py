@@ -6,13 +6,11 @@ Runs MobileNetV2 inference in-process using ONNX Runtime.
 Author: Matthew Hong
 """
 
-import io
 import logging
 import time
 
 import grpc
 import numpy as np
-from PIL import Image
 
 from shared.proto import inference_pb2, inference_pb2_grpc
 
@@ -62,19 +60,11 @@ class ClassificationServiceServicer(inference_pb2_grpc.ClassificationServiceServ
         request_id_var.set(request.request_id)
 
         try:
-            # Decode image from bytes
+            # Decode raw RGB bytes from gRPC (lossless transport)
             t_preprocess_start = time.perf_counter()
-            image = Image.open(io.BytesIO(request.image_crop))
-            crop = np.array(image)
-
-            # Ensure RGB format
-            if crop.ndim == 2:
-                # Grayscale to RGB
-                crop = np.stack([crop, crop, crop], axis=-1)
-            elif crop.shape[2] == 4:
-                # RGBA to RGB
-                crop = crop[:, :, :3]
-
+            crop = np.frombuffer(request.image_crop, dtype=np.uint8).reshape(
+                request.crop_height, request.crop_width, 3
+            )
             t_preprocess_end = time.perf_counter()
 
             # Run inference
