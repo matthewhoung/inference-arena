@@ -59,10 +59,13 @@ message TimingInfo {
 message ClassificationRequest {
     // Request identification
     string request_id = 1;          // Unique request ID for tracing
-    
-    // Image data (one of the following)
-    bytes image_crop = 2;           // JPEG/PNG encoded crop bytes
-    
+
+    // Image data - raw RGB uint8 numpy array bytes (lossless transport)
+    // Format: row-major C-contiguous array of shape [height, width, 3]
+    bytes image_crop = 2;           // Raw RGB bytes (uint8)
+    int32 crop_height = 6;          // Height of the crop
+    int32 crop_width = 7;           // Width of the crop
+
     // Source detection context (optional, for debugging)
     BoundingBox source_box = 3;     // Original detection that produced this crop
 }
