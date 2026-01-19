@@ -78,6 +78,9 @@ results/experiment/
 results/tmp/
 results/keyfindings
 
+# Analysis notebooks and outputs (exclude before publication)
+analysis/
+
 # Local Triton model repository (models copied here for local testing)
 architectures/triton/model_repository/*/1/model.onnx
 

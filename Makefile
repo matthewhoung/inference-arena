@@ -22,7 +22,8 @@
         proto models-export models-init-minio models-init-minio-batched models-setup models-verify \
         data-download data-curate data-verify \
         restart-grafana \
-        test-quick test-arch test-matrix test-dry-run test-web
+        test-quick test-arch test-matrix test-dry-run test-web \
+        verify-accuracy
 
 # Default target
 .DEFAULT_GOAL := help
@@ -381,3 +382,13 @@ test-web: ## Start Locust web UI for manual testing (http://localhost:8089)
 test-single: ## Single test run (ARCH=mono|micro|triton, USERS, RUNS)
 	@echo "$(YELLOW)Running: $(ARCH_FULL) - $(USERS) users - $(RUNS) runs$(NC)"
 	$(VENV)/python -m experiments -a $(ARCH_FULL) -u $(USERS) -r $(RUNS) --no-docker
+
+# =============================================================================
+# 🔬 Verification & Validation
+# =============================================================================
+
+verify-accuracy: ## Verify classification accuracy across architectures (requires all 3 running)
+	@echo "$(YELLOW)Verifying classification accuracy across architectures...$(NC)"
+	@echo "  Requires: make start-infra && make start-mono && make start-micro && make start-triton"
+	@echo ""
+	$(VENV)/python scripts/utils/verify_classification_accuracy.py

@@ -528,6 +528,33 @@ changelog:
       - experiments/results/prometheus_client.py (updated metrics, removed ID lookup)
       - infrastructure/grafana/provisioning/dashboards/*.json (static container.name queries)
 
+  - date: "2026-01-16"
+    version: "1.7.0"
+    change: "Standardized lossless data transport in Microservices architecture"
+    justification: |
+      CRITICAL fix for experimental validity - eliminates confounding variable:
+      1. Problem Identified: Microservices was using JPEG compression (quality=95) for inter-service
+         image transport, while Monolithic uses in-memory numpy and Triton uses raw float32 tensors.
+         This introduced lossy compression artifacts unique to one architecture.
+      2. Verification: Created accuracy verification script comparing classification outputs across
+         all architectures. Initial results showed only 80.5% match rate (322/400 detections).
+      3. Solution: Changed Microservices to transport raw RGB uint8 bytes via numpy.tobytes(),
+         decoded with np.frombuffer() on the Classification service side.
+      4. Validation: After fix, verification shows 100% match rate (400/400 detections identical).
+
+      Transport consistency across architectures:
+      - Monolithic: In-memory numpy arrays (no network transport)
+      - Microservices: Raw uint8 RGB bytes over gRPC (lossless)
+      - Triton: Preprocessed float32 tensors over gRPC (lossless)
+    author: "Matthew Hong"
+    impact: "CRITICAL - Invalidates previous Microservices baselines. All three architectures now produce identical classification outputs."
+    files_modified:
+      - src/shared/proto/inference.proto (added crop_height, crop_width fields)
+      - architectures/microservices/detection/app/grpc_client.py (raw bytes instead of JPEG)
+      - architectures/microservices/classification/app/servicer.py (np.frombuffer instead of PIL)
+      - scripts/verify_classification_accuracy.py (created verification script)
+      - Makefile (added verify-accuracy target)
+
   # Template for future changes:
   # - date: "YYYY-MM-DD"
   #   version: "1.x.x"
