@@ -110,3 +110,7 @@ coverage.xml
 tmp/
 temp/
 *.tmp
+
+# thesis drafts
+.planning/
+.thesis/
