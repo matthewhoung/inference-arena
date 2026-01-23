@@ -15,7 +15,7 @@
 # =============================================================================
 
 .PHONY: help setup reset \
-        install test test-fast lint format clean clean-results clean-all \
+        install test test-fast test-unit test-load lint format validate clean clean-results clean-all \
         docker-build docker-build-mono docker-build-micro docker-build-triton docker-prune \
         start-infra stop-infra logs-otel start-mono start-micro start-triton \
         stop-mono stop-micro stop-triton stop-all \
@@ -23,7 +23,8 @@
         data-download data-curate data-verify \
         restart-grafana \
         test-quick test-arch test-matrix test-dry-run test-web \
-        verify-accuracy
+        verify-accuracy \
+        t tf tl mono micro tri stop up down
 
 # Default target
 .DEFAULT_GOAL := help
@@ -85,7 +86,7 @@ help: ## Show this help message
 	@echo ""
 	@echo "$(YELLOW)📦 Data & Models:$(NC)"
 	@echo "  $(BLUE)make data-download$(NC)    Download COCO test images"
-	@echo "  $(BLUE)make models-setup$(NC)     Export ONNX models + upload to MinIO (with batched)"
+	@echo "  $(BLUE)make models-setup$(NC)     Export ONNX + upload to MinIO (parallel downloads)"
 	@echo "  $(BLUE)make data-verify$(NC)      Verify data setup"
 	@echo ""
 	@echo "$(YELLOW)🧪 Load Testing:$(NC)"
@@ -95,9 +96,24 @@ help: ## Show this help message
 	@echo "  $(BLUE)make test-web$(NC)     Start Locust web UI (http://localhost:8089)"
 	@echo ""
 	@echo "$(YELLOW)🔧 Development:$(NC)"
-	@echo "  $(BLUE)make test$(NC)         Run unit tests with coverage"
+	@echo "  $(BLUE)make test$(NC)         Run all tests with coverage (80% threshold)"
+	@echo "  $(BLUE)make test-fast$(NC)    Run tests without slow/load markers"
+	@echo "  $(BLUE)make test-unit$(NC)    Run unit tests only (no services needed)"
+	@echo "  $(BLUE)make test-load$(NC)    Run load tests (requires running services)"
 	@echo "  $(BLUE)make lint$(NC)         Run linters (ruff + mypy)"
 	@echo "  $(BLUE)make format$(NC)       Format code (black + ruff)"
+	@echo "  $(BLUE)make validate$(NC)     Validate infrastructure configuration"
+	@echo ""
+	@echo "$(YELLOW)⚡ Shortcuts:$(NC)"
+	@echo "  $(BLUE)make t$(NC)            Alias for test"
+	@echo "  $(BLUE)make tf$(NC)           Alias for test-fast"
+	@echo "  $(BLUE)make tl$(NC)           Alias for test-load"
+	@echo "  $(BLUE)make mono$(NC)         Alias for start-mono"
+	@echo "  $(BLUE)make micro$(NC)        Alias for start-micro"
+	@echo "  $(BLUE)make tri$(NC)          Alias for start-triton"
+	@echo "  $(BLUE)make stop$(NC)         Alias for stop-all"
+	@echo "  $(BLUE)make up$(NC)           Alias for start-infra"
+	@echo "  $(BLUE)make down$(NC)         Alias for stop-infra"
 	@echo ""
 
 # =============================================================================
@@ -200,8 +216,19 @@ install: ## Install all Python dependencies using uv
 test: ## Run all tests with coverage
 	$(VENV)/pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=html:results/coverage_html
 
-test-fast: ## Run tests without slow markers
-	$(VENV)/pytest tests/ -v -m "not slow" --cov=src --cov-report=term-missing
+test-fast: ## Run tests without slow/load markers
+	$(VENV)/pytest tests/ -v -m "not slow and not load" --cov=src --cov-report=term-missing
+
+test-unit: ## Run unit tests only (no services needed, excludes slow/load/integration)
+	$(VENV)/pytest tests/ -v -m "not slow and not load and not integration" --cov=src --cov-report=term-missing
+
+test-load: ## Run load tests (requires running services)
+	$(VENV)/pytest tests/load/ -v --load
+
+validate: ## Validate infrastructure configuration
+	@echo "$(YELLOW)Validating infrastructure...$(NC)"
+	@$(VENV)/python -c "from shared.validation import validate_infrastructure_ports; validate_infrastructure_ports()"
+	@echo "$(GREEN)Infrastructure validated$(NC)"
 
 lint: ## Run linters (ruff + mypy)
 	$(VENV)/ruff check src/ tests/
@@ -392,3 +419,19 @@ verify-accuracy: ## Verify classification accuracy across architectures (require
 	@echo "  Requires: make start-infra && make start-mono && make start-micro && make start-triton"
 	@echo ""
 	$(VENV)/python scripts/utils/verify_classification_accuracy.py
+
+# =============================================================================
+# ⚡ Shortcuts
+# =============================================================================
+
+t: test ## Alias: make test
+tf: test-fast ## Alias: make test-fast
+tl: test-load ## Alias: make test-load
+
+mono: start-mono ## Alias: make start-mono
+micro: start-micro ## Alias: make start-micro
+tri: start-triton ## Alias: make start-triton
+stop: stop-all ## Alias: make stop-all
+
+up: start-infra ## Alias: make start-infra
+down: stop-infra ## Alias: make stop-infra
