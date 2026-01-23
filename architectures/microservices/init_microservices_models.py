@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Download models from MinIO to microservices model repository.
+"""Download models from MinIO to microservices model repository.
 
 This script runs as an init container before the microservices start.
 Downloads all required model files from MinIO to the shared volume.
@@ -240,7 +239,6 @@ def download_models_parallel(minio_client: Minio, models: list[str]) -> None:
 
         try:
             for future in as_completed(futures):
-                task = futures[future]
                 # This will raise if the download failed
                 future.result()
         except Exception as e:
