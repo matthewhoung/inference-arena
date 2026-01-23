@@ -144,6 +144,7 @@ addopts = [
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests requiring external services",
+    "load: marks tests as load tests (run with --load flag)",
 ]
 
 # Coverage configuration
@@ -244,5 +245,11 @@ module = [
     "docker.*",
     "yaml.*",
     "shared.*",
+    "psutil.*",
+    "microservices.*",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["tests.load.*"]
+disallow_untyped_defs = false
