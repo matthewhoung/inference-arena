@@ -35,8 +35,11 @@ import time
 import urllib.error
 import urllib.request
 from typing import Any
+from urllib.parse import urlparse
 
 import click
+
+from shared.health import HealthCheckTimeoutError, wait_for_healthy
 
 from .config import (
     ARCHITECTURE_ENDPOINTS,
@@ -462,7 +465,7 @@ def _stop_architecture(arch: str) -> None:
         pass
 
 
-def _wait_for_health(endpoint: str, timeout: int = 120) -> bool:
+def _wait_for_health(endpoint: str, timeout: float = 120.0) -> bool:
     """Wait for architecture health endpoint.
 
     Args:
@@ -470,24 +473,36 @@ def _wait_for_health(endpoint: str, timeout: int = 120) -> bool:
         timeout: Maximum wait time in seconds
 
     Returns:
-        True if healthy, False if timeout
+        True if healthy, raises on timeout
     """
     health_url = f"{endpoint}/health"
     click.echo(f"Waiting for {health_url}...")
 
-    start = time.time()
-    while time.time() - start < timeout:
+    def check_health() -> bool:
         try:
             with urllib.request.urlopen(health_url, timeout=5) as response:
-                if response.status == 200:
-                    click.echo("  Health check passed!")
-                    return True
+                return response.status == 200
         except (urllib.error.URLError, TimeoutError):
-            pass
-        time.sleep(2)
+            return False
 
-    click.echo(f"  Health check timeout after {timeout}s", err=True)
-    return False
+    # Extract service name from URL for logging
+    # e.g., "http://localhost:8100" -> "localhost:8100"
+    service_name = urlparse(endpoint).netloc
+
+    try:
+        wait_for_healthy(
+            service_name,
+            check_health,
+            initial_delay=1.0,
+            max_wait=timeout,
+            backoff_multiplier=2.0,
+            max_interval=5.0,
+        )
+        click.echo("  Health check passed!")
+        return True
+    except HealthCheckTimeoutError as e:
+        click.echo(f"  Health check timeout: {e}", err=True)
+        return False
 
 
 def _print_dry_run_plan(

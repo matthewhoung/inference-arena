@@ -501,6 +501,60 @@ def get_spec_version() -> str:
 
 
 # =============================================================================
+# Download Configuration
+# =============================================================================
+
+
+def get_downloads_config() -> dict[str, Any]:
+    """Get download configuration.
+
+    Returns:
+        Downloads configuration dictionary with keys:
+        - max_concurrent: int (default 3)
+        - timeout: int (default 300)
+
+    Example:
+        >>> downloads = get_downloads_config()
+        >>> downloads["max_concurrent"]
+        3
+    """
+    config = get_config()
+    return config.get(
+        "downloads",
+        {
+            "max_concurrent": 3,
+            "timeout": 300,
+        },
+    )
+
+
+def get_download_max_concurrent() -> int:
+    """Get maximum concurrent downloads.
+
+    Returns:
+        Maximum number of parallel downloads (default: 3)
+
+    Example:
+        >>> get_download_max_concurrent()
+        3
+    """
+    return get_downloads_config().get("max_concurrent", 3)
+
+
+def get_download_timeout() -> int:
+    """Get download timeout in seconds.
+
+    Returns:
+        Timeout per download in seconds (default: 300)
+
+    Example:
+        >>> get_download_timeout()
+        300
+    """
+    return get_downloads_config().get("timeout", 300)
+
+
+# =============================================================================
 # Module Initialization Check
 # =============================================================================
 

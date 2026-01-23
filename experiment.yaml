@@ -371,6 +371,13 @@ services:
     health_port: 13133
 
 # =============================================================================
+# Download Configuration
+# =============================================================================
+downloads:
+  max_concurrent: 3  # Maximum parallel downloads
+  timeout: 300       # Timeout per download in seconds
+
+# =============================================================================
 # Infrastructure Configuration
 # =============================================================================
 infrastructure:
