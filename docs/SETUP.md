@@ -56,6 +56,49 @@ make stop-all
 | Prometheus | http://localhost:9090 | - |
 | OTel Collector | http://localhost:8889/metrics | - |
 
+## Testing
+
+### Development Testing
+
+| Command | Description |
+|---------|-------------|
+| `make test` | Run all tests with coverage (80% threshold) |
+| `make test-fast` | Run tests without slow/load markers |
+| `make test-unit` | Run unit tests only (no services needed) |
+| `make test-load` | Run load tests (requires running services) |
+| `make validate` | Validate infrastructure configuration |
+| `make lint` | Run linters (ruff + mypy) |
+| `make format` | Format code (black + ruff) |
+
+### Shortcuts
+
+| Shortcut | Command |
+|----------|---------|
+| `make t` | `make test` |
+| `make tf` | `make test-fast` |
+| `make tl` | `make test-load` |
+
+### Coverage Information
+
+- **Current coverage:** 88%
+- **Minimum threshold:** 80% (enforced in pyproject.toml)
+- **Coverage report:** `results/coverage_html/index.html`
+
+### Running Specific Tests
+
+```bash
+# Run specific test file
+uv run pytest tests/test_specific.py -v
+
+# Run with specific marker
+uv run pytest tests/ -m "not slow" -v
+
+# Run with load tests (skipped by default)
+uv run pytest tests/ --load -v
+```
+
+For common testing issues (coverage below threshold, health check timeouts, tests hanging), see [TROUBLESHOOTING.md](TROUBLESHOOTING.md#testing-issues).
+
 ## Available Make Commands
 
 Run `make help` to see all commands:
@@ -65,6 +108,9 @@ Run `make help` to see all commands:
 | `make install` | Install all dependencies |
 | `make test` | Run all tests with coverage |
 | `make test-fast` | Run tests without slow markers |
+| `make test-unit` | Run unit tests only |
+| `make test-load` | Run load tests |
+| `make validate` | Validate infrastructure configuration |
 | `make lint` | Run linters (ruff + mypy) |
 | `make format` | Format code (black + ruff fix) |
 | `make start-infra` | Start infrastructure services |
@@ -82,7 +128,7 @@ inference-arena/
 ├── Makefile                     # Common commands
 ├── pyproject.toml               # Python dependencies
 ├── src/shared/
-│   ├── config.py                # Loads experiment.yaml
+│   ├── config/                  # Loads experiment.yaml
 │   ├── processing/              # Preprocessing pipelines
 │   ├── model/                   # Model registry
 │   └── triton/                  # Triton config & MinIO utilities
@@ -106,6 +152,8 @@ inference-arena/
 - Model specifications, preprocessing params, controlled variables
 - Pre-registered hypotheses and predictions
 - **Git-tracked** for reproducibility
+
+See [EXPERIMENT_CONFIG.md](EXPERIMENT_CONFIG.md) for complete documentation.
 
 ### `.env` - Deployment Configuration
 - Infrastructure credentials, port mappings
@@ -135,6 +183,8 @@ docker compose -f infrastructure/docker-compose.infra.yml logs
 
 Edit `.env` to use different ports, then restart services.
 
+For more troubleshooting help, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+
 ## For Thesis Committee Members
 
 This project demonstrates:
@@ -142,7 +192,7 @@ This project demonstrates:
 1. **Reproducible Research** - All parameters in version-controlled `experiment.yaml`
 2. **Pre-registered Hypotheses** - Defined before data collection
 3. **Single Source of Truth** - No hardcoded values
-4. **Comprehensive Testing** - 100+ tests
+4. **Comprehensive Testing** - 100+ tests with 80% coverage threshold
 5. **Production-Grade Engineering** - Monitoring, infrastructure-as-code
 
 To reproduce experiments:
@@ -152,7 +202,10 @@ To reproduce experiments:
 
 ## Documentation
 
+- **[EXPERIMENT_CONFIG.md](EXPERIMENT_CONFIG.md)** - Complete experiment.yaml reference
+- **[EXPERIMENTS.md](EXPERIMENTS.md)** - Load testing framework
 - **[ENVIRONMENT.md](ENVIRONMENT.md)** - Environment configuration details
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
 - **[experiment.yaml](../experiment.yaml)** - Full experimental specification
 
 ## Questions?

@@ -412,6 +412,8 @@ MINIO_ROOT_PASSWORD=my-secure-local-password-12345
 ## See Also
 
 - **[SETUP.md](SETUP.md)** - Complete setup guide with step-by-step instructions
+- **[EXPERIMENT_CONFIG.md](EXPERIMENT_CONFIG.md)** - Complete experiment.yaml reference
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
 - **[experiment.yaml](../experiment.yaml)** - Full experimental specification
 - **[.env.example](../.env.example)** - Environment template with all options
 
