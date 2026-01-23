@@ -1,84 +1,96 @@
 # Inference Arena
 
-**A Comparative Study of ML Model Serving Architectures: Monolithic vs Microservices vs NVIDIA Triton**
+**A Comparative Study of ML Model Serving Architectures**
 
-[![CI](https://github.com/matthewhoung/inference-arena/actions/workflows/ci.yml/badge.svg)](https://github.com/matthewhoung/inference-arena/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/matthewhoung/inference-arena/branch/main/graph/badge.svg)](https://codecov.io/gh/matthewhoung/inference-arena)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Test Coverage](https://img.shields.io/badge/coverage-88%25-brightgreen.svg)](docs/SETUP.md#test-coverage)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
-> Master's Thesis Project
-> Author: Matthew Hong
-> Single Source of Truth: [experiment.yaml](experiment.yaml)
+> Master's Thesis Project - Matthew Hong
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [System Architecture](#system-architecture)
+- [Architectures](#architectures)
+- [Quick Start](#quick-start)
+- [Project Structure](#project-structure)
+- [Testing](#testing)
+- [Documentation](#documentation)
+- [License](#license)
 
 ---
 
 ## Overview
 
-This repository contains the experimental artifacts for a master's thesis comparing three ML model serving architectures under controlled conditions. The study evaluates **performance**, **resource efficiency**, and **operational complexity** trade-offs to help practitioners make informed architectural decisions.
+Inference Arena is a benchmark framework for comparing ML model serving architectures under controlled conditions. It evaluates three architectural approaches to deploying a two-stage computer vision pipeline (object detection + image classification) and measures their performance, resource efficiency, and operational trade-offs.
 
-### Key Research Questions
+The framework provides reproducible experiments with pre-registered hypotheses, centralized configuration, and comprehensive observability. All experimental parameters are defined in a single `experiment.yaml` file, ensuring consistent conditions across all tests.
 
-| RQ | Question |
-|----|----------|
-| **RQ1** | How do latency (P50, P99) and throughput differ across architectures under varying load? |
-| **RQ2** | What is the resource consumption and cost-per-request for each architecture? |
-| **RQ3** | What is the deployment complexity (configuration LOC, deployment time) for each? |
-| **RQ4** | Under what conditions is each architecture optimal? |
-
-See [experiment.yaml](experiment.yaml) for full hypotheses and pre-registered experimental design.
+This project demonstrates production engineering practices including containerized deployments, gRPC microservices communication, infrastructure-as-code, and comprehensive test coverage.
 
 ---
 
-## Architectures Under Test
+## System Architecture
 
-### Architecture A: Monolithic
-Single container consolidating preprocessing, detection, and classification.
+```mermaid
+flowchart TB
+    subgraph Client["Load Testing"]
+        Locust[Locust]
+        Runner[Experiment Runner]
+    end
 
-```
-[Client] → HTTP POST /predict → [FastAPI + YOLO + MobileNet]
-                                        ↓
-                                 [1 Container: 2 vCPU, 4GB]
-```
+    subgraph Architectures["ML Serving Architectures"]
+        A[Monolithic<br/>Port 8100]
+        B[Microservices<br/>Port 8200]
+        C[Triton<br/>Port 8300]
+    end
 
-### Architecture B: Microservices
-Two independent services communicating via gRPC with async fan-out.
+    subgraph Infra["Infrastructure"]
+        MinIO[(MinIO<br/>Model Storage)]
+        Prom[Prometheus<br/>Metrics]
+        Graf[Grafana<br/>Dashboards]
+        OTel[OpenTelemetry<br/>Collector]
+    end
 
-```
-[Client] → HTTP → [Detection Service + YOLO]
-                            ↓ gRPC (async fan-out)
-                  [Classification Service + MobileNet]
-                            ↓
-                  [2 Containers: 4 vCPU, 8GB total]
-```
+    Runner --> Locust
+    Locust --> A
+    Locust --> B
+    Locust --> C
 
-### Architecture C: NVIDIA Triton
-FastAPI gateway with preprocessing, forwarding to Triton Inference Server.
+    A --> MinIO
+    B --> MinIO
+    C --> MinIO
 
-```
-[Client] → HTTP → [FastAPI Gateway + preprocessing]
-                            ↓ gRPC
-                  [Triton Server (YOLO + MobileNet)]
-                            ↓
-                  [2 Containers: 4 vCPU, 8GB total]
+    A --> OTel
+    B --> OTel
+    C --> OTel
+
+    OTel --> Prom
+    Prom --> Graf
 ```
 
 ---
 
-## Workload: Multi-Model Pipeline
+## Architectures
 
-A two-stage computer vision pipeline with controlled fan-out:
+Three architectural approaches are benchmarked using identical ML models and preprocessing logic:
 
-| Stage | Model | Input | Output |
-|-------|-------|-------|--------|
-| Detection | YOLOv5n (ONNX) | 640×640 image | Bounding boxes |
-| Classification | MobileNetV2 (ONNX) | 224×224 crops | 1000-class probabilities |
+| Architecture | Design | Key Characteristics |
+|--------------|--------|---------------------|
+| **Monolithic** | Single container | Simple deployment, all processing in one service |
+| **Microservices** | Detection + Classification services | gRPC fan-out, independent scaling |
+| **Triton** | Gateway + NVIDIA Triton Server | Optimized inference runtime, batching support |
 
-**Fan-out Factor:** Each image produces 3-5 detections (μ=4, σ≈0.71), curated from COCO val2017.
+Each architecture README contains detailed diagrams, port configurations, and deployment instructions:
 
-**All parameters defined in [experiment.yaml](experiment.yaml)** - the single source of truth for reproducibility.
+- [Monolithic Architecture](architectures/monolithic/README.md)
+- [Microservices Architecture](architectures/microservices/README.md)
+- [Triton Architecture](architectures/triton/README.md)
 
 ---
 
@@ -86,8 +98,8 @@ A two-stage computer vision pipeline with controlled fan-out:
 
 ### Prerequisites
 
+- **Docker** and **Docker Compose**
 - **Python 3.11+**
-- **Docker & Docker Compose**
 - **[uv](https://docs.astral.sh/uv/)** - Modern Python package manager
 
 ```bash
@@ -95,30 +107,33 @@ A two-stage computer vision pipeline with controlled fan-out:
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-### Setup (3 Commands)
+### Setup
 
 ```bash
-# 1. Clone
+# Clone the repository
 git clone https://github.com/matthewhoung/inference-arena.git
 cd inference-arena
 
-# 2. Install dependencies
-make install
+# Complete setup (install deps, start infrastructure, download data, upload models)
+make setup
 
-# 3. Run tests
+# Run tests
 make test
 ```
 
-### Run Experiments
+### Run an Architecture
 
 ```bash
 # Start infrastructure (MinIO, Prometheus, Grafana)
 make start-infra
 
-# Start an architecture
-make start-mono     # Monolithic
-make start-micro    # Microservices
-make start-triton   # Triton
+# Start an architecture (choose one)
+make start-mono     # Monolithic   - http://localhost:8100
+make start-micro    # Microservices - http://localhost:8200
+make start-triton   # Triton        - http://localhost:8300
+
+# Run a quick load test
+make test-quick
 
 # Stop everything
 make stop-all
@@ -126,13 +141,13 @@ make stop-all
 
 ### Service Endpoints
 
-| Service | URL | Default Credentials |
-|---------|-----|---------------------|
+| Service | URL | Credentials |
+|---------|-----|-------------|
 | MinIO Console | http://localhost:9001 | minioadmin / minioadmin |
 | Prometheus | http://localhost:9090 | - |
 | Grafana | http://localhost:3000 | admin / admin |
 
-**For detailed setup, see [docs/SETUP.md](docs/SETUP.md)**
+For detailed setup instructions, see [docs/SETUP.md](docs/SETUP.md).
 
 ---
 
@@ -140,137 +155,90 @@ make stop-all
 
 ```
 inference-arena/
-├── experiment.yaml              # Single source of truth (all experimental params)
-├── Makefile                     # Common commands (make help)
-├── pyproject.toml               # Python dependencies
-├── src/shared/
-│   ├── config.py                # Loads experiment.yaml
-│   ├── processing/              # Preprocessing pipelines
-│   ├── model/                   # Model registry
-│   └── triton/                  # Triton config & MinIO utilities
-├── architectures/
-│   ├── monolithic/              # Architecture A
-│   ├── microservices/           # Architecture B
-│   └── triton/                  # Architecture C
-├── infrastructure/
-│   ├── docker-compose.infra.yml # MinIO, Prometheus, Grafana
-│   ├── grafana/                 # Dashboards and provisioning
-│   └── prometheus/              # Scrape configuration
-├── scripts/
-│   ├── setup/                   # Environment & proto setup
-│   ├── models/                  # Export & upload models
-│   └── utils/                   # Dashboard utilities
-├── tests/                       # 100+ tests
-└── docs/                        # Documentation
+├── experiment.yaml          # Single source of truth for all parameters
+├── Makefile                 # Common commands (run: make help)
+├── pyproject.toml           # Python dependencies and tool config
+│
+├── architectures/           # Three ML serving architectures
+│   ├── monolithic/          # Architecture A: Single container
+│   ├── microservices/       # Architecture B: Detection + Classification
+│   └── triton/              # Architecture C: Triton Inference Server
+│
+├── src/shared/              # Shared Python library
+│   ├── config/              # Configuration loading
+│   ├── processing/          # Image preprocessing pipelines
+│   ├── model/               # Model registry and export
+│   ├── validation/          # Container and port validation
+│   └── exceptions.py        # Exception hierarchy
+│
+├── infrastructure/          # Docker infrastructure
+│   ├── docker-compose.infra.yml
+│   ├── grafana/             # Dashboard provisioning
+│   ├── prometheus/          # Scrape configuration
+│   └── otel/                # OpenTelemetry config
+│
+├── experiments/             # Load testing framework
+│   ├── locustfile.py        # Locust user behavior
+│   └── runner.py            # Experiment orchestration
+│
+├── scripts/                 # Setup and utility scripts
+│   ├── setup/               # Environment and data setup
+│   └── models/              # Model export and upload
+│
+├── tests/                   # Unit and integration tests
+└── docs/                    # Documentation
 ```
 
 ---
 
-## Configuration Philosophy
+## Testing
 
-This project uses **two complementary configuration systems**:
+**Test Coverage:** 88% (threshold: 80%)
 
-### `experiment.yaml` - Scientific Configuration ✅ Git-tracked
-- Model specifications (architectures, opset versions, I/O shapes)
-- Preprocessing parameters (input sizes, normalization)
-- Controlled variables (resources, threading, dataset)
-- Pre-registered hypotheses and predictions
-- Load testing protocol
+### Development Testing
 
-### `.env` - Deployment Configuration ❌ Git-ignored
-- Infrastructure credentials (MinIO, Grafana passwords)
-- Port mappings (for local development)
-- Environment-specific overrides
+| Command | Description |
+|---------|-------------|
+| `make test` | Run all tests with coverage |
+| `make test-fast` | Run tests excluding slow markers |
+| `make test-unit` | Unit tests only (no services needed) |
+| `make lint` | Run linters (ruff + mypy) |
+| `make format` | Format code (black + ruff) |
 
-**Key Principle:** `experiment.yaml` defines **WHAT** you're testing (reproducible science), `.env` defines **WHERE** to run it (local secrets).
+### Load Testing
+
+| Command | Description |
+|---------|-------------|
+| `make test-quick` | Quick test (10 users, 1 run) |
+| `make test-arch ARCH=mono` | Test one architecture with all load levels |
+| `make test-matrix` | Full experiment matrix (63 tests) |
+| `make test-web` | Start Locust web UI |
+
+For complete testing documentation, see [docs/SETUP.md](docs/SETUP.md#testing).
 
 ---
 
 ## Documentation
 
-- **[docs/SETUP.md](docs/SETUP.md)** - Complete setup guide for committee members
-- **[docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)** - Detailed environment configuration
-- **[experiment.yaml](experiment.yaml)** - Full experimental specification with inline documentation
+### Getting Started
 
----
+- [SETUP.md](docs/SETUP.md) - Development environment setup and prerequisites
+- [ENVIRONMENT.md](docs/ENVIRONMENT.md) - Environment variables and configuration
 
-## Test Coverage
+### Experiment Documentation
 
-[![codecov](https://codecov.io/gh/matthewhoung/inference-arena/branch/main/graph/badge.svg)](https://codecov.io/gh/matthewhoung/inference-arena)
+- [EXPERIMENTS.md](docs/EXPERIMENTS.md) - Experiment protocol and load testing framework
+- [EXPERIMENT_CONFIG.md](docs/EXPERIMENT_CONFIG.md) - Complete experiment.yaml reference
 
-Current test coverage: **88%** (target: 80%)
+### Reference
 
-| Module | Coverage | Notes |
-|--------|----------|-------|
-| `shared/model/` | 87% | Registry, exporter types and utils |
-| `shared/config/` | 80% | Loader, models, validators |
-| `shared/processing/` | 93% | Image preprocessing pipelines |
-| `shared/validation/` | 97% | Container and port validation |
-| `shared/exceptions.py` | 100% | Exception hierarchy |
-| `shared/warnings.py` | 90% | Warning codes |
-| `shared/security.py` | 100% | Credential validation |
+- [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) - Common issues and solutions
+- [CHANGELOG.md](docs/CHANGELOG.md) - Breaking changes and version history
 
-**Excluded from coverage** (require external resources):
-- `shared/data/coco_dataset.py` - Requires COCO val2017 dataset
-- `shared/data/curator/` - Requires COCO dataset + model files
-- `shared/model/exporter/detection.py` - Requires ultralytics/torch
-- `shared/model/exporter/classification.py` - Requires torchvision
-- `shared/proto/*` - Auto-generated protobuf files
-- `shared/triton/*` - Requires MinIO infrastructure
-- `shared/health.py` - Tested via integration tests
+### Technical Guides
 
-### Running Tests
-
-```bash
-# Run all unit tests
-uv run pytest
-
-# Run with coverage report
-uv run pytest --cov=src --cov-report=term-missing
-
-# Run including slow tests (requires models)
-uv run pytest -m "slow"
-
-# Run load tests (requires running services)
-uv run pytest --load
-```
-
----
-
-## Controlled Variables
-
-All architectures use **identical** configurations (defined in `experiment.yaml`):
-
-| Variable | Value | Purpose |
-|----------|-------|---------|
-| ML Models | YOLOv5n + MobileNetV2 (ONNX) | Byte-identical weights |
-| Preprocessing | Shared preprocessing module | Eliminates variance |
-| Model Source | MinIO (S3-compatible) | Single source for all architectures |
-| Container Resources | 2 vCPU, 4GB per container | Fair comparison |
-| ONNX Threading | `intra_op=2`, `inter_op=1` | Optimal for 2 vCPU |
-| Test Dataset | 100 COCO images (curated) | Controlled fan-out factor |
-
----
-
-## Reproducibility
-
-This project demonstrates research best practices:
-
-- ✅ **Pre-registered Hypotheses** - All hypotheses defined before data collection
-- ✅ **Single Source of Truth** - All parameters in version-controlled `experiment.yaml`
-- ✅ **No Hardcoding** - Configuration values loaded from centralized config
-- ✅ **Comprehensive Testing** - 100+ tests validate configuration consistency
-- ✅ **Git Changelog** - All experiment.yaml changes tracked with rationale
-- ✅ **Cross-Platform** - Python-based setup works on Windows/Mac/Linux
-
----
-
-## Known Limitations
-
-This project has documented version constraints and workarounds:
-
-- **ONNX Version Pinning** - IR version compatibility with Triton. See [docs/ONNX_UPGRADE.md](docs/ONNX_UPGRADE.md)
-- **YOLOv5 Legacy Exporter** - Dynamic axes support requirement. See [docs/YOLO_EXPORT.md](docs/YOLO_EXPORT.md)
+- [ONNX_UPGRADE.md](docs/ONNX_UPGRADE.md) - ONNX IR version constraints
+- [YOLO_EXPORT.md](docs/YOLO_EXPORT.md) - YOLOv5 export settings
 
 ---
 
@@ -285,20 +253,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - NVIDIA Triton Inference Server team
 - Ultralytics YOLOv5 team
 - COCO dataset maintainers
-- Anthropic Claude for development assistance
 
 ---
 
-## Citation
-
-If you use this work, please cite:
-
-```bibtex
-@mastersthesis{hong2025inference,
-  title={Characterizing ML Serving Architectures in CPU-Constrained Environments},
-  author={Hong, Matthew},
-  year={2025},
-  school={[National Chung Hsing University]},
-  type={Master's Thesis}
-}
-```
+*Single Source of Truth: [experiment.yaml](experiment.yaml)*
