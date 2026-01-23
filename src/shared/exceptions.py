@@ -68,3 +68,17 @@ class ConfigKeyError(ConfigError):
     """
 
     pass
+
+
+class InsecureCredentialsError(InferenceArenaError):
+    """Insecure credentials detected in production environment.
+
+    Raised when default or insecure credentials are detected in a production
+    environment. This is a security concern, not a configuration error, hence
+    it inherits directly from InferenceArenaError rather than ConfigError.
+
+    In development environments, insecure credentials result in a warning
+    rather than an error to allow local testing with default credentials.
+    """
+
+    pass

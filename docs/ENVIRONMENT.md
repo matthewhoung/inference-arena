@@ -142,6 +142,16 @@ Should match `experiment.yaml` controlled variables for reproducibility.
 | `CONTAINER_VCPU` | `2` | CPU cores per container |
 | `CONTAINER_MEMORY` | `4096` | Memory limit (MB) per container |
 
+### Application Environment
+
+Controls runtime security behavior.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ENVIRONMENT` | (not set) | Application environment mode |
+
+Set to `"production"` to enable strict security checks. Default credentials will raise errors in production. Case-sensitive: only the exact value `production` (lowercase) triggers production mode.
+
 ---
 
 ## Security Best Practices
@@ -271,6 +281,30 @@ CONTAINER_MEMORY=4096
 ```
 
 Both should match to ensure reproducibility.
+
+---
+
+## Warning Codes Reference
+
+Inference Arena uses warning codes for documentation lookup and optional suppression. Each warning includes a code (e.g., W001) that can be used to find documentation or suppress the warning if needed.
+
+| Code | Message | Resolution |
+|------|---------|------------|
+| W001 | Configuration missing optional field | Add the optional field to config |
+| W002 | Duplicate port configuration detected | Check services section in experiment.yaml |
+| W003 | MinIO using default credentials | Set custom credentials for production |
+
+### Suppressing Warnings
+
+Warnings can be suppressed via the `INFERENCE_ARENA_SUPPRESS_WARNINGS` environment variable using comma-separated codes:
+
+```bash
+export INFERENCE_ARENA_SUPPRESS_WARNINGS="W003"
+# Or multiple codes:
+export INFERENCE_ARENA_SUPPRESS_WARNINGS="W001,W003"
+```
+
+**Note:** In production mode (`ENVIRONMENT=production`), suppressed warnings still log for audit trail but do not raise errors. This ensures you can acknowledge a warning while maintaining visibility for security review.
 
 ---
 

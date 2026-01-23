@@ -43,6 +43,7 @@ from shared.config import (
     get_model_names,
     get_spec_version,
 )
+from shared.security import check_credentials
 from shared.triton.config import generate_config_pbtxt
 
 # Third-party imports (with graceful fallback)
@@ -146,6 +147,9 @@ class MinIOModelRegistry:
         self.secure = secure if secure is not None else minio_config.get("secure", False)
         self.bucket = bucket or minio_config.get("bucket", "models")
         self.models_dir = models_dir or Path(__file__).parent.parent.parent.parent / "models"
+
+        # Check for insecure default credentials
+        check_credentials(self.access_key, self.secret_key, "MinIO")
 
         self.client = Minio(
             self.endpoint,
