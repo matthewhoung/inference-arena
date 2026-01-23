@@ -46,9 +46,15 @@ def pytest_configure(config: pytest.Config) -> None:
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
-    """Skip load tests unless --load flag provided."""
+    """Skip load tests unless --load flag provided.
+
+    Only skips tests that have the explicit @pytest.mark.load marker.
+    Tests without this marker (like unit tests using mocks) run normally.
+    """
     if not config.getoption("--load"):
         skip_load = pytest.mark.skip(reason="need --load option to run load tests")
         for item in items:
-            if "load" in item.keywords:
+            # Check for explicit @pytest.mark.load marker, not just "load" in keywords
+            # (keywords includes directory names which would skip ALL tests in tests/load/)
+            if list(item.iter_markers(name="load")):
                 item.add_marker(skip_load)

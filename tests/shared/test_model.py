@@ -17,6 +17,8 @@ Specification Reference: Foundation Specification §2 Model Export
 
 import hashlib
 import tempfile
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import numpy as np
@@ -488,6 +490,28 @@ class TestGetDefaultRegistry:
 
         assert registry1 is not registry2
 
+    def test_singleton_thread_safe(self, temp_dir: Path) -> None:
+        """Concurrent calls to get_default_registry should return same instance."""
+        NUM_THREADS = 10
+        barrier = threading.Barrier(NUM_THREADS)
+        registry_ids: list[int] = []
+
+        def get_registry(thread_id: int) -> int:
+            barrier.wait()  # Synchronize for maximum contention
+            registry = get_default_registry(models_dir=temp_dir)
+            return id(registry)
+
+        with ThreadPoolExecutor(max_workers=NUM_THREADS) as executor:
+            futures = [executor.submit(get_registry, i) for i in range(NUM_THREADS)]
+            for future in as_completed(futures):
+                registry_ids.append(future.result())
+
+        # All threads should get the same singleton instance
+        unique_registries = set(registry_ids)
+        assert len(unique_registries) == 1, (
+            f"Singleton violated: got {len(unique_registries)} different instances"
+        )
+
 
 # =============================================================================
 # Integration Tests
@@ -529,3 +553,142 @@ class TestModelIntegration:
         assert "mobilenetv2" in results
         assert (temp_dir / "yolov5n.onnx").exists()
         assert (temp_dir / "mobilenetv2.onnx").exists()
+
+
+# =============================================================================
+# Tests for ModelRegistry Thread Safety
+# =============================================================================
+
+
+class TestModelRegistryThreadSafety:
+    """Thread safety tests for ModelRegistry under concurrent load.
+
+    Per CONTEXT.md:
+    - 5-10 threads (low concurrency)
+    - Test read/write races
+    - Success criteria: no exceptions AND data consistency
+    - Single run per test (no iterations)
+    """
+
+    NUM_THREADS = 10
+
+    def test_concurrent_get_session_no_exceptions(
+        self,
+        registry_with_mock_model: ModelRegistry,
+    ) -> None:
+        """Multiple threads can get_session() without exceptions."""
+        errors: list[tuple[int, Exception]] = []
+        results: list[tuple[int, int]] = []  # (thread_id, session_id)
+
+        def get_session_task(thread_id: int) -> None:
+            try:
+                session = registry_with_mock_model.get_session("yolov5n")
+                results.append((thread_id, id(session)))
+            except Exception as e:
+                errors.append((thread_id, e))
+
+        with ThreadPoolExecutor(max_workers=self.NUM_THREADS) as executor:
+            futures = [executor.submit(get_session_task, i) for i in range(self.NUM_THREADS)]
+            for future in as_completed(futures):
+                future.result()  # Propagate any unexpected exceptions
+
+        assert len(errors) == 0, f"Thread errors: {errors}"
+        assert len(results) == self.NUM_THREADS
+
+    def test_concurrent_readers_get_same_instance(
+        self,
+        registry_with_mock_model: ModelRegistry,
+    ) -> None:
+        """All concurrent readers should receive same cached session instance."""
+        session_ids: list[int] = []
+        barrier = threading.Barrier(self.NUM_THREADS)
+
+        def synchronized_read(thread_id: int) -> int:
+            barrier.wait()  # Synchronize start for maximum contention
+            session = registry_with_mock_model.get_session("yolov5n")
+            return id(session)
+
+        with ThreadPoolExecutor(max_workers=self.NUM_THREADS) as executor:
+            futures = [executor.submit(synchronized_read, i) for i in range(self.NUM_THREADS)]
+            for future in as_completed(futures):
+                session_ids.append(future.result())
+
+        # All threads should get the exact same session instance
+        unique_sessions = set(session_ids)
+        assert len(unique_sessions) == 1, (
+            f"Expected 1 unique session, got {len(unique_sessions)}: {unique_sessions}"
+        )
+
+    def test_concurrent_read_during_clear_no_corruption(
+        self,
+        temp_dir: Path,
+        mock_onnx_model: Path,
+    ) -> None:
+        """Concurrent reads during cache clear should not corrupt state."""
+        import shutil
+
+        # Setup fresh registry
+        yolo_path = temp_dir / "yolov5n.onnx"
+        shutil.copy(mock_onnx_model, yolo_path)
+        registry = ModelRegistry(models_dir=temp_dir)
+
+        # Pre-load to warm cache
+        registry.get_session("yolov5n")
+
+        errors: list[tuple[int, Exception]] = []
+        NUM_READERS = 8
+        NUM_WRITERS = 2
+
+        def reader_task(thread_id: int) -> None:
+            try:
+                # May get session or see cleared cache (both OK)
+                registry.get_session("yolov5n")
+            except FileNotFoundError:
+                # This is acceptable - model file still exists
+                pass
+            except Exception as e:
+                errors.append((thread_id, e))
+
+        def writer_task(thread_id: int) -> None:
+            try:
+                registry.clear_cache()
+            except Exception as e:
+                errors.append((thread_id, e))
+
+        with ThreadPoolExecutor(max_workers=NUM_READERS + NUM_WRITERS) as executor:
+            # Mix of readers and writers
+            futures = []
+            for i in range(NUM_READERS):
+                futures.append(executor.submit(reader_task, i))
+            for i in range(NUM_WRITERS):
+                futures.append(executor.submit(writer_task, NUM_READERS + i))
+
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                except Exception:
+                    pass  # Errors captured in errors list
+
+        # No corruption or unexpected exceptions
+        assert len(errors) == 0, f"Unexpected errors: {errors}"
+
+    def test_is_loaded_thread_safe(
+        self,
+        registry_with_mock_model: ModelRegistry,
+    ) -> None:
+        """is_loaded() should be consistent under concurrent access."""
+        # First load the model
+        registry_with_mock_model.get_session("yolov5n")
+
+        results: list[bool] = []
+
+        def check_loaded(thread_id: int) -> bool:
+            return registry_with_mock_model.is_loaded("yolov5n")
+
+        with ThreadPoolExecutor(max_workers=self.NUM_THREADS) as executor:
+            futures = [executor.submit(check_loaded, i) for i in range(self.NUM_THREADS)]
+            for future in as_completed(futures):
+                results.append(future.result())
+
+        # All should report True (model was loaded)
+        assert all(results), f"Inconsistent is_loaded results: {results}"
