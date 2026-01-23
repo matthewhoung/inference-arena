@@ -25,6 +25,8 @@ import logging
 from datetime import datetime
 from typing import Any
 
+from shared.validation import validate_containers
+
 from ..config import CONTAINER_NAMES
 from ..metrics import MetricsCollector
 from .prometheus_client import PrometheusClient
@@ -213,6 +215,10 @@ class ResultsCollector:
         if not container_names:
             logger.warning(f"No container names configured for: {architecture}")
             return {}
+
+        # Validate containers exist and are healthy before querying Prometheus
+        # ConfigError will propagate up if any container is invalid
+        validate_containers(container_names)
 
         try:
             # Query metrics for all containers
