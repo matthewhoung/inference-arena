@@ -1,22 +1,29 @@
-"""Experiment Configuration Module.
+"""Configuration Loader Module.
 
-This module provides a Python interface to experiment.yaml,
-the single source of truth for all experimental parameters.
+This module provides functions for loading and accessing experiment configuration
+from experiment.yaml - the single source of truth for all experimental parameters.
 
-Usage:
-    from shared.config import get_config, get_controlled_variable, get_hypothesis
-
-    # Get full config
-    config = get_config()
-
-    # Get specific controlled variable
-    threads = get_controlled_variable("onnx_runtime", "intra_op_num_threads")
-
-    # Get model config
-    yolo_config = get_model_config("yolov5n")
-
-    # Get hypothesis
-    h1a = get_hypothesis("H1a")
+Functions:
+    get_config: Load and cache the experiment configuration
+    reload_config: Force reload of configuration (clears cache)
+    get_controlled_variable: Get a specific controlled variable value
+    get_controlled_variables: Get all controlled variables for a section
+    get_model_config: Get configuration for a specific model
+    get_model_names: Get list of all model names
+    get_hypothesis: Get a specific hypothesis by ID
+    get_hypotheses_by_category: Get all hypotheses for a category
+    get_hypotheses: Get all hypotheses
+    get_infrastructure_config: Get infrastructure configuration
+    get_minio_config: Get MinIO configuration
+    get_triton_config: Get Triton Inference Server configuration
+    get_triton_batching_config: Get Triton dynamic batching configuration
+    get_load_testing_config: Get load testing protocol configuration
+    get_concurrent_user_levels: Get concurrent user levels for experiments
+    get_container_names: Get container names for architectures
+    get_container_name: Get container name for a specific architecture
+    get_monitoring_config: Get monitoring configuration
+    get_metadata: Get experiment metadata
+    get_spec_version: Get specification version
 
 Author: Matthew Hong
 Specification Reference: experiment.yaml
@@ -26,11 +33,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, field_validator
 import yaml
-
-from shared.exceptions import ConfigKeyError
-from shared.warnings import warn_once
 
 # =============================================================================
 # Constants
@@ -41,16 +44,17 @@ _POSSIBLE_PATHS = [
     Path.cwd() / "experiment.yaml",
 ]
 
-# Find first existing path
-_CONFIG_PATH = None
-for path in _POSSIBLE_PATHS:
-    if path.exists():
-        _CONFIG_PATH = path
-        break
 
-# If not found, default to first option for better error messages
-if _CONFIG_PATH is None:
-    _CONFIG_PATH = _POSSIBLE_PATHS[0]
+def _find_config_path() -> Path:
+    """Find the configuration file path, defaulting to first option if not found."""
+    for path in _POSSIBLE_PATHS:
+        if path.exists():
+            return path
+    # If not found, default to first option for better error messages
+    return _POSSIBLE_PATHS[0]
+
+
+_CONFIG_PATH: Path = _find_config_path()
 
 
 # =============================================================================
@@ -258,6 +262,21 @@ def get_hypotheses_by_category(category: str) -> dict[str, dict[str, Any]]:
     }
 
 
+def get_hypotheses() -> dict[str, dict[str, Any]]:
+    """Get all hypotheses.
+
+    Returns:
+        Dictionary of hypothesis_id -> hypothesis_config
+
+    Example:
+        >>> hypotheses = get_hypotheses()
+        >>> list(hypotheses.keys())
+        ['H1a', 'H1b', 'H1c', 'H1d', 'H2a', 'H2b', 'H3a', 'H3b']
+    """
+    config = get_config()
+    return config.get("hypotheses", {})
+
+
 # =============================================================================
 # Infrastructure Configuration
 # =============================================================================
@@ -449,119 +468,6 @@ def get_monitoring_config() -> dict[str, Any]:
 
 
 # =============================================================================
-# Service Ports Configuration
-# =============================================================================
-
-
-class ServicePorts(BaseModel):
-    """Service port configuration with validation.
-
-    Provides typed access to service ports from experiment.yaml.
-    Validates port ranges and detects duplicates.
-
-    Attributes:
-        minio_api: MinIO API port (default 9000)
-        minio_console: MinIO console port (default 9001)
-        prometheus: Prometheus port (default 9090)
-        grafana: Grafana port (default 3000)
-        otel_collector: OTel Collector Prometheus metrics port (default 8889)
-        otel_health: OTel Collector health check port (default 13133)
-    """
-
-    minio_api: int
-    minio_console: int
-    prometheus: int
-    grafana: int
-    otel_collector: int
-    otel_health: int
-
-    @field_validator("*")
-    @classmethod
-    def port_in_valid_range(cls, v: int) -> int:
-        """Validate port is in valid range 1-65535."""
-        if not 1 <= v <= 65535:
-            raise ValueError(f"Port {v} not in valid range 1-65535")
-        return v
-
-
-_service_ports_cache: ServicePorts | None = None
-
-
-def get_service_ports() -> ServicePorts:
-    """Get service ports from experiment.yaml with validation.
-
-    Ports are loaded from the services section in experiment.yaml.
-    The function validates port ranges and detects duplicate port
-    assignments, logging a warning (W002) if duplicates are found.
-
-    Raises:
-        ConfigKeyError: If required port config missing
-        ValueError: If port validation fails (invalid port range)
-
-    Returns:
-        ServicePorts model with all configured ports
-
-    Example:
-        >>> ports = get_service_ports()
-        >>> ports.minio_api
-        9000
-        >>> ports.prometheus
-        9090
-    """
-    global _service_ports_cache
-    if _service_ports_cache is not None:
-        return _service_ports_cache
-
-    config = get_config()
-    try:
-        services = config["services"]
-        ports = ServicePorts(
-            minio_api=services["minio"]["api_port"],
-            minio_console=services["minio"]["console_port"],
-            prometheus=services["prometheus"]["port"],
-            grafana=services["grafana"]["port"],
-            otel_collector=services["otel_collector"]["port"],
-            otel_health=services["otel_collector"]["health_port"],
-        )
-    except KeyError as e:
-        raise ConfigKeyError(
-            f"Missing service port configuration in experiment.yaml: {e}. "
-            "Ensure services section is defined with all required ports."
-        ) from e
-
-    # Detect duplicate ports
-    seen: dict[int, str] = {}
-    for name, port in [
-        ("minio_api", ports.minio_api),
-        ("minio_console", ports.minio_console),
-        ("prometheus", ports.prometheus),
-        ("grafana", ports.grafana),
-        ("otel_collector", ports.otel_collector),
-        ("otel_health", ports.otel_health),
-    ]:
-        if port in seen:
-            warn_once(
-                "W002",
-                f"Duplicate port {port} configured for {name} and {seen[port]}",
-                "Check services section in experiment.yaml",
-            )
-        seen[port] = name
-
-    _service_ports_cache = ports
-    return ports
-
-
-def clear_service_ports_cache() -> None:
-    """Clear the service ports cache. Primarily for testing.
-
-    Clears the cached ServicePorts instance, causing the next call
-    to get_service_ports() to reload from configuration.
-    """
-    global _service_ports_cache
-    _service_ports_cache = None
-
-
-# =============================================================================
 # Metadata
 # =============================================================================
 
@@ -592,93 +498,6 @@ def get_spec_version() -> str:
         '1.0.0'
     """
     return get_metadata().get("spec_version", "0.0.0")
-
-
-# =============================================================================
-# Validation
-# =============================================================================
-
-
-def validate_config() -> list[str]:
-    """Validate the experiment configuration.
-
-    Returns:
-        List of validation error messages (empty if valid)
-
-    Example:
-        >>> errors = validate_config()
-        >>> if errors:
-        ...     print("Validation failed:", errors)
-    """
-    errors = []
-
-    try:
-        config = get_config()
-    except FileNotFoundError as e:
-        return [f"Configuration file not found: {e}"]
-    except yaml.YAMLError as e:
-        return [f"YAML parsing error: {e}"]
-
-    # Check required sections
-    required_sections = [
-        "metadata",
-        "research_questions",
-        "hypotheses",
-        "independent_variables",
-        "controlled_variables",
-        "infrastructure",
-    ]
-
-    for section in required_sections:
-        if section not in config:
-            errors.append(f"Missing required section: {section}")
-
-    # Check controlled variables
-    cv = config.get("controlled_variables", {})
-    required_cv = [
-        "models",
-        "preprocessing",
-        "resources",
-        "onnx_runtime",
-        "dataset",
-        "load_testing",
-    ]
-
-    for section in required_cv:
-        if section not in cv:
-            errors.append(f"Missing controlled_variables section: {section}")
-
-    # Check models
-    models = cv.get("models", {})
-    for model_name in ["yolov5n", "mobilenetv2"]:
-        if model_name not in models:
-            errors.append(f"Missing model configuration: {model_name}")
-        else:
-            model = models[model_name]
-            for field in ["opset_version", "input", "output"]:
-                if field not in model:
-                    errors.append(f"Model {model_name} missing field: {field}")
-
-    # Check ONNX runtime config
-    onnx = cv.get("onnx_runtime", {})
-    for field in ["intra_op_num_threads", "inter_op_num_threads"]:
-        if field not in onnx:
-            errors.append(f"Missing onnx_runtime field: {field}")
-
-    # Check hypotheses
-    hypotheses = config.get("hypotheses", {})
-    for h_id, h_config in hypotheses.items():
-        # Required fields for all hypotheses
-        required_fields = ["category", "statement", "rationale"]
-        for field in required_fields:
-            if field not in h_config:
-                errors.append(f"Hypothesis {h_id} missing required field: {field}")
-
-        # Must have either 'testable_prediction' or 'prediction'
-        if "testable_prediction" not in h_config and "prediction" not in h_config:
-            errors.append(f"Hypothesis {h_id} missing testable_prediction or prediction")
-
-    return errors
 
 
 # =============================================================================
