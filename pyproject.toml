@@ -132,7 +132,7 @@ dev-mode-dirs = ["src"]
 # pytest configuration
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "architectures"]
 asyncio_mode = "auto"
 addopts = [
     "-v",

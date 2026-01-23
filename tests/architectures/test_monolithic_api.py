@@ -6,11 +6,13 @@ Uses mocking to simulate the inference pipeline.
 Author: Matthew Hong
 """
 
-import os
-import sys
-
-# Add architectures to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../..", "architectures/monolithic"))
+from monolithic.app.models import (
+    Classification,
+    DetectionBox,
+    DetectionWithClassification,
+    HealthResponse,
+    PredictResponse,
+)
 
 
 class TestHealthEndpoint:
@@ -18,7 +20,7 @@ class TestHealthEndpoint:
 
     def test_health_response_schema(self):
         """Verify health response matches expected schema."""
-        from architectures.monolithic.app.models import HealthResponse
+        from monolithic.app.models import HealthResponse
 
         response = HealthResponse(status="healthy", models_loaded=True)
         assert response.status == "healthy"
@@ -26,7 +28,7 @@ class TestHealthEndpoint:
 
     def test_health_response_unhealthy(self):
         """Verify health response handles unhealthy state."""
-        from architectures.monolithic.app.models import HealthResponse
+        from monolithic.app.models import HealthResponse
 
         response = HealthResponse(status="healthy", models_loaded=False)
         assert response.models_loaded is False
@@ -37,7 +39,7 @@ class TestPredictEndpoint:
 
     def test_predict_response_schema(self):
         """Verify predict response matches expected schema."""
-        from architectures.monolithic.app.models import (
+        from monolithic.app.models import (
             Classification,
             DetectionBox,
             DetectionWithClassification,
@@ -77,7 +79,7 @@ class TestPredictEndpoint:
 
     def test_predict_response_empty_detections(self):
         """Verify predict handles no detections."""
-        from architectures.monolithic.app.models import PredictResponse
+        from monolithic.app.models import PredictResponse
 
         response = PredictResponse(
             request_id="test-uuid",
@@ -93,7 +95,7 @@ class TestPredictEndpoint:
 
     def test_timing_breakdown_structure(self):
         """Verify timing breakdown has required fields."""
-        from architectures.monolithic.app.models import PredictResponse
+        from monolithic.app.models import PredictResponse
 
         response = PredictResponse(
             request_id="test",
@@ -116,7 +118,7 @@ class TestModelsSchema:
 
     def test_classification_schema(self):
         """Verify Classification schema."""
-        from architectures.monolithic.app.models import Classification
+        from monolithic.app.models import Classification
 
         result = Classification(
             class_name="cat",
@@ -129,7 +131,7 @@ class TestModelsSchema:
 
     def test_detection_box_format(self):
         """Verify DetectionBox schema with bbox coordinates."""
-        from architectures.monolithic.app.models import DetectionBox
+        from monolithic.app.models import DetectionBox
 
         detection = DetectionBox(
             x1=10.5,

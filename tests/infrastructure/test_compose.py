@@ -21,7 +21,7 @@ from typing import Any
 import pytest
 import yaml
 
-from shared.config import get_controlled_variables, get_infrastructure_config
+from shared.config import get_controlled_variables, get_infrastructure_config, get_service_ports
 
 # Load infrastructure config for port assertions
 _infra_config = get_infrastructure_config()
@@ -29,6 +29,7 @@ _minio_api_port = _infra_config["minio"]["external_endpoint"].split(":")[
     -1
 ]  # Extract port from "localhost:9000"
 _monitoring_config = get_controlled_variables("monitoring")
+_ports = get_service_ports()
 
 
 # =============================================================================
@@ -197,8 +198,10 @@ class TestMinIOService:
         assert any(
             _minio_api_port in p for p in port_mappings
         ), f"MinIO API port {_minio_api_port} not exposed"
-        # MinIO console port (9001) - TODO: Add to experiment.yaml infrastructure config
-        assert any("9001" in p for p in port_mappings), "MinIO console port 9001 not exposed"
+        # MinIO console port from config
+        assert any(
+            str(_ports.minio_console) in p for p in port_mappings
+        ), f"MinIO console port {_ports.minio_console} not exposed"
 
     def test_minio_healthcheck(self, compose_config: dict[str, Any]) -> None:
         """MinIO should have a healthcheck for startup ordering."""
@@ -274,12 +277,14 @@ class TestPrometheusService:
         assert "latest" not in prometheus["image"].lower()
 
     def test_prometheus_port(self, compose_config: dict[str, Any]) -> None:
-        """Prometheus should expose port 9090."""
+        """Prometheus should expose port from config."""
         prometheus = compose_config["services"]["prometheus"]
         ports = prometheus.get("ports", [])
         port_mappings = [str(p) for p in ports]
-        # TODO: Add prometheus.port to experiment.yaml infrastructure config
-        assert any("9090" in p for p in port_mappings), "Prometheus port 9090 not exposed"
+        # Prometheus port from config
+        assert any(
+            str(_ports.prometheus) in p for p in port_mappings
+        ), f"Prometheus port {_ports.prometheus} not exposed"
 
     def test_prometheus_config_mount(self, compose_config: dict[str, Any]) -> None:
         """Prometheus should mount configuration file."""
@@ -314,12 +319,14 @@ class TestGrafanaService:
         assert "latest" not in grafana["image"].lower()
 
     def test_grafana_port(self, compose_config: dict[str, Any]) -> None:
-        """Grafana should expose port 3000."""
+        """Grafana should expose port from config."""
         grafana = compose_config["services"]["grafana"]
         ports = grafana.get("ports", [])
         port_mappings = [str(p) for p in ports]
-        # TODO: Add grafana.port to experiment.yaml infrastructure config
-        assert any("3000" in p for p in port_mappings), "Grafana port 3000 not exposed"
+        # Grafana port from config
+        assert any(
+            str(_ports.grafana) in p for p in port_mappings
+        ), f"Grafana port {_ports.grafana} not exposed"
 
     def test_grafana_provisioning_mounts(self, compose_config: dict[str, Any]) -> None:
         """Grafana should mount provisioning directories."""
@@ -415,8 +422,8 @@ class TestPrometheusConfig:
             targets.extend(sc.get("targets", []))
 
         assert any(
-            "otel-collector:8889" in t for t in targets
-        ), "OTel target should be otel-collector:8889"
+            f"otel-collector:{_ports.otel_collector}" in t for t in targets
+        ), f"OTel target should be otel-collector:{_ports.otel_collector}"
 
 
 # =============================================================================

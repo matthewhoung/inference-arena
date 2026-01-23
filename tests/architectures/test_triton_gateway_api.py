@@ -6,11 +6,13 @@ Uses mocking to simulate the Triton client.
 Author: Matthew Hong
 """
 
-import os
-import sys
-
-# Add architectures to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../..", "architectures/triton/gateway"))
+from triton.gateway.app.models import (
+    Classification,
+    DetectionBox,
+    DetectionWithClassification,
+    HealthResponse,
+    PredictResponse,
+)
 
 
 class TestHealthEndpoint:
@@ -18,7 +20,6 @@ class TestHealthEndpoint:
 
     def test_health_response_schema(self):
         """Verify health response matches expected schema."""
-        from architectures.triton.gateway.app.models import HealthResponse
 
         response = HealthResponse(status="healthy", models_loaded=True)
         assert response.status == "healthy"
@@ -26,8 +27,6 @@ class TestHealthEndpoint:
 
     def test_health_response_unhealthy(self):
         """Verify health handles unhealthy state."""
-        from architectures.triton.gateway.app.models import HealthResponse
-
         response = HealthResponse(status="unhealthy", models_loaded=False)
         assert response.models_loaded is False
 
@@ -37,7 +36,7 @@ class TestPredictEndpoint:
 
     def test_predict_response_schema(self):
         """Verify predict response matches expected schema."""
-        from architectures.triton.gateway.app.models import (
+        from triton.gateway.app.models import (
             Classification,
             DetectionBox,
             DetectionWithClassification,
@@ -77,7 +76,7 @@ class TestPredictEndpoint:
 
     def test_timing_reflects_triton_inference(self):
         """Verify timing breakdown includes Triton inference time."""
-        from architectures.triton.gateway.app.models import PredictResponse
+        from triton.gateway.app.models import PredictResponse
 
         response = PredictResponse(
             request_id="test",
@@ -98,7 +97,7 @@ class TestModelsSchema:
 
     def test_classification_schema(self):
         """Verify Classification schema."""
-        from architectures.triton.gateway.app.models import Classification
+        from triton.gateway.app.models import Classification
 
         result = Classification(
             class_name="car",
@@ -110,7 +109,7 @@ class TestModelsSchema:
 
     def test_detection_box_format(self):
         """Verify DetectionBox format is consistent."""
-        from architectures.triton.gateway.app.models import DetectionBox
+        from triton.gateway.app.models import DetectionBox
 
         detection = DetectionBox(
             x1=200.0,
@@ -127,7 +126,7 @@ class TestModelsSchema:
 
     def test_predict_response_serialization(self):
         """Verify PredictResponse serializes correctly for JSON."""
-        from architectures.triton.gateway.app.models import (
+        from triton.gateway.app.models import (
             Classification,
             DetectionBox,
             DetectionWithClassification,

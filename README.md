@@ -241,6 +241,15 @@ This project demonstrates research best practices:
 
 ---
 
+## Known Limitations
+
+This project has documented version constraints and workarounds:
+
+- **ONNX Version Pinning** - IR version compatibility with Triton. See [docs/ONNX_UPGRADE.md](docs/ONNX_UPGRADE.md)
+- **YOLOv5 Legacy Exporter** - Dynamic axes support requirement. See [docs/YOLO_EXPORT.md](docs/YOLO_EXPORT.md)
+
+---
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

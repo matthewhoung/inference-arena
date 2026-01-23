@@ -18,8 +18,11 @@ Specification Reference: experiment.yaml
 import os
 from pathlib import Path
 
+import yaml
+
 # Import from shared config (single source of truth)
 from shared.config import get_concurrent_user_levels, get_container_names, get_load_testing_config
+from shared.exceptions import ConfigError, ConfigKeyError, ConfigNotFoundError, ConfigParseError
 
 # =============================================================================
 # Architecture Configuration
@@ -56,17 +59,28 @@ def get_architecture_container_names(architecture: str) -> list[str]:
 
     Returns:
         List of full container names (e.g., ["inference-arena-monolithic"])
+
+    Raises:
+        ConfigNotFoundError: If experiment.yaml not found
+        ConfigParseError: If YAML parsing fails
+        ConfigKeyError: If architecture not found in container_names
     """
     try:
         return get_container_names(architecture)
-    except Exception:
-        # Fallback to hardcoded values if config unavailable
-        _fallback = {
-            "monolithic": ["inference-arena-monolithic"],
-            "microservices": ["inference-arena-detection", "inference-arena-classification"],
-            "triton": ["inference-arena-triton-server", "inference-arena-triton-gateway"],
-        }
-        return _fallback.get(architecture, [])
+    except FileNotFoundError as e:
+        raise ConfigNotFoundError(
+            "Could not load container names: experiment.yaml not found. "
+            "Ensure you are running from the project root directory."
+        ) from e
+    except yaml.YAMLError as e:
+        raise ConfigParseError(
+            "Could not parse experiment.yaml. Check for YAML syntax errors."
+        ) from e
+    except KeyError as e:
+        raise ConfigKeyError(
+            f"Architecture '{architecture}' not found in container_names configuration. "
+            f"Check experiment.yaml controlled_variables.container_names section."
+        ) from e
 
 
 # Legacy compatibility dict - use get_architecture_container_names() instead
@@ -121,6 +135,11 @@ def get_phase_durations() -> dict[str, int]:
 
     Returns:
         Dictionary with warmup, measurement, cooldown durations in seconds
+
+    Raises:
+        ConfigNotFoundError: If experiment.yaml not found
+        ConfigParseError: If YAML parsing fails
+        ConfigKeyError: If load_testing section not found
     """
     try:
         config = get_load_testing_config()
@@ -134,13 +153,19 @@ def get_phase_durations() -> dict[str, int]:
                 "duration_seconds", DEFAULT_COOLDOWN_SECONDS
             ),
         }
-    except Exception:
-        # Fallback to defaults if config not available
-        return {
-            "warmup": DEFAULT_WARMUP_SECONDS,
-            "measurement": DEFAULT_MEASUREMENT_SECONDS,
-            "cooldown": DEFAULT_COOLDOWN_SECONDS,
-        }
+    except FileNotFoundError as e:
+        raise ConfigNotFoundError(
+            "Could not load phase durations: experiment.yaml not found. "
+            "Ensure you are running from the project root directory."
+        ) from e
+    except yaml.YAMLError as e:
+        raise ConfigParseError(
+            "Could not parse experiment.yaml. Check for YAML syntax errors."
+        ) from e
+    except KeyError as e:
+        raise ConfigKeyError(
+            f"Missing configuration key in experiment.yaml: {e}"
+        ) from e
 
 
 def get_total_duration() -> int:
@@ -158,12 +183,28 @@ def get_runs_per_configuration() -> int:
 
     Returns:
         Number of runs (default: 3)
+
+    Raises:
+        ConfigNotFoundError: If experiment.yaml not found
+        ConfigParseError: If YAML parsing fails
+        ConfigKeyError: If load_testing section not found
     """
     try:
         config = get_load_testing_config()
         return config.get("runs_per_configuration", 3)
-    except Exception:
-        return 3
+    except FileNotFoundError as e:
+        raise ConfigNotFoundError(
+            "Could not load runs_per_configuration: experiment.yaml not found. "
+            "Ensure you are running from the project root directory."
+        ) from e
+    except yaml.YAMLError as e:
+        raise ConfigParseError(
+            "Could not parse experiment.yaml. Check for YAML syntax errors."
+        ) from e
+    except KeyError as e:
+        raise ConfigKeyError(
+            f"Missing configuration key in experiment.yaml: {e}"
+        ) from e
 
 
 def get_user_levels() -> list[int]:
@@ -171,11 +212,27 @@ def get_user_levels() -> list[int]:
 
     Returns:
         List of user counts [1, 5, 10, 25, 50, 75, 100]
+
+    Raises:
+        ConfigNotFoundError: If experiment.yaml not found
+        ConfigParseError: If YAML parsing fails
+        ConfigKeyError: If independent_variables section not found
     """
     try:
         return get_concurrent_user_levels()
-    except Exception:
-        return list(SPAWN_RATES.keys())
+    except FileNotFoundError as e:
+        raise ConfigNotFoundError(
+            "Could not load user levels: experiment.yaml not found. "
+            "Ensure you are running from the project root directory."
+        ) from e
+    except yaml.YAMLError as e:
+        raise ConfigParseError(
+            "Could not parse experiment.yaml. Check for YAML syntax errors."
+        ) from e
+    except KeyError as e:
+        raise ConfigKeyError(
+            f"Missing configuration key in experiment.yaml: {e}"
+        ) from e
 
 
 def get_architectures() -> list[str]:
