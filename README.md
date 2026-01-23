@@ -196,19 +196,43 @@ This project uses **two complementary configuration systems**:
 
 ## Test Coverage
 
-All preprocessing pipelines have comprehensive test coverage:
+[![codecov](https://codecov.io/gh/matthewhoung/inference-arena/branch/main/graph/badge.svg)](https://codecov.io/gh/matthewhoung/inference-arena)
 
-| Module | Coverage |
-|--------|----------|
-| `transforms.py` | 88% |
-| `yolo_preprocess.py` | 96% |
-| `mobilenet_preprocess.py` | 95% |
-| `config.py` | 100% |
-| **Total** | **93%** |
+Current test coverage: **88%** (target: 80%)
 
-Run tests with:
+| Module | Coverage | Notes |
+|--------|----------|-------|
+| `shared/model/` | 87% | Registry, exporter types and utils |
+| `shared/config/` | 80% | Loader, models, validators |
+| `shared/processing/` | 93% | Image preprocessing pipelines |
+| `shared/validation/` | 97% | Container and port validation |
+| `shared/exceptions.py` | 100% | Exception hierarchy |
+| `shared/warnings.py` | 90% | Warning codes |
+| `shared/security.py` | 100% | Credential validation |
+
+**Excluded from coverage** (require external resources):
+- `shared/data/coco_dataset.py` - Requires COCO val2017 dataset
+- `shared/data/curator/` - Requires COCO dataset + model files
+- `shared/model/exporter/detection.py` - Requires ultralytics/torch
+- `shared/model/exporter/classification.py` - Requires torchvision
+- `shared/proto/*` - Auto-generated protobuf files
+- `shared/triton/*` - Requires MinIO infrastructure
+- `shared/health.py` - Tested via integration tests
+
+### Running Tests
+
 ```bash
-pytest tests/ --cov=src/shared --cov-report=html
+# Run all unit tests
+uv run pytest
+
+# Run with coverage report
+uv run pytest --cov=src --cov-report=term-missing
+
+# Run including slow tests (requires models)
+uv run pytest -m "slow"
+
+# Run load tests (requires running services)
+uv run pytest --load
 ```
 
 ---
