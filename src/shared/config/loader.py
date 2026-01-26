@@ -31,7 +31,7 @@ Specification Reference: experiment.yaml
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
 
@@ -85,7 +85,7 @@ def get_config() -> dict[str, Any]:
         )
 
     with open(_CONFIG_PATH) as f:
-        return yaml.safe_load(f)
+        return cast(dict[str, Any], yaml.safe_load(f))
 
 
 def reload_config() -> dict[str, Any]:
@@ -167,7 +167,7 @@ def get_controlled_variables(section: str) -> dict[str, Any]:
         available = list(controlled.keys())
         raise KeyError(f"Section '{section}' not found. Available: {available}")
 
-    return controlled[section]
+    return cast(dict[str, Any], controlled[section])
 
 
 # =============================================================================
@@ -192,7 +192,7 @@ def get_model_config(model_name: str) -> dict[str, Any]:
         17
     """
     models = get_controlled_variable("models", model_name)
-    return models
+    return cast(dict[str, Any], models)
 
 
 def get_model_names() -> list[str]:
@@ -235,7 +235,7 @@ def get_hypothesis(hypothesis_id: str) -> dict[str, Any]:
         available = list(hypotheses.keys())
         raise KeyError(f"Hypothesis '{hypothesis_id}' not found. Available: {available}")
 
-    return hypotheses[hypothesis_id]
+    return cast(dict[str, Any], hypotheses[hypothesis_id])
 
 
 def get_hypotheses_by_category(category: str) -> dict[str, dict[str, Any]]:
@@ -274,7 +274,7 @@ def get_hypotheses() -> dict[str, dict[str, Any]]:
         ['H1a', 'H1b', 'H1c', 'H1d', 'H2a', 'H2b', 'H3a', 'H3b']
     """
     config = get_config()
-    return config.get("hypotheses", {})
+    return cast(dict[str, dict[str, Any]], config.get("hypotheses", {}))
 
 
 # =============================================================================
@@ -301,13 +301,13 @@ def get_infrastructure_config(service: str | None = None) -> dict[str, Any]:
     infra = config.get("infrastructure", {})
 
     if service is None:
-        return infra
+        return cast(dict[str, Any], infra)
 
     if service not in infra:
         available = list(infra.keys())
         raise KeyError(f"Service '{service}' not found. Available: {available}")
 
-    return infra[service]
+    return cast(dict[str, Any], infra[service])
 
 
 def get_minio_config() -> dict[str, Any]:
@@ -343,7 +343,7 @@ def get_triton_config() -> dict[str, Any]:
         's3://minio:9000/models'
     """
     config = get_config()
-    return config.get("triton", {})
+    return cast(dict[str, Any], config.get("triton", {}))
 
 
 def get_triton_batching_config() -> dict[str, Any]:
@@ -364,14 +364,17 @@ def get_triton_batching_config() -> dict[str, Any]:
         8
     """
     triton = get_triton_config()
-    return triton.get(
-        "batching",
-        {
-            "enabled": False,
-            "max_batch_size": 8,
-            "preferred_batch_size": [4, 8],
-            "max_queue_delay_microseconds": 5000,
-        },
+    return cast(
+        dict[str, Any],
+        triton.get(
+            "batching",
+            {
+                "enabled": False,
+                "max_batch_size": 8,
+                "preferred_batch_size": [4, 8],
+                "max_queue_delay_microseconds": 5000,
+            },
+        ),
     )
 
 
@@ -406,7 +409,7 @@ def get_concurrent_user_levels() -> list[int]:
     """
     config = get_config()
     iv = config.get("independent_variables", {})
-    return iv.get("concurrent_users", {}).get("levels", [])
+    return cast(list[int], iv.get("concurrent_users", {}).get("levels", []))
 
 
 # =============================================================================
@@ -450,7 +453,7 @@ def get_container_names(architecture: str | None = None) -> dict[str, list[str]]
         available = list(container_names.keys())
         raise KeyError(f"Architecture '{architecture}' not found. Available: {available}")
 
-    return container_names[architecture]
+    return cast(list[str], container_names[architecture])
 
 
 def get_monitoring_config() -> dict[str, Any]:
@@ -484,7 +487,7 @@ def get_metadata() -> dict[str, Any]:
         'Matthew Hong'
     """
     config = get_config()
-    return config.get("metadata", {})
+    return cast(dict[str, Any], config.get("metadata", {}))
 
 
 def get_spec_version() -> str:
@@ -497,7 +500,7 @@ def get_spec_version() -> str:
         >>> get_spec_version()
         '1.0.0'
     """
-    return get_metadata().get("spec_version", "0.0.0")
+    return cast(str, get_metadata().get("spec_version", "0.0.0"))
 
 
 # =============================================================================
@@ -519,12 +522,15 @@ def get_downloads_config() -> dict[str, Any]:
         3
     """
     config = get_config()
-    return config.get(
-        "downloads",
-        {
-            "max_concurrent": 3,
-            "timeout": 300,
-        },
+    return cast(
+        dict[str, Any],
+        config.get(
+            "downloads",
+            {
+                "max_concurrent": 3,
+                "timeout": 300,
+            },
+        ),
     )
 
 
@@ -538,7 +544,7 @@ def get_download_max_concurrent() -> int:
         >>> get_download_max_concurrent()
         3
     """
-    return get_downloads_config().get("max_concurrent", 3)
+    return cast(int, get_downloads_config().get("max_concurrent", 3))
 
 
 def get_download_timeout() -> int:
@@ -551,7 +557,7 @@ def get_download_timeout() -> int:
         >>> get_download_timeout()
         300
     """
-    return get_downloads_config().get("timeout", 300)
+    return cast(int, get_downloads_config().get("timeout", 300))
 
 
 # =============================================================================

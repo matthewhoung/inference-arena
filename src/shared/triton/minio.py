@@ -54,11 +54,11 @@ try:
     MINIO_AVAILABLE = True
 except ImportError:
     MINIO_AVAILABLE = False
-    Minio = None
-    S3Error = Exception
+    Minio = None  # type: ignore[misc, assignment]
+    S3Error = Exception  # type: ignore[misc, assignment]
 
 try:
-    from tenacity import (
+    from tenacity import (  # type: ignore[import-not-found]
         retry,
         retry_if_exception_type,
         stop_after_attempt,
@@ -91,7 +91,11 @@ if TENACITY_AVAILABLE:
     )
 else:
     # Fallback: no retry
-    def retry_on_connection(func):
+    from typing import Callable, TypeVar
+
+    F = TypeVar("F", bound=Callable[..., Any])
+
+    def retry_on_connection(func: F) -> F:
         """No-op decorator when tenacity is not available."""
         return func
 
@@ -215,7 +219,7 @@ class MinIOModelRegistry:
         if not model_path.exists():
             raise FileNotFoundError(f"Model not found: {model_path}")
 
-        result = {
+        result: dict[str, Any] = {
             "model_name": model_name,
             "local_path": str(model_path),
             "batching_enabled": batching_enabled,
@@ -351,14 +355,14 @@ class MinIOModelRegistry:
         Returns:
             Verification result with status per model
         """
-        verification = {
+        verification: dict[str, Any] = {
             "bucket": self.bucket,
             "models": {},
             "all_valid": True,
         }
 
         for model_name in get_model_names():
-            model_status = {
+            model_status: dict[str, bool] = {
                 "model_onnx": False,
                 "config_pbtxt": False,
                 "metadata_json": False,

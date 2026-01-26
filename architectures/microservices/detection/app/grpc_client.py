@@ -7,8 +7,11 @@ parallel classification calls with asyncio.gather().
 Author: Matthew Hong
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
+from typing import TYPE_CHECKING, Any
 
 import grpc
 import grpc.aio
@@ -16,7 +19,19 @@ import numpy as np
 
 from shared.proto import inference_pb2, inference_pb2_grpc
 
+if TYPE_CHECKING:
+    # These types are only used for type checking, not at runtime
+    from shared.proto.inference_pb2 import ClassificationResponse
+
 logger = logging.getLogger(__name__)
+
+
+def _check_proto_available() -> None:
+    """Verify proto modules are available."""
+    if inference_pb2 is None or inference_pb2_grpc is None:
+        raise ImportError(
+            "Proto files not generated. Run 'python scripts/generate_proto.py' first."
+        )
 
 
 class ClassificationClient:
@@ -43,11 +58,13 @@ class ClassificationClient:
         """
         self.endpoint = endpoint
         self.channel: grpc.aio.Channel | None = None
-        self.stub: inference_pb2_grpc.ClassificationServiceStub | None = None
+        self.stub: Any = None  # inference_pb2_grpc.ClassificationServiceStub | None
         logger.info(f"ClassificationClient configured for {endpoint}")
 
     async def connect(self) -> None:
         """Establish async gRPC channel connection."""
+        _check_proto_available()
+
         # Create channel with options
         options = [
             ("grpc.max_send_message_length", 50 * 1024 * 1024),  # 50MB
@@ -78,8 +95,8 @@ class ClassificationClient:
         self,
         request_id: str,
         crop: np.ndarray,
-        source_box: dict | None = None,
-    ) -> inference_pb2.ClassificationResponse:
+        source_box: dict[str, Any] | None = None,
+    ) -> ClassificationResponse:
         """Classify a single image crop.
 
         Args:
@@ -125,8 +142,8 @@ class ClassificationClient:
         self,
         request_id: str,
         crops: list[np.ndarray],
-        boxes: list[dict],
-    ) -> list[inference_pb2.ClassificationResponse]:
+        boxes: list[dict[str, Any]],
+    ) -> list[ClassificationResponse]:
         """Classify multiple crops in parallel using asyncio.gather().
 
         ============================================================

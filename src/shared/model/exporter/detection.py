@@ -84,7 +84,7 @@ def export_yolov5n(
 
             # Export to ONNX
             # dynamic=True enables dynamic batch dimension for Triton batching
-            export_path = model.export(
+            export_result = model.export(
                 format="onnx",
                 opset=opset_version,
                 imgsz=input_size,
@@ -94,9 +94,9 @@ def export_yolov5n(
             )
 
             # Move to target location if different
-            export_path = Path(export_path)
-            if export_path.name != output_path.name:
-                export_path.rename(output_path)
+            exported_path = Path(str(export_result))
+            if exported_path.name != output_path.name:
+                exported_path.rename(output_path)
         finally:
             # Always restore original directory
             os.chdir(original_cwd)
@@ -148,6 +148,9 @@ def export_yolov5n(
     logger.info("  Export successful")
     logger.info(f"  File size: {file_size_mb:.2f} MB")
     logger.info(f"  Checksum: {checksum[:16]}...")
+
+    # opset_version is guaranteed to be set when valid=True
+    assert verification["opset_version"] is not None
 
     return ExportResult(
         model_path=output_path,

@@ -18,19 +18,26 @@ Specification Reference:
 """
 
 from pathlib import Path
+from types import ModuleType
+from typing import Any, cast
 
 # Proto file location
 PROTO_DIR = Path(__file__).parent
 PROTO_FILE = PROTO_DIR / "inference.proto"
 
 # Export generated modules if they exist
+inference_pb2: ModuleType | None = None
+inference_pb2_grpc: ModuleType | None = None
+
 try:
-    from shared.proto import inference_pb2 as inference_pb2
-    from shared.proto import inference_pb2_grpc as inference_pb2_grpc
+    from shared.proto import inference_pb2 as _pb2
+    from shared.proto import inference_pb2_grpc as _pb2_grpc
+
+    inference_pb2 = _pb2
+    inference_pb2_grpc = _pb2_grpc
 except ImportError:
-    # Generated files not yet created
-    inference_pb2 = None  # type: ignore[assignment]
-    inference_pb2_grpc = None  # type: ignore[assignment]
+    # Generated files not yet created - keep None values
+    pass
 
 __all__ = ["inference_pb2", "inference_pb2_grpc", "get_proto_path", "is_generated", "get_messages", "get_services"]
 
@@ -48,7 +55,7 @@ def is_generated() -> bool:
 
 
 # Lazy imports for generated modules
-def get_messages():
+def get_messages() -> ModuleType:
     """Get generated protobuf message classes.
 
     Returns:
@@ -61,12 +68,12 @@ def get_messages():
         raise ImportError(
             "Proto files not generated. Run 'python scripts/generate_proto.py' first."
         )
-    from shared.proto import inference_pb2
+    from shared.proto import inference_pb2 as pb2
 
-    return inference_pb2
+    return cast(ModuleType, pb2)
 
 
-def get_services():
+def get_services() -> ModuleType:
     """Get generated gRPC service classes.
 
     Returns:
@@ -79,6 +86,6 @@ def get_services():
         raise ImportError(
             "Proto files not generated. Run 'python scripts/generate_proto.py' first."
         )
-    from shared.proto import inference_pb2_grpc
+    from shared.proto import inference_pb2_grpc as pb2_grpc
 
-    return inference_pb2_grpc
+    return cast(ModuleType, pb2_grpc)

@@ -238,6 +238,9 @@ exclude = [
     ".venv",
     "build",
     "dist",
+    # Generated proto files
+    "src/shared/proto/inference_pb2.py",
+    "src/shared/proto/inference_pb2_grpc.py",
 ]
 
 [[tool.mypy.overrides]]
@@ -254,6 +257,10 @@ module = [
     "shared.*",
     "psutil.*",
     "microservices.*",
+    "torch.*",
+    "torchvision.*",
+    "tenacity.*",
+    "google.protobuf.*",
 ]
 ignore_missing_imports = true
 

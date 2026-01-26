@@ -95,6 +95,7 @@ class DetectionCounter:
         result = preprocessor(image)
 
         # Run inference
+        assert self._session is not None  # Set by _load_model()
         input_name = self._session.get_inputs()[0].name
         outputs = self._session.run(None, {input_name: result.tensor})
 

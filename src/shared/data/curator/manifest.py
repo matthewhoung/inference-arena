@@ -221,6 +221,7 @@ class DatasetCurator:
 
         # Copy selected images to output directory
         for record in selected:
+            assert record.original_path is not None  # Set during curation
             src_path = Path(record.original_path)
             dst_path = self.output_dir / record.filename
             shutil.copy(src_path, dst_path)
@@ -330,7 +331,7 @@ class DatasetCurator:
             mean_det = std_det = min_det = max_det = 0
 
         # Count distribution
-        distribution = {}
+        distribution: dict[int, int] = {}
         for count in counts:
             distribution[count] = distribution.get(count, 0) + 1
 

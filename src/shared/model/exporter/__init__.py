@@ -78,6 +78,7 @@ def export_all_models(
         model_path = output_dir / "yolov5n.onnx"
         verification = verify_onnx_model(model_path)
         if verification["valid"]:
+            assert verification["opset_version"] is not None
             results["yolov5n"] = ExportResult(
                 model_path=model_path,
                 checksum=compute_checksum(model_path),
@@ -99,6 +100,7 @@ def export_all_models(
         model_path = output_dir / "mobilenetv2.onnx"
         verification = verify_onnx_model(model_path)
         if verification["valid"]:
+            assert verification["opset_version"] is not None
             results["mobilenetv2"] = ExportResult(
                 model_path=model_path,
                 checksum=compute_checksum(model_path),

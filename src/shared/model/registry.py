@@ -16,12 +16,18 @@ Author: Matthew Hong
 Specification Reference: Foundation Specification §4 Resource Constraints
 """
 
+from __future__ import annotations
+
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Lock
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
+
+if TYPE_CHECKING:
+    import onnxruntime as ort
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +66,7 @@ class ModelInfo:
     path: Path
     input_name: str
     input_shape: tuple[int, ...]
-    input_dtype: np.dtype
+    input_dtype: type[Any]
     output_name: str
     output_shape: tuple[int, ...]
 

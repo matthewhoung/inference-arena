@@ -9,6 +9,17 @@ Specification Reference: Foundation Specification Section 2 Model Export
 
 import hashlib
 from pathlib import Path
+from typing import Any, TypedDict
+
+
+class VerificationResult(TypedDict):
+    """Type definition for verify_onnx_model result."""
+
+    valid: bool
+    opset_version: int | None
+    input_shapes: list[tuple[Any, ...]]
+    output_shapes: list[tuple[Any, ...]]
+    error: str | None
 
 # =============================================================================
 # Checksum Utilities
@@ -43,7 +54,7 @@ def compute_checksum(file_path: Path) -> str:
 # =============================================================================
 
 
-def verify_onnx_model(model_path: Path) -> dict:
+def verify_onnx_model(model_path: Path) -> VerificationResult:
     """Verify ONNX model is valid and meets specifications.
 
     Checks:
@@ -70,7 +81,7 @@ def verify_onnx_model(model_path: Path) -> dict:
         >>> result["opset_version"]
         17
     """
-    result = {
+    result: VerificationResult = {
         "valid": False,
         "opset_version": None,
         "input_shapes": [],
@@ -94,8 +105,9 @@ def verify_onnx_model(model_path: Path) -> dict:
         result["opset_version"] = model.opset_import[0].version
 
         # Extract input shapes
+        input_shapes: list[tuple[Any, ...]] = []
         for inp in model.graph.input:
-            shape = []
+            shape: list[Any] = []
             for dim in inp.type.tensor_type.shape.dim:
                 if dim.dim_value:
                     shape.append(dim.dim_value)
@@ -103,9 +115,11 @@ def verify_onnx_model(model_path: Path) -> dict:
                     shape.append(dim.dim_param)  # Dynamic dimension
                 else:
                     shape.append(-1)
-            result["input_shapes"].append(tuple(shape))
+            input_shapes.append(tuple(shape))
+        result["input_shapes"] = input_shapes
 
         # Extract output shapes
+        output_shapes: list[tuple[Any, ...]] = []
         for out in model.graph.output:
             shape = []
             for dim in out.type.tensor_type.shape.dim:
@@ -115,7 +129,8 @@ def verify_onnx_model(model_path: Path) -> dict:
                     shape.append(dim.dim_param)
                 else:
                     shape.append(-1)
-            result["output_shapes"].append(tuple(shape))
+            output_shapes.append(tuple(shape))
+        result["output_shapes"] = output_shapes
 
         # Verify can be loaded by ONNX Runtime
         import onnxruntime as ort

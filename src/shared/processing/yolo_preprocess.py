@@ -17,6 +17,7 @@ Specification Reference: Foundation Specification §3.2
 """
 
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -57,7 +58,7 @@ class YOLOPreprocessResult:
     padding: tuple[int, int]
     original_shape: tuple[int, int]
 
-    def scale_boxes_to_original(self, boxes: np.ndarray) -> np.ndarray:
+    def scale_boxes_to_original(self, boxes: np.ndarray) -> "np.ndarray[Any, Any]":
         """Convert detection boxes from YOLO output space to original image coordinates.
 
         Args:
@@ -66,7 +67,10 @@ class YOLOPreprocessResult:
         Returns:
             Boxes with coordinates in original image space
         """
-        return scale_boxes(boxes, self.scale, self.padding, self.original_shape)
+        result: np.ndarray[Any, Any] = scale_boxes(
+            boxes, self.scale, self.padding, self.original_shape
+        )
+        return result
 
 
 # =============================================================================

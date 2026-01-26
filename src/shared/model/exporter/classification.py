@@ -123,6 +123,9 @@ def export_mobilenetv2(
     logger.info(f"  File size: {file_size_mb:.2f} MB")
     logger.info(f"  Checksum: {checksum[:16]}...")
 
+    # opset_version is guaranteed to be set when valid=True
+    assert verification["opset_version"] is not None
+
     return ExportResult(
         model_path=output_path,
         checksum=checksum,

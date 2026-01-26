@@ -20,6 +20,7 @@ import urllib.request
 import zipfile
 from collections.abc import Iterator
 from pathlib import Path
+from typing import cast
 
 import cv2
 import numpy as np
@@ -36,12 +37,12 @@ logger = logging.getLogger(__name__)
 
 def _get_coco_url() -> str:
     """Get COCO download URL from experiment.yaml."""
-    return get_controlled_variable("dataset", "source_url")
+    return cast(str, get_controlled_variable("dataset", "source_url"))
 
 
 def _get_coco_count() -> int:
     """Get expected COCO image count from experiment.yaml."""
-    return get_controlled_variable("dataset", "total_images")
+    return cast(int, get_controlled_variable("dataset", "total_images"))
 
 
 COCO_VAL2017_URL: str = _get_coco_url()
