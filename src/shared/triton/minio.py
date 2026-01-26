@@ -47,15 +47,18 @@ from shared.security import check_credentials
 from shared.triton.config import generate_config_pbtxt
 
 # Third-party imports (with graceful fallback)
+# Declare with Any type to avoid type: ignore comments that cause CI issues
+Minio: Any = None
+S3Error: Any = Exception
+MINIO_AVAILABLE = False
+
 try:
     from minio import Minio
     from minio.error import S3Error
 
     MINIO_AVAILABLE = True
 except ImportError:
-    MINIO_AVAILABLE = False
-    Minio = None  # type: ignore[misc, assignment]
-    S3Error = Exception  # type: ignore[misc, assignment]
+    pass
 
 try:
     from tenacity import (

@@ -267,7 +267,3 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = ["tests.load.*"]
 disallow_untyped_defs = false
-
-[[tool.mypy.overrides]]
-module = ["shared.triton.minio"]
-warn_unused_ignores = false
