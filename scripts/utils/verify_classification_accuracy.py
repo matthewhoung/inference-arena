@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Cross-Architecture Classification Accuracy Verification
+"""Cross-Architecture Classification Accuracy Verification.
 
 This script validates that the JPEG compression used in the microservices
 architecture does not materially affect classification accuracy compared
@@ -28,7 +27,6 @@ import json
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 import httpx
 from tqdm import tqdm
@@ -48,9 +46,9 @@ class DetectionComparison:
     """Comparison of a single detection across architectures."""
     image_id: str
     detection_index: int
-    mono: Optional[ClassificationResult] = None
-    micro: Optional[ClassificationResult] = None
-    triton: Optional[ClassificationResult] = None
+    mono: ClassificationResult | None = None
+    micro: ClassificationResult | None = None
+    triton: ClassificationResult | None = None
 
     @property
     def all_match(self) -> bool:
@@ -61,14 +59,14 @@ class DetectionComparison:
         return all(r.class_id == results[0].class_id for r in results)
 
     @property
-    def mono_micro_match(self) -> Optional[bool]:
+    def mono_micro_match(self) -> bool | None:
         """Check if mono and micro agree (the key comparison)."""
         if self.mono is None or self.micro is None:
             return None
         return self.mono.class_id == self.micro.class_id
 
     @property
-    def confidence_deviation(self) -> Optional[float]:
+    def confidence_deviation(self) -> float | None:
         """Max confidence deviation between mono and micro."""
         if self.mono is None or self.micro is None:
             return None
@@ -88,23 +86,27 @@ class VerificationReport:
 
     @property
     def mono_micro_match_rate(self) -> float:
+        """Calculate match rate between monolithic and microservices."""
         if self.mono_micro_total == 0:
             return 1.0
         return self.mono_micro_matches / self.mono_micro_total
 
     @property
     def mean_confidence_deviation(self) -> float:
+        """Calculate mean confidence deviation across comparisons."""
         if not self.confidence_deviations:
             return 0.0
         return sum(self.confidence_deviations) / len(self.confidence_deviations)
 
     @property
     def max_confidence_deviation(self) -> float:
+        """Get maximum confidence deviation across comparisons."""
         if not self.confidence_deviations:
             return 0.0
         return max(self.confidence_deviations)
 
     def to_dict(self) -> dict:
+        """Convert report to dictionary for JSON serialization."""
         return {
             "total_images": self.total_images,
             "total_detections": self.total_detections,
@@ -138,7 +140,7 @@ def parse_response(response: dict) -> list[ClassificationResult]:
 
 def boxes_match(box1: tuple, box2: tuple, tolerance: float = 5.0) -> bool:
     """Check if two bounding boxes are approximately the same."""
-    return all(abs(a - b) < tolerance for a, b in zip(box1, box2))
+    return all(abs(a - b) < tolerance for a, b in zip(box1, box2, strict=True))
 
 
 def match_detections(
@@ -203,7 +205,7 @@ def run_verification(
                     print(f"Warning: {name} health check failed: {resp.status_code}")
             except httpx.RequestError as e:
                 print(f"Error: Cannot connect to {name} at {url}: {e}")
-                print(f"Make sure all three architectures are running.")
+                print("Make sure all three architectures are running.")
                 sys.exit(1)
 
     print("All services healthy. Starting verification...\n")
@@ -270,7 +272,8 @@ def run_verification(
     return report
 
 
-def main():
+def main() -> None:
+    """Run classification accuracy verification from command line."""
     parser = argparse.ArgumentParser(
         description="Verify classification accuracy across architectures"
     )

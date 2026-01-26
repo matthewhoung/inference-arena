@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Setup Data Script - Download COCO and curate thesis dataset.
+"""Setup Data Script - Download COCO and curate thesis dataset.
 
 This script is a thin CLI wrapper around shared.data module.
 It is idempotent: existing data is skipped unless --force is used.
@@ -24,20 +23,17 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from shared.data.coco_dataset import (
+from shared.data.coco_dataset import (  # noqa: E402
     download_coco_val2017,
     is_coco_downloaded,
-    get_coco_image_paths,
-    COCO_VAL2017_COUNT,
 )
-from shared.data.curator import (
-    DatasetCurator,
-    CurationConfig,
-    DatasetManifest,
+from shared.data.curator import (  # noqa: E402
     TARGET_MEAN_DETECTIONS,
     TARGET_STD_DETECTIONS,
+    CurationConfig,
+    DatasetCurator,
+    DatasetManifest,
 )
-
 
 # =============================================================================
 # Configuration
@@ -108,7 +104,7 @@ def verify_data() -> bool:
             print(f"  ✗ Thesis dataset: Invalid manifest ({e})")
             all_valid = False
     else:
-        print(f"  ✗ Thesis dataset: Not found")
+        print("  ✗ Thesis dataset: Not found")
         all_valid = False
 
     # Check models (needed for curation)
@@ -117,7 +113,7 @@ def verify_data() -> bool:
         size_mb = yolo_path.stat().st_size / (1024 * 1024)
         print(f"  ✓ YOLOv5n model: {size_mb:.2f} MB")
     else:
-        print(f"  ⚠ YOLOv5n model: Not found (needed for curation)")
+        print("  ⚠ YOLOv5n model: Not found (needed for curation)")
 
     return all_valid
 
@@ -151,14 +147,14 @@ def curate_dataset(force: bool = False) -> bool:
     yolo_path = MODELS_DIR / "yolov5n.onnx"
     if not yolo_path.exists():
         print(f"  ✗ YOLOv5n model not found at {yolo_path}")
-        print(f"    Run 'make setup-models' or 'python scripts/export_models.py' first")
+        print("    Run 'make setup-models' or 'python scripts/export_models.py' first")
         return False
 
     # Check if COCO exists
     ready, msg = is_coco_downloaded(DATA_DIR)
     if not ready:
         print(f"  ✗ COCO not downloaded: {msg}")
-        print(f"    Run with --download-only first or without --curate-only")
+        print("    Run with --download-only first or without --curate-only")
         return False
 
     config = CurationConfig(

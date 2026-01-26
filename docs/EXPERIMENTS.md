@@ -13,6 +13,52 @@ The framework implements a rigorous three-phase testing protocol:
 
 **Only metrics from the measurement phase are used for analysis.**
 
+## Experiment Protocol Flow
+
+```mermaid
+flowchart TB
+    subgraph Phase1["Phase 1: Warmup (60s)"]
+        W1[Start Load Generator] --> W2[Prime JIT/ONNX]
+        W2 --> W3[Warm CPU Caches]
+    end
+
+    subgraph Phase2["Phase 2: Measurement (180s)"]
+        M1[Steady State Load] --> M2[Collect Latency Metrics]
+        M2 --> M3[Collect Resource Metrics]
+        M3 --> M4[Record Throughput]
+    end
+
+    subgraph Phase3["Phase 3: Cooldown (30s)"]
+        C1[Ramp Down Load] --> C2[System Reset]
+        C2 --> C3[Export Results]
+    end
+
+    Phase1 --> Phase2
+    Phase2 --> Phase3
+
+    Note1[Only Phase 2 metrics used for analysis]
+```
+
+The three-phase protocol ensures consistent measurements:
+- **Warmup** eliminates cold-start variance from JIT compilation, ONNX optimizations, and CPU cache warming
+- **Measurement** captures steady-state performance under controlled load
+- **Cooldown** allows system reset between configurations and exports collected data
+
+For complete configuration details, see [EXPERIMENT_CONFIG.md](EXPERIMENT_CONFIG.md).
+
+## Health Checking
+
+Before each experiment run, the framework verifies service health using exponential backoff:
+
+| Setting | Value |
+|---------|-------|
+| Initial interval | 1 second |
+| Multiplier | 2x |
+| Max interval | 5 seconds |
+| Total timeout | 60 seconds |
+
+This ensures services are fully ready before load testing begins, preventing false failures from slow container startup.
+
 ## Directory Structure
 
 ```
@@ -46,7 +92,7 @@ experiments/
    ```
 4. **Dependencies installed:**
    ```bash
-   pip install -e ".[experiment]"
+   make install
    ```
 
 ## Quick Start
@@ -187,6 +233,23 @@ cpu_avg_percent, cpu_max_percent, memory_avg_mb, memory_max_mb
 | `LOCUST_USERS`      | 1                        | User count (set by runner)     |
 | `LOG_REQUESTS`      | 0                        | Enable request logging (1=on)  |
 
+## Running Tests
+
+Use the test commands to verify the framework:
+
+```bash
+# Run all tests
+make test
+
+# Run tests without load markers (faster)
+make test-fast
+
+# Run load tests specifically (requires services)
+make test-load
+```
+
+See [SETUP.md](SETUP.md) for more testing options.
+
 ## Troubleshooting
 
 ### Health Check Timeout
@@ -218,6 +281,8 @@ make start-infra
 curl http://localhost:9090/api/v1/query?query=up
 ```
 
+For more troubleshooting help, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+
 ## Author
 
 Matthew Hong - National Chung Hsing University
@@ -225,4 +290,6 @@ Matthew Hong - National Chung Hsing University
 ## References
 
 - [experiment.yaml](../experiment.yaml) - Experiment specification
+- [EXPERIMENT_CONFIG.md](EXPERIMENT_CONFIG.md) - Complete configuration reference
+- [SETUP.md](SETUP.md) - Setup and test commands
 - [Locust Documentation](https://docs.locust.io/)

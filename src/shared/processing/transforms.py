@@ -18,6 +18,8 @@ Author: Matthew Hong
 Specification Reference: Foundation Specification §3.2, §3.3, §3.4
 """
 
+from typing import Any
+
 import cv2
 import numpy as np
 
@@ -235,7 +237,7 @@ def scale_boxes(
 # =============================================================================
 
 
-def imagenet_normalize(image: np.ndarray) -> np.ndarray:
+def imagenet_normalize(image: np.ndarray) -> "np.ndarray[Any, Any]":
     """Apply ImageNet normalization to an image.
 
     Converts image to float32, scales to [0, 1], then normalizes using
@@ -267,6 +269,6 @@ def imagenet_normalize(image: np.ndarray) -> np.ndarray:
             normalized /= 255.0
 
     # Apply ImageNet normalization: (x - mean) / std
-    normalized = (normalized - IMAGENET_MEAN) / IMAGENET_STD
+    result: np.ndarray[Any, Any] = (normalized - IMAGENET_MEAN) / IMAGENET_STD
 
-    return normalized
+    return result

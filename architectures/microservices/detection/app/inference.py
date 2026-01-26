@@ -11,8 +11,6 @@ import logging
 import time
 from pathlib import Path
 
-import numpy as np
-
 from shared.config import get_controlled_variables, get_model_config
 from shared.model.registry import ModelRegistry, SessionConfig
 from shared.processing import YOLOPreprocessor
@@ -182,7 +180,7 @@ class DetectionPipeline:
             )
 
             # Aggregate results
-            for box, cls_response in zip(boxes, classification_responses):
+            for box, cls_response in zip(boxes, classification_responses, strict=True):
                 if cls_response.error:
                     logger.warning(
                         f"Classification error for {cls_response.request_id}: "

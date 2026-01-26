@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Generate Proto Script - Compile .proto files to Python.
+"""Generate Proto Script - Compile .proto files to Python.
 
 This script compiles inference.proto to:
 - inference_pb2.py (message classes)
@@ -16,7 +15,6 @@ Author: Matthew Hong
 
 import argparse
 import logging
-import subprocess
 import sys
 from pathlib import Path
 
@@ -51,17 +49,13 @@ GENERATED_FILES = [
 
 def check_dependencies() -> bool:
     """Check if grpcio-tools is installed."""
-    try:
-        import grpc_tools.protoc
-        return True
-    except ImportError:
-        return False
+    import importlib.util
+    return importlib.util.find_spec("grpc_tools.protoc") is not None
 
 
 def generate_proto() -> bool:
-    """
-    Generate Python files from proto definition.
-    
+    """Generate Python files from proto definition.
+
     Returns:
         True if generation successful
     """
@@ -74,7 +68,7 @@ def generate_proto() -> bool:
         logger.error("Install with: pip install grpcio-tools")
         return False
 
-    logger.info(f"Generating proto files...")
+    logger.info("Generating proto files...")
     logger.info(f"  Source: {PROTO_FILE}")
     logger.info(f"  Output: {PROTO_DIR}")
 
@@ -113,23 +107,22 @@ def generate_proto() -> bool:
 
 
 def fix_imports() -> None:
-    """
-    Fix imports in generated files to use relative imports.
-    
+    """Fix imports in generated files to use relative imports.
+
     The generated files use absolute imports which don't work
     when the package is installed. This fixes them to use
     relative imports.
     """
     grpc_file = PROTO_DIR / "inference_pb2_grpc.py"
-    
+
     if not grpc_file.exists():
         return
 
     content = grpc_file.read_text()
-    
+
     old_import = "import inference_pb2 as inference__pb2"
     new_import = "from . import inference_pb2 as inference__pb2"
-    
+
     if old_import in content:
         content = content.replace(old_import, new_import)
         grpc_file.write_text(content)
@@ -137,9 +130,8 @@ def fix_imports() -> None:
 
 
 def verify_proto() -> bool:
-    """
-    Verify proto files are correctly generated.
-    
+    """Verify proto files are correctly generated.
+
     Returns:
         True if all files valid
     """
@@ -154,8 +146,7 @@ def verify_proto() -> bool:
 
     # Try importing
     try:
-        from shared.proto import inference_pb2
-        from shared.proto import inference_pb2_grpc
+        from shared.proto import inference_pb2, inference_pb2_grpc
 
         # List available message types
         messages = [
@@ -176,14 +167,14 @@ def verify_proto() -> bool:
             request_id="test-123",
             image_crop=b"fake-image-data",
         )
-        logger.info(f"  ✓ Created test message: ClassificationRequest")
+        logger.info("  ✓ Created test message: ClassificationRequest")
 
         # Test serialization
         serialized = request.SerializeToString()
         deserialized = inference_pb2.ClassificationRequest()
         deserialized.ParseFromString(serialized)
         assert deserialized.request_id == "test-123"
-        logger.info(f"  ✓ Serialization/deserialization works")
+        logger.info("  ✓ Serialization/deserialization works")
 
         return True
 
@@ -196,9 +187,8 @@ def verify_proto() -> bool:
 
 
 def clean_proto() -> bool:
-    """
-    Remove generated proto files.
-    
+    """Remove generated proto files.
+
     Returns:
         True if cleanup successful
     """
@@ -216,7 +206,7 @@ def clean_proto() -> bool:
     if pycache.exists():
         import shutil
         shutil.rmtree(pycache)
-        logger.info(f"  ✓ Removed: __pycache__")
+        logger.info("  ✓ Removed: __pycache__")
 
     return True
 

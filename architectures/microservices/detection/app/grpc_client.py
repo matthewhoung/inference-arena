@@ -7,9 +7,11 @@ parallel classification calls with asyncio.gather().
 Author: Matthew Hong
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
-from typing import Optional
+from typing import TYPE_CHECKING, Any
 
 import grpc
 import grpc.aio
@@ -17,7 +19,19 @@ import numpy as np
 
 from shared.proto import inference_pb2, inference_pb2_grpc
 
+if TYPE_CHECKING:
+    # These types are only used for type checking, not at runtime
+    from shared.proto.inference_pb2 import ClassificationResponse
+
 logger = logging.getLogger(__name__)
+
+
+def _check_proto_available() -> None:
+    """Verify proto modules are available."""
+    if inference_pb2 is None or inference_pb2_grpc is None:
+        raise ImportError(
+            "Proto files not generated. Run 'python scripts/generate_proto.py' first."
+        )
 
 
 class ClassificationClient:
@@ -43,12 +57,14 @@ class ClassificationClient:
             endpoint: Classification service gRPC endpoint
         """
         self.endpoint = endpoint
-        self.channel: Optional[grpc.aio.Channel] = None
-        self.stub: Optional[inference_pb2_grpc.ClassificationServiceStub] = None
+        self.channel: grpc.aio.Channel | None = None
+        self.stub: Any = None  # inference_pb2_grpc.ClassificationServiceStub | None
         logger.info(f"ClassificationClient configured for {endpoint}")
 
     async def connect(self) -> None:
         """Establish async gRPC channel connection."""
+        _check_proto_available()
+
         # Create channel with options
         options = [
             ("grpc.max_send_message_length", 50 * 1024 * 1024),  # 50MB
@@ -64,10 +80,10 @@ class ClassificationClient:
                 timeout=30.0,
             )
             logger.info(f"Connected to Classification service at {self.endpoint}")
-        except asyncio.TimeoutError:
+        except TimeoutError as err:
             raise RuntimeError(
                 f"Timeout connecting to Classification service at {self.endpoint}"
-            )
+            ) from err
 
     async def close(self) -> None:
         """Close gRPC channel."""
@@ -79,8 +95,8 @@ class ClassificationClient:
         self,
         request_id: str,
         crop: np.ndarray,
-        source_box: Optional[dict] = None,
-    ) -> inference_pb2.ClassificationResponse:
+        source_box: dict[str, Any] | None = None,
+    ) -> ClassificationResponse:
         """Classify a single image crop.
 
         Args:
@@ -126,8 +142,8 @@ class ClassificationClient:
         self,
         request_id: str,
         crops: list[np.ndarray],
-        boxes: list[dict],
-    ) -> list[inference_pb2.ClassificationResponse]:
+        boxes: list[dict[str, Any]],
+    ) -> list[ClassificationResponse]:
         """Classify multiple crops in parallel using asyncio.gather().
 
         ============================================================
@@ -156,7 +172,7 @@ class ClassificationClient:
         # Create tasks for parallel execution
         tasks = [
             self.classify(f"{request_id}_{i}", crop, box)
-            for i, (crop, box) in enumerate(zip(crops, boxes))
+            for i, (crop, box) in enumerate(zip(crops, boxes, strict=True))
         ]
 
         # Execute all classification calls in parallel

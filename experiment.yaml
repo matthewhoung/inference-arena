@@ -353,6 +353,31 @@ controlled_variables:
       - inference-arena-triton-gateway
 
 # =============================================================================
+# Service Port Configuration
+# =============================================================================
+# Single source of truth for all service ports.
+# Test files and infrastructure validation read from this section.
+# =============================================================================
+services:
+  minio:
+    api_port: 9000
+    console_port: 9001
+  prometheus:
+    port: 9090
+  grafana:
+    port: 3000
+  otel_collector:
+    port: 8889
+    health_port: 13133
+
+# =============================================================================
+# Download Configuration
+# =============================================================================
+downloads:
+  max_concurrent: 3  # Maximum parallel downloads
+  timeout: 300       # Timeout per download in seconds
+
+# =============================================================================
 # Infrastructure Configuration
 # =============================================================================
 infrastructure:
@@ -554,6 +579,19 @@ changelog:
       - architectures/microservices/classification/app/servicer.py (np.frombuffer instead of PIL)
       - scripts/verify_classification_accuracy.py (created verification script)
       - Makefile (added verify-accuracy target)
+
+  - date: "2026-01-23"
+    version: "1.8.0"
+    change: "Centralized service port configuration in experiment.yaml"
+    justification: |
+      Technical debt elimination - consolidates hard-coded ports:
+      1. Added services section with all infrastructure service ports
+      2. Test files now read ports from config via get_service_ports()
+      3. Single source of truth eliminates port mismatch errors
+      4. Pydantic validation ensures port range validity (1-65535)
+      5. Duplicate port detection warns at config load time (W002)
+    author: "Matthew Hong"
+    impact: "Configuration consolidation - no behavioral change"
 
   # Template for future changes:
   # - date: "YYYY-MM-DD"

@@ -118,7 +118,7 @@ async def predict(file: UploadFile = File(...)):
         )
     except Exception as e:
         logger.error(f"Predict failed: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @app.get("/health", response_model=HealthResponse)

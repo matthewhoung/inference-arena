@@ -16,14 +16,9 @@ Author: Matthew Hong
 """
 
 # Import module under test
-import sys
-from pathlib import Path
 from typing import Any
 
 import pytest
-
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from shared.config import (
     get_concurrent_user_levels,

@@ -17,11 +17,28 @@ Specification Reference:
     Foundation Specification §6 gRPC Interface
 """
 
+import importlib
 from pathlib import Path
+from types import ModuleType
+from typing import cast
 
 # Proto file location
 PROTO_DIR = Path(__file__).parent
 PROTO_FILE = PROTO_DIR / "inference.proto"
+
+# Export generated modules if they exist
+inference_pb2: ModuleType | None = None
+inference_pb2_grpc: ModuleType | None = None
+
+try:
+    # Use importlib to avoid self-referencing import issues
+    inference_pb2 = importlib.import_module("shared.proto.inference_pb2")
+    inference_pb2_grpc = importlib.import_module("shared.proto.inference_pb2_grpc")
+except ImportError:
+    # Generated files not yet created - keep None values
+    pass
+
+__all__ = ["inference_pb2", "inference_pb2_grpc", "get_proto_path", "is_generated", "get_messages", "get_services"]
 
 
 def get_proto_path() -> Path:
@@ -37,7 +54,7 @@ def is_generated() -> bool:
 
 
 # Lazy imports for generated modules
-def get_messages():
+def get_messages() -> ModuleType:
     """Get generated protobuf message classes.
 
     Returns:
@@ -50,12 +67,10 @@ def get_messages():
         raise ImportError(
             "Proto files not generated. Run 'python scripts/generate_proto.py' first."
         )
-    from shared.proto import inference_pb2
-
-    return inference_pb2
+    return cast(ModuleType, importlib.import_module("shared.proto.inference_pb2"))
 
 
-def get_services():
+def get_services() -> ModuleType:
     """Get generated gRPC service classes.
 
     Returns:
@@ -68,6 +83,4 @@ def get_services():
         raise ImportError(
             "Proto files not generated. Run 'python scripts/generate_proto.py' first."
         )
-    from shared.proto import inference_pb2_grpc
-
-    return inference_pb2_grpc
+    return cast(ModuleType, importlib.import_module("shared.proto.inference_pb2_grpc"))

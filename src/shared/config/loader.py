@@ -1,22 +1,29 @@
-"""Experiment Configuration Module.
+"""Configuration Loader Module.
 
-This module provides a Python interface to experiment.yaml,
-the single source of truth for all experimental parameters.
+This module provides functions for loading and accessing experiment configuration
+from experiment.yaml - the single source of truth for all experimental parameters.
 
-Usage:
-    from shared.config import get_config, get_controlled_variable, get_hypothesis
-
-    # Get full config
-    config = get_config()
-
-    # Get specific controlled variable
-    threads = get_controlled_variable("onnx_runtime", "intra_op_num_threads")
-
-    # Get model config
-    yolo_config = get_model_config("yolov5n")
-
-    # Get hypothesis
-    h1a = get_hypothesis("H1a")
+Functions:
+    get_config: Load and cache the experiment configuration
+    reload_config: Force reload of configuration (clears cache)
+    get_controlled_variable: Get a specific controlled variable value
+    get_controlled_variables: Get all controlled variables for a section
+    get_model_config: Get configuration for a specific model
+    get_model_names: Get list of all model names
+    get_hypothesis: Get a specific hypothesis by ID
+    get_hypotheses_by_category: Get all hypotheses for a category
+    get_hypotheses: Get all hypotheses
+    get_infrastructure_config: Get infrastructure configuration
+    get_minio_config: Get MinIO configuration
+    get_triton_config: Get Triton Inference Server configuration
+    get_triton_batching_config: Get Triton dynamic batching configuration
+    get_load_testing_config: Get load testing protocol configuration
+    get_concurrent_user_levels: Get concurrent user levels for experiments
+    get_container_names: Get container names for architectures
+    get_container_name: Get container name for a specific architecture
+    get_monitoring_config: Get monitoring configuration
+    get_metadata: Get experiment metadata
+    get_spec_version: Get specification version
 
 Author: Matthew Hong
 Specification Reference: experiment.yaml
@@ -24,7 +31,7 @@ Specification Reference: experiment.yaml
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
 
@@ -37,16 +44,17 @@ _POSSIBLE_PATHS = [
     Path.cwd() / "experiment.yaml",
 ]
 
-# Find first existing path
-_CONFIG_PATH = None
-for path in _POSSIBLE_PATHS:
-    if path.exists():
-        _CONFIG_PATH = path
-        break
 
-# If not found, default to first option for better error messages
-if _CONFIG_PATH is None:
-    _CONFIG_PATH = _POSSIBLE_PATHS[0]
+def _find_config_path() -> Path:
+    """Find the configuration file path, defaulting to first option if not found."""
+    for path in _POSSIBLE_PATHS:
+        if path.exists():
+            return path
+    # If not found, default to first option for better error messages
+    return _POSSIBLE_PATHS[0]
+
+
+_CONFIG_PATH: Path = _find_config_path()
 
 
 # =============================================================================
@@ -77,7 +85,7 @@ def get_config() -> dict[str, Any]:
         )
 
     with open(_CONFIG_PATH) as f:
-        return yaml.safe_load(f)
+        return cast(dict[str, Any], yaml.safe_load(f))
 
 
 def reload_config() -> dict[str, Any]:
@@ -159,7 +167,7 @@ def get_controlled_variables(section: str) -> dict[str, Any]:
         available = list(controlled.keys())
         raise KeyError(f"Section '{section}' not found. Available: {available}")
 
-    return controlled[section]
+    return cast(dict[str, Any], controlled[section])
 
 
 # =============================================================================
@@ -184,7 +192,7 @@ def get_model_config(model_name: str) -> dict[str, Any]:
         17
     """
     models = get_controlled_variable("models", model_name)
-    return models
+    return cast(dict[str, Any], models)
 
 
 def get_model_names() -> list[str]:
@@ -227,7 +235,7 @@ def get_hypothesis(hypothesis_id: str) -> dict[str, Any]:
         available = list(hypotheses.keys())
         raise KeyError(f"Hypothesis '{hypothesis_id}' not found. Available: {available}")
 
-    return hypotheses[hypothesis_id]
+    return cast(dict[str, Any], hypotheses[hypothesis_id])
 
 
 def get_hypotheses_by_category(category: str) -> dict[str, dict[str, Any]]:
@@ -254,6 +262,21 @@ def get_hypotheses_by_category(category: str) -> dict[str, dict[str, Any]]:
     }
 
 
+def get_hypotheses() -> dict[str, dict[str, Any]]:
+    """Get all hypotheses.
+
+    Returns:
+        Dictionary of hypothesis_id -> hypothesis_config
+
+    Example:
+        >>> hypotheses = get_hypotheses()
+        >>> list(hypotheses.keys())
+        ['H1a', 'H1b', 'H1c', 'H1d', 'H2a', 'H2b', 'H3a', 'H3b']
+    """
+    config = get_config()
+    return cast(dict[str, dict[str, Any]], config.get("hypotheses", {}))
+
+
 # =============================================================================
 # Infrastructure Configuration
 # =============================================================================
@@ -278,13 +301,13 @@ def get_infrastructure_config(service: str | None = None) -> dict[str, Any]:
     infra = config.get("infrastructure", {})
 
     if service is None:
-        return infra
+        return cast(dict[str, Any], infra)
 
     if service not in infra:
         available = list(infra.keys())
         raise KeyError(f"Service '{service}' not found. Available: {available}")
 
-    return infra[service]
+    return cast(dict[str, Any], infra[service])
 
 
 def get_minio_config() -> dict[str, Any]:
@@ -320,7 +343,7 @@ def get_triton_config() -> dict[str, Any]:
         's3://minio:9000/models'
     """
     config = get_config()
-    return config.get("triton", {})
+    return cast(dict[str, Any], config.get("triton", {}))
 
 
 def get_triton_batching_config() -> dict[str, Any]:
@@ -341,14 +364,17 @@ def get_triton_batching_config() -> dict[str, Any]:
         8
     """
     triton = get_triton_config()
-    return triton.get(
-        "batching",
-        {
-            "enabled": False,
-            "max_batch_size": 8,
-            "preferred_batch_size": [4, 8],
-            "max_queue_delay_microseconds": 5000,
-        },
+    return cast(
+        dict[str, Any],
+        triton.get(
+            "batching",
+            {
+                "enabled": False,
+                "max_batch_size": 8,
+                "preferred_batch_size": [4, 8],
+                "max_queue_delay_microseconds": 5000,
+            },
+        ),
     )
 
 
@@ -383,7 +409,7 @@ def get_concurrent_user_levels() -> list[int]:
     """
     config = get_config()
     iv = config.get("independent_variables", {})
-    return iv.get("concurrent_users", {}).get("levels", [])
+    return cast(list[int], iv.get("concurrent_users", {}).get("levels", []))
 
 
 # =============================================================================
@@ -427,7 +453,7 @@ def get_container_names(architecture: str | None = None) -> dict[str, list[str]]
         available = list(container_names.keys())
         raise KeyError(f"Architecture '{architecture}' not found. Available: {available}")
 
-    return container_names[architecture]
+    return cast(list[str], container_names[architecture])
 
 
 def get_monitoring_config() -> dict[str, Any]:
@@ -461,7 +487,7 @@ def get_metadata() -> dict[str, Any]:
         'Matthew Hong'
     """
     config = get_config()
-    return config.get("metadata", {})
+    return cast(dict[str, Any], config.get("metadata", {}))
 
 
 def get_spec_version() -> str:
@@ -474,92 +500,64 @@ def get_spec_version() -> str:
         >>> get_spec_version()
         '1.0.0'
     """
-    return get_metadata().get("spec_version", "0.0.0")
+    return cast(str, get_metadata().get("spec_version", "0.0.0"))
 
 
 # =============================================================================
-# Validation
+# Download Configuration
 # =============================================================================
 
 
-def validate_config() -> list[str]:
-    """Validate the experiment configuration.
+def get_downloads_config() -> dict[str, Any]:
+    """Get download configuration.
 
     Returns:
-        List of validation error messages (empty if valid)
+        Downloads configuration dictionary with keys:
+        - max_concurrent: int (default 3)
+        - timeout: int (default 300)
 
     Example:
-        >>> errors = validate_config()
-        >>> if errors:
-        ...     print("Validation failed:", errors)
+        >>> downloads = get_downloads_config()
+        >>> downloads["max_concurrent"]
+        3
     """
-    errors = []
+    config = get_config()
+    return cast(
+        dict[str, Any],
+        config.get(
+            "downloads",
+            {
+                "max_concurrent": 3,
+                "timeout": 300,
+            },
+        ),
+    )
 
-    try:
-        config = get_config()
-    except Exception as e:
-        return [f"Failed to load config: {e}"]
 
-    # Check required sections
-    required_sections = [
-        "metadata",
-        "research_questions",
-        "hypotheses",
-        "independent_variables",
-        "controlled_variables",
-        "infrastructure",
-    ]
+def get_download_max_concurrent() -> int:
+    """Get maximum concurrent downloads.
 
-    for section in required_sections:
-        if section not in config:
-            errors.append(f"Missing required section: {section}")
+    Returns:
+        Maximum number of parallel downloads (default: 3)
 
-    # Check controlled variables
-    cv = config.get("controlled_variables", {})
-    required_cv = [
-        "models",
-        "preprocessing",
-        "resources",
-        "onnx_runtime",
-        "dataset",
-        "load_testing",
-    ]
+    Example:
+        >>> get_download_max_concurrent()
+        3
+    """
+    return cast(int, get_downloads_config().get("max_concurrent", 3))
 
-    for section in required_cv:
-        if section not in cv:
-            errors.append(f"Missing controlled_variables section: {section}")
 
-    # Check models
-    models = cv.get("models", {})
-    for model_name in ["yolov5n", "mobilenetv2"]:
-        if model_name not in models:
-            errors.append(f"Missing model configuration: {model_name}")
-        else:
-            model = models[model_name]
-            for field in ["opset_version", "input", "output"]:
-                if field not in model:
-                    errors.append(f"Model {model_name} missing field: {field}")
+def get_download_timeout() -> int:
+    """Get download timeout in seconds.
 
-    # Check ONNX runtime config
-    onnx = cv.get("onnx_runtime", {})
-    for field in ["intra_op_num_threads", "inter_op_num_threads"]:
-        if field not in onnx:
-            errors.append(f"Missing onnx_runtime field: {field}")
+    Returns:
+        Timeout per download in seconds (default: 300)
 
-    # Check hypotheses
-    hypotheses = config.get("hypotheses", {})
-    for h_id, h_config in hypotheses.items():
-        # Required fields for all hypotheses
-        required_fields = ["category", "statement", "rationale"]
-        for field in required_fields:
-            if field not in h_config:
-                errors.append(f"Hypothesis {h_id} missing required field: {field}")
-
-        # Must have either 'testable_prediction' or 'prediction'
-        if "testable_prediction" not in h_config and "prediction" not in h_config:
-            errors.append(f"Hypothesis {h_id} missing testable_prediction or prediction")
-
-    return errors
+    Example:
+        >>> get_download_timeout()
+        300
+    """
+    return cast(int, get_downloads_config().get("timeout", 300))
 
 
 # =============================================================================
@@ -580,7 +578,10 @@ def _check_config_exists() -> None:
 
 
 # Run check on import (non-blocking)
+# Only catch expected exceptions; let unexpected exceptions propagate
 try:
     _check_config_exists()
-except Exception:
+except (FileNotFoundError, PermissionError):
+    # Expected: config file missing or unreadable during import
+    # _check_config_exists already emits a warning, no action needed
     pass

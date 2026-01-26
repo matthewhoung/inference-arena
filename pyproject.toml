@@ -23,6 +23,7 @@ dependencies = [
     "numpy>=1.24.0",
     # Configuration
     "pyyaml>=6.0",
+    "docker>=7.1.0",
 ]
 
 [project.optional-dependencies]
@@ -68,6 +69,7 @@ api = [
 infra = [
     "minio>=7.2.0",
     "prometheus-client>=0.19.0",
+    "docker>=7.0.0",
 ]
 
 # Load testing (basic)
@@ -132,7 +134,7 @@ dev-mode-dirs = ["src"]
 # pytest configuration
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "architectures"]
 asyncio_mode = "auto"
 addopts = [
     "-v",
@@ -142,6 +144,7 @@ addopts = [
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests requiring external services",
+    "load: marks tests as load tests (run with --load flag)",
 ]
 
 # Coverage configuration
@@ -158,6 +161,12 @@ omit = [
     # Data modules requiring COCO dataset (tested via make data-verify)
     "*/data/curator.py",
     "*/data/coco_dataset.py",
+    "*/data/curator/*",
+    # Model export modules requiring torch/ultralytics (tested via make models)
+    "*/model/exporter/classification.py",
+    "*/model/exporter/detection.py",
+    # Health check utilities (tested via integration tests)
+    "*/health.py",
 ]
 
 [tool.coverage.report]
@@ -167,6 +176,7 @@ exclude_lines = [
     "raise NotImplementedError",
     "if TYPE_CHECKING:",
 ]
+fail_under = 80
 
 # Black configuration
 [tool.black]
@@ -213,7 +223,7 @@ convention = "google"
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D", "E402"]  # No docstrings required in tests, allow sys.path manipulation
 "__init__.py" = ["F401"]  # Unused imports OK in __init__
-"src/shared/proto/*" = ["D", "F"]  # Ignore all errors in auto-generated proto files
+"src/shared/proto/*" = ["D", "F", "I", "UP"]  # Ignore all errors in auto-generated proto files
 "src/shared/model/registry.py" = ["F821"]  # Allow ort type hints (optional dependency)
 
 # MyPy configuration
@@ -228,6 +238,9 @@ exclude = [
     ".venv",
     "build",
     "dist",
+    # Generated proto files
+    "src/shared/proto/inference_pb2.py",
+    "src/shared/proto/inference_pb2_grpc.py",
 ]
 
 [[tool.mypy.overrides]]
@@ -239,5 +252,18 @@ module = [
     "grpc.*",
     "locust.*",
     "ultralytics.*",
+    "docker.*",
+    "yaml.*",
+    "shared.*",
+    "psutil.*",
+    "microservices.*",
+    "torch.*",
+    "torchvision.*",
+    "tenacity.*",
+    "google.protobuf.*",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["tests.load.*"]
+disallow_untyped_defs = false

@@ -25,6 +25,8 @@ import logging
 from datetime import datetime
 from typing import Any
 
+from shared.validation import validate_containers
+
 from ..config import CONTAINER_NAMES
 from ..metrics import MetricsCollector
 from .prometheus_client import PrometheusClient
@@ -214,6 +216,10 @@ class ResultsCollector:
             logger.warning(f"No container names configured for: {architecture}")
             return {}
 
+        # Validate containers exist and are healthy before querying Prometheus
+        # ConfigError will propagate up if any container is invalid
+        validate_containers(container_names)
+
         try:
             # Query metrics for all containers
             container_metrics = prometheus.query_container_metrics(
@@ -228,7 +234,7 @@ class ResultsCollector:
             network_rx_values = []
             network_tx_values = []
 
-            for name, metrics in container_metrics.items():
+            for _name, metrics in container_metrics.items():
                 if metrics["cpu"]["avg_percent"] > 0:
                     cpu_values.append(metrics["cpu"]["avg_percent"])
                 if metrics["memory"]["avg_mb"] > 0:

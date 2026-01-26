@@ -6,12 +6,12 @@ Uses mocking to simulate the inference pipeline.
 Author: Matthew Hong
 """
 
-import os
-import sys
-
-# Add architectures to path for imports
-sys.path.insert(
-    0, os.path.join(os.path.dirname(__file__), "../..", "architectures/microservices/detection")
+from microservices.detection.app.models import (
+    Classification,
+    DetectionBox,
+    DetectionWithClassification,
+    HealthResponse,
+    PredictResponse,
 )
 
 
@@ -20,7 +20,6 @@ class TestHealthEndpoint:
 
     def test_health_response_schema(self):
         """Verify health response matches expected schema."""
-        from architectures.microservices.detection.app.models import HealthResponse
 
         response = HealthResponse(status="healthy", models_loaded=True)
         assert response.status == "healthy"
@@ -32,12 +31,6 @@ class TestPredictEndpoint:
 
     def test_predict_response_schema(self):
         """Verify predict response matches expected schema."""
-        from architectures.microservices.detection.app.models import (
-            Classification,
-            DetectionBox,
-            DetectionWithClassification,
-            PredictResponse,
-        )
 
         classification = Classification(
             class_name="person",
@@ -72,7 +65,6 @@ class TestPredictEndpoint:
 
     def test_predict_response_timing_breakdown(self):
         """Verify timing includes detection and classification separately."""
-        from architectures.microservices.detection.app.models import PredictResponse
 
         response = PredictResponse(
             request_id="test",
@@ -94,7 +86,6 @@ class TestModelsSchema:
 
     def test_classification_schema(self):
         """Verify Classification schema matches expected format."""
-        from architectures.microservices.detection.app.models import Classification
 
         result = Classification(
             class_name="cat",
@@ -110,11 +101,6 @@ class TestModelsSchema:
 
     def test_detection_with_classification(self):
         """Verify DetectionWithClassification includes nested models."""
-        from architectures.microservices.detection.app.models import (
-            Classification,
-            DetectionBox,
-            DetectionWithClassification,
-        )
 
         classification = Classification(
             class_name="bird",

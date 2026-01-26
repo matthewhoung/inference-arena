@@ -43,18 +43,25 @@ from shared.config import (
     get_model_names,
     get_spec_version,
 )
+from shared.security import check_credentials
 from shared.triton.config import generate_config_pbtxt
 
 # Third-party imports (with graceful fallback)
-try:
-    from minio import Minio
-    from minio.error import S3Error
+# Declare types once, then assign in try/except to avoid "no-redef" errors
+Minio: Any
+S3Error: Any
 
+try:
+    from minio import Minio as _MinioClient
+    from minio.error import S3Error as _S3Error
+
+    Minio = _MinioClient
+    S3Error = _S3Error
     MINIO_AVAILABLE = True
 except ImportError:
-    MINIO_AVAILABLE = False
     Minio = None
     S3Error = Exception
+    MINIO_AVAILABLE = False
 
 try:
     from tenacity import (
@@ -90,7 +97,12 @@ if TENACITY_AVAILABLE:
     )
 else:
     # Fallback: no retry
-    def retry_on_connection(func):
+    from collections.abc import Callable
+    from typing import TypeVar
+
+    F = TypeVar("F", bound=Callable[..., Any])
+
+    def retry_on_connection(func: F) -> F:
         """No-op decorator when tenacity is not available."""
         return func
 
@@ -146,6 +158,9 @@ class MinIOModelRegistry:
         self.secure = secure if secure is not None else minio_config.get("secure", False)
         self.bucket = bucket or minio_config.get("bucket", "models")
         self.models_dir = models_dir or Path(__file__).parent.parent.parent.parent / "models"
+
+        # Check for insecure default credentials
+        check_credentials(self.access_key, self.secret_key, "MinIO")
 
         self.client = Minio(
             self.endpoint,
@@ -211,7 +226,7 @@ class MinIOModelRegistry:
         if not model_path.exists():
             raise FileNotFoundError(f"Model not found: {model_path}")
 
-        result = {
+        result: dict[str, Any] = {
             "model_name": model_name,
             "local_path": str(model_path),
             "batching_enabled": batching_enabled,
@@ -347,14 +362,14 @@ class MinIOModelRegistry:
         Returns:
             Verification result with status per model
         """
-        verification = {
+        verification: dict[str, Any] = {
             "bucket": self.bucket,
             "models": {},
             "all_valid": True,
         }
 
         for model_name in get_model_names():
-            model_status = {
+            model_status: dict[str, bool] = {
                 "model_onnx": False,
                 "config_pbtxt": False,
                 "metadata_json": False,

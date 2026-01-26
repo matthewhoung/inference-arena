@@ -28,7 +28,7 @@ from pathlib import Path
 import pytest
 import requests
 
-from shared.config import get_infrastructure_config
+from shared.config import get_infrastructure_config, get_service_ports
 
 # =============================================================================
 # Constants (Loaded from experiment.yaml where available)
@@ -41,12 +41,13 @@ HEALTH_CHECK_INTERVAL = 2  # seconds
 # Service URLs derived from experiment.yaml infrastructure config
 _infra_config = get_infrastructure_config()
 _minio_endpoint = _infra_config["minio"]["external_endpoint"]
+_ports = get_service_ports()
 
 MINIO_API_URL = f"http://{_minio_endpoint}"
-MINIO_CONSOLE_URL = "http://localhost:9001"  # MinIO console port (not in config yet)
-OTEL_COLLECTOR_URL = "http://localhost:8889"  # OTel Collector Prometheus metrics endpoint
-PROMETHEUS_URL = "http://localhost:9090"  # Prometheus port (not in config yet)
-GRAFANA_URL = "http://localhost:3000"  # Grafana port (not in config yet)
+MINIO_CONSOLE_URL = f"http://localhost:{_ports.minio_console}"
+OTEL_COLLECTOR_URL = f"http://localhost:{_ports.otel_collector}"
+PROMETHEUS_URL = f"http://localhost:{_ports.prometheus}"
+GRAFANA_URL = f"http://localhost:{_ports.grafana}"
 
 
 # =============================================================================

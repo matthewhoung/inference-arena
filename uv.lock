@@ -731,6 +731,20 @@ wheels = [
 ]
 
 [[package]]
+name = "docker"
+version = "7.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pywin32", marker = "sys_platform == 'win32'" },
+    { name = "requests" },
+    { name = "urllib3" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/91/9b/4a2ea29aeba62471211598dac5d96825bb49348fa07e906ea930394a83ce/docker-7.1.0.tar.gz", hash = "sha256:ad8c70e6e3f8926cb8a92619b832b4ea5299e2831c14284663184e200546fa6c", size = 117834, upload-time = "2024-05-23T11:13:57.216Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e3/26/57c6fb270950d476074c087527a558ccb6f4436657314bfb6cdf484114c4/docker-7.1.0-py3-none-any.whl", hash = "sha256:c96b93b7f0a746f9e77d325bcfb87422a3d8bd4f03136ae8a85b37f1898d5fc0", size = 147774, upload-time = "2024-05-23T11:13:55.01Z" },
+]
+
+[[package]]
 name = "executing"
 version = "2.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1226,6 +1240,7 @@ name = "inference-arena"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "docker" },
     { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
     { name = "numpy", version = "2.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13'" },
     { name = "opencv-python" },
@@ -1236,6 +1251,7 @@ dependencies = [
 all = [
     { name = "black" },
     { name = "click" },
+    { name = "docker" },
     { name = "fastapi" },
     { name = "grpcio" },
     { name = "grpcio-tools" },
@@ -1307,6 +1323,7 @@ grpc = [
     { name = "protobuf" },
 ]
 infra = [
+    { name = "docker" },
     { name = "minio" },
     { name = "prometheus-client" },
 ]
@@ -1327,6 +1344,8 @@ model = [
 requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=24.1.0" },
     { name = "click", marker = "extra == 'experiment'", specifier = ">=8.0.0" },
+    { name = "docker", specifier = ">=7.1.0" },
+    { name = "docker", marker = "extra == 'infra'", specifier = ">=7.0.0" },
     { name = "fastapi", marker = "extra == 'api'", specifier = ">=0.109.0" },
     { name = "grpcio", marker = "extra == 'grpc'", specifier = ">=1.60.0" },
     { name = "grpcio-tools", marker = "extra == 'grpc'", specifier = ">=1.60.0" },

@@ -87,7 +87,7 @@ class PrometheusClient:
 
         except URLError as e:
             logger.error(f"Prometheus query failed: {e}")
-            raise RuntimeError(f"Failed to query Prometheus: {e}")
+            raise RuntimeError(f"Failed to query Prometheus: {e}") from e
 
     def _query_range(
         self,
@@ -128,7 +128,7 @@ class PrometheusClient:
 
         except URLError as e:
             logger.error(f"Prometheus range query failed: {e}")
-            raise RuntimeError(f"Failed to query Prometheus: {e}")
+            raise RuntimeError(f"Failed to query Prometheus: {e}") from e
 
     def query_cpu_usage(
         self,
@@ -291,7 +291,7 @@ class PrometheusClient:
         if result_type == "matrix":
             # Range query result
             for series in result.get("result", []):
-                for timestamp, value in series.get("values", []):
+                for _timestamp, value in series.get("values", []):
                     try:
                         values.append(float(value))
                     except (ValueError, TypeError):

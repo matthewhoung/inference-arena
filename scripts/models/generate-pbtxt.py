@@ -31,8 +31,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from shared.triton.config import (
-    generate_all_configs,
+from shared.triton.config import (  # noqa: E402
     generate_config_pbtxt,
     save_config_pbtxt,
     validate_config_pbtxt,

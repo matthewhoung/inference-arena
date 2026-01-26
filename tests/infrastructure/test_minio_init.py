@@ -22,11 +22,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(PROJECT_ROOT / "src"))
-sys.path.insert(0, str(PROJECT_ROOT))
-
-
 # =============================================================================
 # Triton Config Tests
 # =============================================================================
@@ -154,7 +149,6 @@ class TestMinIORegistryMocked:
         init_models.py conditionally imports Minio in a try-except block.
         """
         # Create a mock module if minio isn't installed
-        import sys
 
         try:
             import minio  # noqa: F401  # Import needed to check availability
