@@ -47,18 +47,21 @@ from shared.security import check_credentials
 from shared.triton.config import generate_config_pbtxt
 
 # Third-party imports (with graceful fallback)
-# Declare with Any type to avoid type: ignore comments that cause CI issues
-Minio: Any = None
-S3Error: Any = Exception
-MINIO_AVAILABLE = False
+# Declare types once, then assign in try/except to avoid "no-redef" errors
+Minio: Any
+S3Error: Any
 
 try:
-    from minio import Minio
-    from minio.error import S3Error
+    from minio import Minio as _MinioClient
+    from minio.error import S3Error as _S3Error
 
+    Minio = _MinioClient
+    S3Error = _S3Error
     MINIO_AVAILABLE = True
 except ImportError:
-    pass
+    Minio = None
+    S3Error = Exception
+    MINIO_AVAILABLE = False
 
 try:
     from tenacity import (
