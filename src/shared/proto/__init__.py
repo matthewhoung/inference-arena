@@ -17,9 +17,10 @@ Specification Reference:
     Foundation Specification §6 gRPC Interface
 """
 
+import importlib
 from pathlib import Path
 from types import ModuleType
-from typing import Any, cast
+from typing import cast
 
 # Proto file location
 PROTO_DIR = Path(__file__).parent
@@ -30,11 +31,9 @@ inference_pb2: ModuleType | None = None
 inference_pb2_grpc: ModuleType | None = None
 
 try:
-    from shared.proto import inference_pb2 as _pb2
-    from shared.proto import inference_pb2_grpc as _pb2_grpc
-
-    inference_pb2 = _pb2
-    inference_pb2_grpc = _pb2_grpc
+    # Use importlib to avoid self-referencing import issues
+    inference_pb2 = importlib.import_module("shared.proto.inference_pb2")
+    inference_pb2_grpc = importlib.import_module("shared.proto.inference_pb2_grpc")
 except ImportError:
     # Generated files not yet created - keep None values
     pass
@@ -68,9 +67,7 @@ def get_messages() -> ModuleType:
         raise ImportError(
             "Proto files not generated. Run 'python scripts/generate_proto.py' first."
         )
-    from shared.proto import inference_pb2 as pb2
-
-    return cast(ModuleType, pb2)
+    return cast(ModuleType, importlib.import_module("shared.proto.inference_pb2"))
 
 
 def get_services() -> ModuleType:
@@ -86,6 +83,4 @@ def get_services() -> ModuleType:
         raise ImportError(
             "Proto files not generated. Run 'python scripts/generate_proto.py' first."
         )
-    from shared.proto import inference_pb2_grpc as pb2_grpc
-
-    return cast(ModuleType, pb2_grpc)
+    return cast(ModuleType, importlib.import_module("shared.proto.inference_pb2_grpc"))

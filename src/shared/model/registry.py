@@ -138,7 +138,7 @@ class ModelRegistry:
         logger.info(f"  Intra-op threads: {self.config.intra_op_threads}")
         logger.info(f"  Inter-op threads: {self.config.inter_op_threads}")
 
-    def get_session(self, model_name: str) -> "ort.InferenceSession":
+    def get_session(self, model_name: str) -> ort.InferenceSession:
         """Get ONNX Runtime inference session for a model.
 
         Sessions are cached after first load. Thread-safe for concurrent access.

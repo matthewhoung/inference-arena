@@ -91,7 +91,8 @@ if TENACITY_AVAILABLE:
     )
 else:
     # Fallback: no retry
-    from typing import Callable, TypeVar
+    from collections.abc import Callable
+    from typing import TypeVar
 
     F = TypeVar("F", bound=Callable[..., Any])
 
