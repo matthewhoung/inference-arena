@@ -1,4 +1,4 @@
-"""Container validation using Docker SDK.
+r"""Container validation using Docker SDK.
 
 This module validates that containers exist, are running, and are healthy
 before performing operations that depend on them (e.g., Prometheus queries).
@@ -13,7 +13,7 @@ Usage:
     try:
         validate_containers(["prometheus", "cadvisor"])
     except ConfigError as e:
-        print(f"Container validation failed:\\n{e}")
+        print(f"Container validation failed:\n{e}")
 
 Author: Matthew Hong
 """

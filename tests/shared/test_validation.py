@@ -21,7 +21,6 @@ import pytest
 from shared.exceptions import ConfigError
 from shared.validation import validate_containers
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================

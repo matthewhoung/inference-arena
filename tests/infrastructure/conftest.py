@@ -6,9 +6,9 @@ This module provides shared fixtures and configuration for infrastructure tests.
 
 import socket
 import threading
+from collections.abc import Generator
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Generator
 
 import pytest
 

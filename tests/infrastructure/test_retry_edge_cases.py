@@ -10,7 +10,6 @@ These tests verify the retry logic in wait_for_healthy() handles edge cases corr
 Tests use a real configurable HTTP server (not mocks) to verify behavior.
 """
 
-import socket
 import time
 
 import pytest

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Inference Arena - Environment Setup Script
+"""Inference Arena - Environment Setup Script.
 
 Cross-platform Python script to create .env configuration file.
 Works on Windows, macOS, and Linux.
@@ -16,7 +15,6 @@ import shutil
 import sys
 from getpass import getpass
 from pathlib import Path
-from typing import Optional
 
 
 class Colors:
@@ -47,8 +45,7 @@ def print_header() -> None:
 
 
 def generate_secure_password(length: int = 32) -> str:
-    """
-    Generate a cryptographically secure password.
+    """Generate a cryptographically secure password.
 
     Args:
         length: Password length (default: 32 characters)
@@ -61,9 +58,8 @@ def generate_secure_password(length: int = 32) -> str:
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
-def backup_existing_env(env_file: Path) -> Optional[Path]:
-    """
-    Create backup of existing .env file.
+def backup_existing_env(env_file: Path) -> Path | None:
+    """Create backup of existing .env file.
 
     Args:
         env_file: Path to .env file

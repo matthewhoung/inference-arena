@@ -36,12 +36,6 @@ class TestPredictEndpoint:
 
     def test_predict_response_schema(self):
         """Verify predict response matches expected schema."""
-        from triton.gateway.app.models import (
-            Classification,
-            DetectionBox,
-            DetectionWithClassification,
-            PredictResponse,
-        )
 
         classification = Classification(
             class_name="person",
@@ -76,7 +70,6 @@ class TestPredictEndpoint:
 
     def test_timing_reflects_triton_inference(self):
         """Verify timing breakdown includes Triton inference time."""
-        from triton.gateway.app.models import PredictResponse
 
         response = PredictResponse(
             request_id="test",
@@ -97,7 +90,6 @@ class TestModelsSchema:
 
     def test_classification_schema(self):
         """Verify Classification schema."""
-        from triton.gateway.app.models import Classification
 
         result = Classification(
             class_name="car",
@@ -109,7 +101,6 @@ class TestModelsSchema:
 
     def test_detection_box_format(self):
         """Verify DetectionBox format is consistent."""
-        from triton.gateway.app.models import DetectionBox
 
         detection = DetectionBox(
             x1=200.0,
@@ -126,12 +117,6 @@ class TestModelsSchema:
 
     def test_predict_response_serialization(self):
         """Verify PredictResponse serializes correctly for JSON."""
-        from triton.gateway.app.models import (
-            Classification,
-            DetectionBox,
-            DetectionWithClassification,
-            PredictResponse,
-        )
 
         classification = Classification(
             class_name="bicycle",

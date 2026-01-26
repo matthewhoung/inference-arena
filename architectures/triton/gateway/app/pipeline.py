@@ -9,19 +9,20 @@ This module orchestrates the detection + classification pipeline via Triton:
 Author: Matthew Hong
 """
 
+import asyncio
 import logging
 import time
-import asyncio
 from pathlib import Path
+
 import numpy as np
 
 from shared.config import get_model_config
-from shared.processing import YOLOPreprocessor, MobileNetPreprocessor
+from shared.processing import MobileNetPreprocessor, YOLOPreprocessor
 from shared.processing.mobilenet_preprocess import extract_crop
 from shared.processing.transforms import load_image_from_bytes
 
-from .triton_client import TritonInferenceClient
 from .postprocess import parse_yolo_output
+from .triton_client import TritonInferenceClient
 
 logger = logging.getLogger(__name__)
 
@@ -170,7 +171,7 @@ class TritonInferencePipeline:
             # 1. Prepare all crops
             crops = []
             dets_for_classification = []
-            
+
             for det in detections_orig:
                 crop = extract_crop(image, det)
                 preprocessed = self.mobilenet_preprocessor(crop)
@@ -180,14 +181,14 @@ class TritonInferencePipeline:
             # 2. Launch all inference tasks in parallel
             # This is the "Magic Fix" that allows Batching to work
             tasks = [
-                self.triton_client.infer_mobilenet(crop_tensor) 
+                self.triton_client.infer_mobilenet(crop_tensor)
                 for crop_tensor in crops
             ]
-            
+
             cls_outputs = await asyncio.gather(*tasks)
 
             # 3. Process results
-            for det, cls_output in zip(dets_for_classification, cls_outputs):
+            for det, cls_output in zip(dets_for_classification, cls_outputs, strict=True):
                 class_id = int(np.argmax(cls_output[0]))
                 confidence = float(cls_output[0, class_id])
                 class_name = self.labels[class_id]

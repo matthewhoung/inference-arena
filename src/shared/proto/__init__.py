@@ -23,6 +23,17 @@ from pathlib import Path
 PROTO_DIR = Path(__file__).parent
 PROTO_FILE = PROTO_DIR / "inference.proto"
 
+# Export generated modules if they exist
+try:
+    from shared.proto import inference_pb2 as inference_pb2
+    from shared.proto import inference_pb2_grpc as inference_pb2_grpc
+except ImportError:
+    # Generated files not yet created
+    inference_pb2 = None  # type: ignore[assignment]
+    inference_pb2_grpc = None  # type: ignore[assignment]
+
+__all__ = ["inference_pb2", "inference_pb2_grpc", "get_proto_path", "is_generated", "get_messages", "get_services"]
+
 
 def get_proto_path() -> Path:
     """Get path to inference.proto file."""

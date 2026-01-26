@@ -22,7 +22,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-
 # =============================================================================
 # Triton Config Tests
 # =============================================================================
@@ -150,7 +149,6 @@ class TestMinIORegistryMocked:
         init_models.py conditionally imports Minio in a try-except block.
         """
         # Create a mock module if minio isn't installed
-        import sys
 
         try:
             import minio  # noqa: F401  # Import needed to check availability

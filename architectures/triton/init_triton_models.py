@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Download models and config.pbtxt from MinIO to Triton model repository.
+"""Download models and config.pbtxt from MinIO to Triton model repository.
 
 This script runs as an init container before Triton server starts.
 Downloads all required model files from MinIO to the shared volume.
@@ -14,6 +13,7 @@ Author: Matthew Hong
 import os
 import sys
 from pathlib import Path
+
 from minio import Minio
 from minio.error import S3Error
 
@@ -123,7 +123,7 @@ def main() -> int:
         if not client.bucket_exists(BUCKET):
             print(f"✗ Bucket '{BUCKET}' does not exist!")
             return 1
-        print(f"✓ Connected to MinIO")
+        print("✓ Connected to MinIO")
     except Exception as e:
         print(f"✗ Failed to connect to MinIO: {e}")
         return 1

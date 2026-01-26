@@ -10,9 +10,11 @@ mobilenetv2_batched) which have dynamic batching enabled.
 Author: Matthew Hong
 """
 
+import asyncio
 import logging
 import os
 import time
+
 import numpy as np
 import tritonclient.grpc.aio as grpcclient
 
@@ -52,7 +54,7 @@ class TritonInferenceClient:
                 if await self.client.is_server_ready():
                     logger.info("Triton server is ready")
                     return True
-            except Exception as e:
+            except Exception:
                 attempt += 1
                 wait_time = min(2**attempt, 5)
                 logger.debug(f"Waiting for Triton... (attempt {attempt})")

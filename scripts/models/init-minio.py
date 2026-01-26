@@ -39,13 +39,13 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 # Add src to path for imports
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from shared.config import get_spec_version
+from shared.config import get_spec_version  # noqa: E402
 
 # Configure logging
 logging.basicConfig(
@@ -67,7 +67,7 @@ def print_header() -> None:
     print()
 
 
-def print_verification(verification: Dict[str, Any]) -> None:
+def print_verification(verification: dict[str, Any]) -> None:
     """Print verification results."""
     print()
     print("Verification Results:")
@@ -124,7 +124,7 @@ def main() -> int:
 
     # Import MinIO registry (may fail if minio not installed)
     try:
-        from shared.triton.minio import MinIOModelRegistry, MINIO_AVAILABLE
+        from shared.triton.minio import MINIO_AVAILABLE, MinIOModelRegistry
     except ImportError as e:
         logger.error(f"Import error: {e}")
         logger.error("Install with: pip install minio")

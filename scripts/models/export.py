@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Export Models Script - Export YOLOv5n and MobileNetV2 to ONNX format.
+"""Export Models Script - Export YOLOv5n and MobileNetV2 to ONNX format.
 
 This script is a thin CLI wrapper around shared.model.exporter.
 It is idempotent: existing models are skipped unless --force is used.
@@ -24,16 +23,14 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from shared.model.exporter import (
-    export_yolov5n,
-    export_mobilenetv2,
-    export_all_models,
-    verify_onnx_model,
-    compute_checksum,
-    ExportResult,
+from shared.model.exporter import (  # noqa: E402
     ONNX_OPSET_VERSION,
+    ExportResult,
+    compute_checksum,
+    export_mobilenetv2,
+    export_yolov5n,
+    verify_onnx_model,
 )
-
 
 # =============================================================================
 # Configuration
@@ -77,19 +74,19 @@ def print_result(name: str, result: ExportResult) -> None:
 def verify_existing_models() -> bool:
     """Verify existing models in models directory."""
     print("\nVerifying existing models...")
-    
+
     all_valid = True
-    
+
     for model_name, filename in [("YOLOv5n", "yolov5n.onnx"), ("MobileNetV2", "mobilenetv2.onnx")]:
         model_path = MODELS_DIR / filename
-        
+
         if not model_path.exists():
             print(f"  ✗ {model_name}: Not found")
             all_valid = False
             continue
-        
+
         result = verify_onnx_model(model_path)
-        
+
         if result["valid"]:
             checksum = compute_checksum(model_path)
             size_mb = model_path.stat().st_size / (1024 * 1024)
@@ -99,7 +96,7 @@ def verify_existing_models() -> bool:
         else:
             print(f"  {model_name}: Invalid - {result['error']}")
             all_valid = False
-    
+
     return all_valid
 
 
@@ -109,8 +106,7 @@ def export_models(
     mobilenet_only: bool = False,
     dynamic_batch: bool = False,
 ) -> bool:
-    """
-    Export models to ONNX format.
+    """Export models to ONNX format.
 
     Args:
         force: Overwrite existing files
@@ -213,7 +209,7 @@ def export_models(
             if dynamic_batch:
                 f.write("# Batch mode: dynamic (for Triton batching)\n")
             f.write("\n")
-            for name, result in results.items():
+            for _name, result in results.items():
                 f.write(f"{result.model_path.name}: sha256:{result.checksum}\n")
         print(f"\n  Checksums saved to: {checksums_path}")
 

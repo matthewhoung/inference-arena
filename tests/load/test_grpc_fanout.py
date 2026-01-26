@@ -15,7 +15,6 @@ microservices architecture). They are skipped by default; run with
 Author: Matthew Hong
 """
 
-import asyncio
 import logging
 import os
 import time
@@ -223,7 +222,7 @@ class TestGRPCFanout:
 
         # Sequential execution
         t_seq_start = time.perf_counter()
-        for i, (crop, box) in enumerate(zip(test_crops, test_boxes)):
+        for i, (crop, box) in enumerate(zip(test_crops, test_boxes, strict=True)):
             await client.classify(f"seq_{i}", crop, box)
         t_seq_end = time.perf_counter()
         sequential_ms = (t_seq_end - t_seq_start) * 1000

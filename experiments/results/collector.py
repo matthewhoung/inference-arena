@@ -234,7 +234,7 @@ class ResultsCollector:
             network_rx_values = []
             network_tx_values = []
 
-            for name, metrics in container_metrics.items():
+            for _name, metrics in container_metrics.items():
                 if metrics["cpu"]["avg_percent"] > 0:
                     cpu_values.append(metrics["cpu"]["avg_percent"])
                 if metrics["memory"]["avg_mb"] > 0:

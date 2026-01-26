@@ -23,8 +23,8 @@ Author: Matthew Hong
 Specification Reference: TEST-02 coverage gap
 """
 
-import socket
 from unittest.mock import MagicMock, Mock, patch
+from urllib.error import URLError
 
 import pytest
 
@@ -32,8 +32,6 @@ from experiments.results.prometheus_client import (
     DEFAULT_PROMETHEUS_URL,
     PrometheusClient,
 )
-from urllib.error import URLError
-
 
 # =============================================================================
 # Fixtures
@@ -160,7 +158,7 @@ class TestPrometheusQueryErrors:
     @patch("experiments.results.prometheus_client.urlopen")
     def test_timeout_raises_runtime_error(self, mock_urlopen: Mock) -> None:
         """URLError with socket timeout should raise RuntimeError."""
-        mock_urlopen.side_effect = URLError(socket.timeout("timed out"))
+        mock_urlopen.side_effect = URLError(TimeoutError("timed out"))
         client = PrometheusClient("http://localhost:9090")
 
         with pytest.raises(RuntimeError, match="Failed to query"):
@@ -225,7 +223,7 @@ class TestPrometheusRangeQueryErrors:
     @patch("experiments.results.prometheus_client.urlopen")
     def test_range_query_timeout(self, mock_urlopen: Mock) -> None:
         """Socket timeout on range query should raise RuntimeError."""
-        mock_urlopen.side_effect = URLError(socket.timeout("timed out"))
+        mock_urlopen.side_effect = URLError(TimeoutError("timed out"))
         client = PrometheusClient("http://localhost:9090")
 
         with pytest.raises(RuntimeError, match="Failed to query"):
@@ -461,7 +459,7 @@ class TestPrometheusAvailability:
         self, mock_urlopen: Mock
     ) -> None:
         """Should return False when query times out."""
-        mock_urlopen.side_effect = URLError(socket.timeout("timed out"))
+        mock_urlopen.side_effect = URLError(TimeoutError("timed out"))
         client = PrometheusClient("http://localhost:9090")
 
         assert client.is_available() is False

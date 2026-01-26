@@ -19,7 +19,6 @@ import pytest
 from shared.exceptions import ConfigError
 from shared.validation import parse_compose_ports, validate_ports
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================

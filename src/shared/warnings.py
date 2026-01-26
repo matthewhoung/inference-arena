@@ -20,10 +20,9 @@ Author: Matthew Hong
 
 import logging
 import os
-from typing import Set
 
 logger = logging.getLogger(__name__)
-_warned: Set[str] = set()
+_warned: set[str] = set()
 
 # Environment variable to suppress specific warnings (comma-separated codes)
 _SUPPRESS_WARNINGS = [

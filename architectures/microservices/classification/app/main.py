@@ -11,7 +11,6 @@ import logging
 import signal
 from pathlib import Path
 
-import grpc
 from grpc import aio
 
 from shared.config import get_controlled_variables

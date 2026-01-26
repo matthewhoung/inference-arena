@@ -22,7 +22,7 @@ import yaml
 
 # Import from shared config (single source of truth)
 from shared.config import get_concurrent_user_levels, get_container_names, get_load_testing_config
-from shared.exceptions import ConfigError, ConfigKeyError, ConfigNotFoundError, ConfigParseError
+from shared.exceptions import ConfigKeyError, ConfigNotFoundError, ConfigParseError
 
 # =============================================================================
 # Architecture Configuration

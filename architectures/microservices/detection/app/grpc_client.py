@@ -9,7 +9,6 @@ Author: Matthew Hong
 
 import asyncio
 import logging
-from typing import Optional
 
 import grpc
 import grpc.aio
@@ -43,8 +42,8 @@ class ClassificationClient:
             endpoint: Classification service gRPC endpoint
         """
         self.endpoint = endpoint
-        self.channel: Optional[grpc.aio.Channel] = None
-        self.stub: Optional[inference_pb2_grpc.ClassificationServiceStub] = None
+        self.channel: grpc.aio.Channel | None = None
+        self.stub: inference_pb2_grpc.ClassificationServiceStub | None = None
         logger.info(f"ClassificationClient configured for {endpoint}")
 
     async def connect(self) -> None:
@@ -64,10 +63,10 @@ class ClassificationClient:
                 timeout=30.0,
             )
             logger.info(f"Connected to Classification service at {self.endpoint}")
-        except asyncio.TimeoutError:
+        except TimeoutError as err:
             raise RuntimeError(
                 f"Timeout connecting to Classification service at {self.endpoint}"
-            )
+            ) from err
 
     async def close(self) -> None:
         """Close gRPC channel."""
@@ -79,7 +78,7 @@ class ClassificationClient:
         self,
         request_id: str,
         crop: np.ndarray,
-        source_box: Optional[dict] = None,
+        source_box: dict | None = None,
     ) -> inference_pb2.ClassificationResponse:
         """Classify a single image crop.
 
@@ -156,7 +155,7 @@ class ClassificationClient:
         # Create tasks for parallel execution
         tasks = [
             self.classify(f"{request_id}_{i}", crop, box)
-            for i, (crop, box) in enumerate(zip(crops, boxes))
+            for i, (crop, box) in enumerate(zip(crops, boxes, strict=True))
         ]
 
         # Execute all classification calls in parallel

@@ -17,9 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import grpc
 import numpy as np
 import pytest
-
 from microservices.detection.app.grpc_client import ClassificationClient
-
 
 # =============================================================================
 # Test Fixtures
@@ -53,7 +51,7 @@ class TestClassificationClientConnectionFailures:
 
         # Mock channel that times out
         with patch.object(client, 'channel', create=True) as mock_channel:
-            mock_channel.channel_ready = AsyncMock(side_effect=asyncio.TimeoutError())
+            mock_channel.channel_ready = AsyncMock(side_effect=TimeoutError())
             client.channel = mock_channel
 
             # Re-implement connect logic to test timeout handling
@@ -64,10 +62,10 @@ class TestClassificationClientConnectionFailures:
                         mock_channel.channel_ready(),
                         timeout=0.1,
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError as err:
                     raise RuntimeError(
                         f"Timeout connecting to Classification service at {client.endpoint}"
-                    )
+                    ) from err
 
     @pytest.mark.asyncio
     async def test_classify_without_connect_raises_runtime_error(
