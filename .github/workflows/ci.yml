@@ -68,6 +68,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra dev --extra infra --extra model --extra grpc
 
+      - name: Generate proto files
+        run: uv run python scripts/setup/generate-proto.py
+
       - name: Run unit tests with coverage
         run: |
           uv run pytest tests/ -v \

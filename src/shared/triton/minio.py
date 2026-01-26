@@ -58,7 +58,7 @@ except ImportError:
     S3Error = Exception  # type: ignore[misc, assignment]
 
 try:
-    from tenacity import (  # type: ignore[import-not-found]
+    from tenacity import (
         retry,
         retry_if_exception_type,
         stop_after_attempt,
