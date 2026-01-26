@@ -2,6 +2,7 @@
 
 **A Comparative Study of ML Model Serving Architectures**
 
+[![CI](https://github.com/matthewhoung/inference-arena/actions/workflows/ci.yml/badge.svg)](https://github.com/matthewhoung/inference-arena/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Test Coverage](https://img.shields.io/badge/coverage-88%25-brightgreen.svg)](docs/SETUP.md#test-coverage)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

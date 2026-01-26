@@ -56,6 +56,27 @@ make stop-all
 | Prometheus | http://localhost:9090 | - |
 | OTel Collector | http://localhost:8889/metrics | - |
 
+## Pre-commit Hooks
+
+Install pre-commit hooks for automated linting before push:
+
+```bash
+# Install pre-commit
+pip install pre-commit
+
+# Install pre-push hooks
+pre-commit install --hook-type pre-push
+```
+
+The hooks run automatically when you `git push` and check:
+- **ruff**: Linting and auto-formatting
+- **mypy**: Static type checking
+
+To run hooks manually:
+```bash
+pre-commit run --all-files --hook-stage pre-push
+```
+
 ## Testing
 
 ### Development Testing
