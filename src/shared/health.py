@@ -94,6 +94,4 @@ def wait_for_healthy(
 
     # Timeout reached
     error_detail = f": {last_error}" if last_error else ""
-    raise HealthCheckTimeoutError(
-        f"{name} not healthy after {max_wait}s{error_detail}"
-    )
+    raise HealthCheckTimeoutError(f"{name} not healthy after {max_wait}s{error_detail}")

@@ -21,6 +21,7 @@ class VerificationResult(TypedDict):
     output_shapes: list[tuple[Any, ...]]
     error: str | None
 
+
 # =============================================================================
 # Checksum Utilities
 # =============================================================================

@@ -1,0 +1,12 @@
+service_display_name,name,quantity,region,service_id,sku,"total_price, USD",notes
+Instances (Compute Engine),E2 Custom Instance Core running in Americas,1460.0,us-central1,6F81-5844-456A,61C6-6F89-DCF4,33.43717,
+Instances (Compute Engine),E2 Custom Instance Ram running in Americas,2920.0,us-central1,6F81-5844-456A,8D24-CB74-5E70,8.96354,
+Instances (Compute Engine),Balanced PD Capacity,10.0,us-central1,6F81-5844-456A,6AE1-525F-8B80,1,
+,,,,,,,
+,,,,,Total Price:,43.40071,
+,,,,,,,
+"Prices are in US dollars, effective date is 2026-01-26T08:13:07.465Z",,,,,,,
+,,,,,,,
+The estimated fees provided by Google Cloud Pricing Calculator are for discussion purposes only and are not binding on either you or Google. Your actual fees may be higher or lower than the estimate.,,,,,,,
+,,,,,,,
+Url to the estimate:,https://cloud.google.com/calculator?dl=CjhDaVF4WldSbVlUZGxaUzFoWXpVNUxUUmtZbVl0T0dObVl5MHhZMkkwTVRabE5XWmxPRFVRQVE9PRokMkM3OTQ3QkUtOTA5NC00NjhDLUIwRkMtQ0Q5NTIwNzE1RjZB,,,,,,

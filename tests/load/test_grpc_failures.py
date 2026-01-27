@@ -50,7 +50,7 @@ class TestClassificationClientConnectionFailures:
         client = ClassificationClient("localhost:9999")
 
         # Mock channel that times out
-        with patch.object(client, 'channel', create=True) as mock_channel:
+        with patch.object(client, "channel", create=True) as mock_channel:
             mock_channel.channel_ready = AsyncMock(side_effect=TimeoutError())
             client.channel = mock_channel
 
@@ -133,6 +133,7 @@ class TestClassificationClientRPCFailures:
 
         # Mock stub that fails on second call
         call_count = 0
+
         async def mock_classify(*args, **kwargs):
             nonlocal call_count
             call_count += 1

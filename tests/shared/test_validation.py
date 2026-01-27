@@ -41,13 +41,7 @@ def healthy_container():
     """Create a mock healthy container."""
     container = MagicMock()
     container.status = "running"
-    container.attrs = {
-        "State": {
-            "Health": {
-                "Status": "healthy"
-            }
-        }
-    }
+    container.attrs = {"State": {"Health": {"Status": "healthy"}}}
     return container
 
 
@@ -56,9 +50,7 @@ def running_no_health_container():
     """Create a mock running container with no healthcheck."""
     container = MagicMock()
     container.status = "running"
-    container.attrs = {
-        "State": {}  # No Health key
-    }
+    container.attrs = {"State": {}}  # No Health key
     return container
 
 
@@ -67,9 +59,7 @@ def stopped_container():
     """Create a mock stopped container."""
     container = MagicMock()
     container.status = "exited"
-    container.attrs = {
-        "State": {}
-    }
+    container.attrs = {"State": {}}
     return container
 
 
@@ -78,13 +68,7 @@ def unhealthy_container():
     """Create a mock unhealthy container."""
     container = MagicMock()
     container.status = "running"
-    container.attrs = {
-        "State": {
-            "Health": {
-                "Status": "unhealthy"
-            }
-        }
-    }
+    container.attrs = {"State": {"Health": {"Status": "unhealthy"}}}
     return container
 
 
@@ -93,13 +77,7 @@ def starting_container():
     """Create a mock container with health status 'starting'."""
     container = MagicMock()
     container.status = "running"
-    container.attrs = {
-        "State": {
-            "Health": {
-                "Status": "starting"
-            }
-        }
-    }
+    container.attrs = {"State": {"Health": {"Status": "starting"}}}
     return container
 
 
@@ -111,9 +89,7 @@ def starting_container():
 class TestValidateContainersSuccess:
     """Test successful container validation scenarios."""
 
-    def test_validate_containers_all_healthy(
-        self, mock_docker_client, healthy_container
-    ) -> None:
+    def test_validate_containers_all_healthy(self, mock_docker_client, healthy_container) -> None:
         """All containers running and healthy should pass validation."""
         mock_docker_client.containers.get.return_value = healthy_container
 
@@ -197,9 +173,7 @@ class TestValidateContainersNotFound:
 class TestValidateContainersNotRunning:
     """Test container not running scenarios."""
 
-    def test_validate_containers_not_running(
-        self, mock_docker_client, stopped_container
-    ) -> None:
+    def test_validate_containers_not_running(self, mock_docker_client, stopped_container) -> None:
         """Stopped container should raise ConfigError with status message."""
         mock_docker_client.containers.get.return_value = stopped_container
 
@@ -233,9 +207,7 @@ class TestValidateContainersNotRunning:
 class TestValidateContainersUnhealthy:
     """Test container unhealthy scenarios."""
 
-    def test_validate_containers_unhealthy(
-        self, mock_docker_client, unhealthy_container
-    ) -> None:
+    def test_validate_containers_unhealthy(self, mock_docker_client, unhealthy_container) -> None:
         """Unhealthy container should raise ConfigError with health status."""
         mock_docker_client.containers.get.return_value = unhealthy_container
 
@@ -246,9 +218,7 @@ class TestValidateContainersUnhealthy:
         assert "unhealthy-container" in error_msg
         assert "unhealthy" in error_msg
 
-    def test_validate_containers_starting(
-        self, mock_docker_client, starting_container
-    ) -> None:
+    def test_validate_containers_starting(self, mock_docker_client, starting_container) -> None:
         """Container with 'starting' health should fail validation."""
         mock_docker_client.containers.get.return_value = starting_container
 
@@ -277,8 +247,8 @@ class TestValidateContainersMultipleFailures:
 
         mock_docker_client.containers.get.side_effect = [
             NotFound("Container not found"),  # container-1: not found
-            stopped_container,                 # container-2: not running
-            unhealthy_container,              # container-3: unhealthy
+            stopped_container,  # container-2: not running
+            unhealthy_container,  # container-3: unhealthy
         ]
 
         with pytest.raises(ConfigError) as exc_info:
@@ -298,9 +268,9 @@ class TestValidateContainersMultipleFailures:
     ) -> None:
         """Mix of valid and invalid containers should fail listing only invalids."""
         mock_docker_client.containers.get.side_effect = [
-            healthy_container,    # valid
-            stopped_container,    # invalid
-            healthy_container,    # valid
+            healthy_container,  # valid
+            stopped_container,  # invalid
+            healthy_container,  # valid
         ]
 
         with pytest.raises(ConfigError) as exc_info:
@@ -354,9 +324,7 @@ class TestValidateContainersDockerErrors:
 class TestValidateContainersErrorFormat:
     """Test error message formatting."""
 
-    def test_error_message_has_header(
-        self, mock_docker_client, stopped_container
-    ) -> None:
+    def test_error_message_has_header(self, mock_docker_client, stopped_container) -> None:
         """Error message should have 'Container validation failed' header."""
         mock_docker_client.containers.get.return_value = stopped_container
 
@@ -387,9 +355,7 @@ class TestValidateContainersErrorFormat:
 class TestValidateContainersMaxWait:
     """Test max_wait parameter behavior."""
 
-    def test_max_wait_parameter_accepted(
-        self, mock_docker_client, healthy_container
-    ) -> None:
+    def test_max_wait_parameter_accepted(self, mock_docker_client, healthy_container) -> None:
         """max_wait parameter should be accepted (reserved for future use)."""
         mock_docker_client.containers.get.return_value = healthy_container
 

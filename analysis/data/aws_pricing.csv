@@ -1,0 +1,14 @@
+﻿預估摘要
+預付成本,每月費用,Total 12 months cost,貨幣
+0,30.37,364.44,USD
+,,* 包含預付成本
+
+
+詳細預估
+群組階層,區域,描述,服務,預付,每月,First 12 months total,貨幣,狀態,組態摘要
+My Estimate,美國東部 (俄亥俄),,Amazon EC2 ,0,30.368,364.42,USD,,"租用 (共用執行個體), 作業系統 (Linux), 工作負載 (Consistent, 執行個體數量: 1), 進階 EC2 執行個體 (t3.medium), Pricing strategy (On-Demand Utilization: 100 %Utilized/Month), 啟用監控 (已停用), DT 傳入: Not selected (0 每月 TB), DT 傳出: Not selected (0 每月 TB), DT 內部區域: (0 每月 TB)"
+
+
+
+確認
+* AWS 定價計算器只提供您的 AWS 費用預估，不包括任何可能適用的稅金。您的實際費用取決於多種因素，包括您對 AWS 服務的實際使用情況。

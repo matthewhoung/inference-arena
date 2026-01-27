@@ -163,9 +163,7 @@ def get_phase_durations() -> dict[str, int]:
             "Could not parse experiment.yaml. Check for YAML syntax errors."
         ) from e
     except KeyError as e:
-        raise ConfigKeyError(
-            f"Missing configuration key in experiment.yaml: {e}"
-        ) from e
+        raise ConfigKeyError(f"Missing configuration key in experiment.yaml: {e}") from e
 
 
 def get_total_duration() -> int:
@@ -202,9 +200,7 @@ def get_runs_per_configuration() -> int:
             "Could not parse experiment.yaml. Check for YAML syntax errors."
         ) from e
     except KeyError as e:
-        raise ConfigKeyError(
-            f"Missing configuration key in experiment.yaml: {e}"
-        ) from e
+        raise ConfigKeyError(f"Missing configuration key in experiment.yaml: {e}") from e
 
 
 def get_user_levels() -> list[int]:
@@ -230,9 +226,7 @@ def get_user_levels() -> list[int]:
             "Could not parse experiment.yaml. Check for YAML syntax errors."
         ) from e
     except KeyError as e:
-        raise ConfigKeyError(
-            f"Missing configuration key in experiment.yaml: {e}"
-        ) from e
+        raise ConfigKeyError(f"Missing configuration key in experiment.yaml: {e}") from e
 
 
 def get_architectures() -> list[str]:

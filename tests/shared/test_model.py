@@ -508,9 +508,9 @@ class TestGetDefaultRegistry:
 
         # All threads should get the same singleton instance
         unique_registries = set(registry_ids)
-        assert len(unique_registries) == 1, (
-            f"Singleton violated: got {len(unique_registries)} different instances"
-        )
+        assert (
+            len(unique_registries) == 1
+        ), f"Singleton violated: got {len(unique_registries)} different instances"
 
 
 # =============================================================================
@@ -615,9 +615,9 @@ class TestModelRegistryThreadSafety:
 
         # All threads should get the exact same session instance
         unique_sessions = set(session_ids)
-        assert len(unique_sessions) == 1, (
-            f"Expected 1 unique session, got {len(unique_sessions)}: {unique_sessions}"
-        )
+        assert (
+            len(unique_sessions) == 1
+        ), f"Expected 1 unique session, got {len(unique_sessions)}: {unique_sessions}"
 
     def test_concurrent_read_during_clear_no_corruption(
         self,

@@ -1,0 +1,7 @@
+architecture,category,loc,files
+monolithic,application,316,7
+monolithic,configuration,57,1
+microservices,application,668,15
+microservices,configuration,89,1
+triton,application,438,9
+triton,configuration,85,1

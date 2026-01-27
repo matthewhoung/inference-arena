@@ -140,6 +140,8 @@ Run `make help` to see all commands:
 | `make start-triton` | Start Triton architecture |
 | `make stop-all` | Stop all containers |
 | `make clean` | Remove caches and build artifacts |
+| `make metrics-static` | Generate static code metrics (LOC, files, endpoints) |
+| `make metrics-all` | Complete metrics collection (includes deployment times) |
 
 ## Project Structure
 

@@ -173,9 +173,7 @@ def _parse_port_value(value: str) -> int | None:
         return None
 
 
-def validate_ports(
-    compose_path: Path, expected_ports: dict[str, int]
-) -> None:
+def validate_ports(compose_path: Path, expected_ports: dict[str, int]) -> None:
     """Validate docker-compose ports match expected configuration.
 
     Compares expected service ports against those defined in a docker-compose
@@ -208,13 +206,9 @@ def validate_ports(
         actual_ports = compose_ports.get(service)
 
         if actual_ports is None:
-            errors.append(
-                f"{service}: expected port {expected_port}, found no ports"
-            )
+            errors.append(f"{service}: expected port {expected_port}, found no ports")
         elif expected_port not in actual_ports:
-            errors.append(
-                f"{service}: expected port {expected_port}, found {actual_ports}"
-            )
+            errors.append(f"{service}: expected port {expected_port}, found {actual_ports}")
 
     if errors:
         raise ConfigError(
@@ -278,9 +272,7 @@ def _find_infrastructure_compose() -> Path:
     # Try common locations relative to where code runs
     candidates = [
         Path("infrastructure/docker-compose.infra.yml"),
-        Path(__file__).parent.parent.parent.parent
-        / "infrastructure"
-        / "docker-compose.infra.yml",
+        Path(__file__).parent.parent.parent.parent / "infrastructure" / "docker-compose.infra.yml",
     ]
 
     for path in candidates:

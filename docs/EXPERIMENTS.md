@@ -71,6 +71,13 @@ experiments/
 ├── shapes.py                # ThreePhaseShape for Locust
 ├── locustfile.py            # Locust user behavior
 ├── runner.py                # CLI for experiment orchestration
+├── metrics/                 # Static metrics collection scripts
+│   ├── count_loc.py         # Lines of code counting
+│   ├── count_files.py       # File count by extension
+│   ├── count_api_endpoints.py # API endpoint counting
+│   ├── measure_deployment.sh  # Deployment time measurement
+│   ├── aggregate_metrics.py   # Metrics aggregation
+│   └── README.md            # Metrics collection documentation
 ├── results/
 │   ├── __init__.py
 │   ├── prometheus_client.py # Prometheus queries for CPU/memory

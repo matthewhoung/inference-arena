@@ -54,7 +54,9 @@ def custom_client() -> PrometheusClient:
 def mock_success_response() -> MagicMock:
     """Create a mock successful response."""
     mock_response = MagicMock()
-    mock_response.read.return_value = b'{"status": "success", "data": {"resultType": "vector", "result": []}}'
+    mock_response.read.return_value = (
+        b'{"status": "success", "data": {"resultType": "vector", "result": []}}'
+    )
     mock_response.__enter__ = Mock(return_value=mock_response)
     mock_response.__exit__ = Mock(return_value=False)
     return mock_response
@@ -64,7 +66,7 @@ def mock_success_response() -> MagicMock:
 def mock_matrix_response() -> MagicMock:
     """Create a mock matrix (range query) response."""
     mock_response = MagicMock()
-    mock_response.read.return_value = b'''{
+    mock_response.read.return_value = b"""{
         "status": "success",
         "data": {
             "resultType": "matrix",
@@ -75,7 +77,7 @@ def mock_matrix_response() -> MagicMock:
                 }
             ]
         }
-    }'''
+    }"""
     mock_response.__enter__ = Mock(return_value=mock_response)
     mock_response.__exit__ = Mock(return_value=False)
     return mock_response
@@ -85,7 +87,7 @@ def mock_matrix_response() -> MagicMock:
 def mock_vector_response() -> MagicMock:
     """Create a mock vector (instant query) response."""
     mock_response = MagicMock()
-    mock_response.read.return_value = b'''{
+    mock_response.read.return_value = b"""{
         "status": "success",
         "data": {
             "resultType": "vector",
@@ -93,7 +95,7 @@ def mock_vector_response() -> MagicMock:
                 {"metric": {"job": "prometheus"}, "value": [1000, "1"]}
             ]
         }
-    }'''
+    }"""
     mock_response.__enter__ = Mock(return_value=mock_response)
     mock_response.__exit__ = Mock(return_value=False)
     return mock_response
@@ -145,9 +147,7 @@ class TestPrometheusQueryErrors:
     """Tests for _query method error handling."""
 
     @patch("experiments.results.prometheus_client.urlopen")
-    def test_connection_refused_raises_runtime_error(
-        self, mock_urlopen: Mock
-    ) -> None:
+    def test_connection_refused_raises_runtime_error(self, mock_urlopen: Mock) -> None:
         """URLError with connection refused should raise RuntimeError."""
         mock_urlopen.side_effect = URLError("Connection refused")
         client = PrometheusClient("http://localhost:9090")
@@ -187,9 +187,7 @@ class TestPrometheusQueryErrors:
         assert len(result["result"]) == 1
 
     @patch("experiments.results.prometheus_client.urlopen")
-    def test_query_failed_status_raises_runtime_error(
-        self, mock_urlopen: Mock
-    ) -> None:
+    def test_query_failed_status_raises_runtime_error(self, mock_urlopen: Mock) -> None:
         """Non-success status should raise RuntimeError."""
         mock_response = MagicMock()
         mock_response.read.return_value = b'{"status": "error", "error": "bad query"}'
@@ -243,9 +241,7 @@ class TestPrometheusRangeQueryErrors:
         assert len(result["result"]) == 1
 
     @patch("experiments.results.prometheus_client.urlopen")
-    def test_range_query_failed_status_raises_runtime_error(
-        self, mock_urlopen: Mock
-    ) -> None:
+    def test_range_query_failed_status_raises_runtime_error(self, mock_urlopen: Mock) -> None:
         """Non-success status on range query should raise RuntimeError."""
         mock_response = MagicMock()
         mock_response.read.return_value = b'{"status": "error", "errorType": "bad_data"}'
@@ -268,15 +264,13 @@ class TestPrometheusEmptyResults:
     """Tests for handling empty Prometheus results."""
 
     @patch("experiments.results.prometheus_client.urlopen")
-    def test_cpu_usage_empty_result_returns_zeros(
-        self, mock_urlopen: Mock
-    ) -> None:
+    def test_cpu_usage_empty_result_returns_zeros(self, mock_urlopen: Mock) -> None:
         """Empty CPU result should return zero values."""
         mock_response = MagicMock()
-        mock_response.read.return_value = b'''{
+        mock_response.read.return_value = b"""{
             "status": "success",
             "data": {"resultType": "matrix", "result": []}
-        }'''
+        }"""
         mock_response.__enter__ = Mock(return_value=mock_response)
         mock_response.__exit__ = Mock(return_value=False)
         mock_urlopen.return_value = mock_response
@@ -287,15 +281,13 @@ class TestPrometheusEmptyResults:
         assert result == {"avg_percent": 0.0, "max_percent": 0.0, "min_percent": 0.0}
 
     @patch("experiments.results.prometheus_client.urlopen")
-    def test_memory_usage_empty_result_returns_zeros(
-        self, mock_urlopen: Mock
-    ) -> None:
+    def test_memory_usage_empty_result_returns_zeros(self, mock_urlopen: Mock) -> None:
         """Empty memory result should return zero values."""
         mock_response = MagicMock()
-        mock_response.read.return_value = b'''{
+        mock_response.read.return_value = b"""{
             "status": "success",
             "data": {"resultType": "matrix", "result": []}
-        }'''
+        }"""
         mock_response.__enter__ = Mock(return_value=mock_response)
         mock_response.__exit__ = Mock(return_value=False)
         mock_urlopen.return_value = mock_response
@@ -306,15 +298,13 @@ class TestPrometheusEmptyResults:
         assert result == {"avg_mb": 0.0, "max_mb": 0.0, "min_mb": 0.0}
 
     @patch("experiments.results.prometheus_client.urlopen")
-    def test_network_io_empty_result_returns_zeros(
-        self, mock_urlopen: Mock
-    ) -> None:
+    def test_network_io_empty_result_returns_zeros(self, mock_urlopen: Mock) -> None:
         """Empty network I/O result should return zero values."""
         mock_response = MagicMock()
-        mock_response.read.return_value = b'''{
+        mock_response.read.return_value = b"""{
             "status": "success",
             "data": {"resultType": "matrix", "result": []}
-        }'''
+        }"""
         mock_response.__enter__ = Mock(return_value=mock_response)
         mock_response.__exit__ = Mock(return_value=False)
         mock_urlopen.return_value = mock_response
@@ -368,9 +358,7 @@ class TestPrometheusDataExtraction:
         assert values[0] == 42.5
         assert values[1] == 17.3
 
-    def test_extract_values_handles_invalid_values(
-        self, client: PrometheusClient
-    ) -> None:
+    def test_extract_values_handles_invalid_values(self, client: PrometheusClient) -> None:
         """Should skip non-numeric values gracefully."""
         result = {
             "resultType": "matrix",
@@ -402,9 +390,7 @@ class TestPrometheusDataExtraction:
 
         assert values == []
 
-    def test_extract_values_missing_values_key(
-        self, client: PrometheusClient
-    ) -> None:
+    def test_extract_values_missing_values_key(self, client: PrometheusClient) -> None:
         """Should handle missing 'values' key in series."""
         result = {
             "resultType": "matrix",
@@ -415,9 +401,7 @@ class TestPrometheusDataExtraction:
 
         assert values == []
 
-    def test_extract_values_unknown_result_type(
-        self, client: PrometheusClient
-    ) -> None:
+    def test_extract_values_unknown_result_type(self, client: PrometheusClient) -> None:
         """Should return empty list for unknown result type."""
         result = {"resultType": "scalar", "result": [1000, "42"]}
 
@@ -445,9 +429,7 @@ class TestPrometheusAvailability:
         assert client.is_available() is True
 
     @patch("experiments.results.prometheus_client.urlopen")
-    def test_is_available_returns_false_on_error(
-        self, mock_urlopen: Mock
-    ) -> None:
+    def test_is_available_returns_false_on_error(self, mock_urlopen: Mock) -> None:
         """Should return False when Prometheus is unreachable."""
         mock_urlopen.side_effect = URLError("Connection refused")
         client = PrometheusClient("http://localhost:9090")
@@ -455,9 +437,7 @@ class TestPrometheusAvailability:
         assert client.is_available() is False
 
     @patch("experiments.results.prometheus_client.urlopen")
-    def test_is_available_returns_false_on_timeout(
-        self, mock_urlopen: Mock
-    ) -> None:
+    def test_is_available_returns_false_on_timeout(self, mock_urlopen: Mock) -> None:
         """Should return False when query times out."""
         mock_urlopen.side_effect = URLError(TimeoutError("timed out"))
         client = PrometheusClient("http://localhost:9090")
@@ -524,6 +504,7 @@ class TestQueryContainerMetrics:
         self, mock_cpu: Mock, mock_memory: Mock, mock_network: Mock
     ) -> None:
         """Should handle partial failures gracefully via method return values."""
+
         # First container succeeds, second returns zeros (as methods do on error)
         def cpu_side_effect(name: str, start: float, end: float) -> dict:
             if name == "good-container":
@@ -545,9 +526,7 @@ class TestQueryContainerMetrics:
         mock_network.side_effect = network_side_effect
 
         client = PrometheusClient()
-        result = client.query_container_metrics(
-            ["good-container", "missing-container"], 0, 100
-        )
+        result = client.query_container_metrics(["good-container", "missing-container"], 0, 100)
 
         # Both containers should be present
         assert len(result) == 2
@@ -584,7 +563,7 @@ class TestMetricQueryMethods:
     def test_cpu_usage_calculates_stats(self, mock_urlopen: Mock) -> None:
         """Should calculate avg/max/min from CPU data."""
         mock_response = MagicMock()
-        mock_response.read.return_value = b'''{
+        mock_response.read.return_value = b"""{
             "status": "success",
             "data": {
                 "resultType": "matrix",
@@ -593,7 +572,7 @@ class TestMetricQueryMethods:
                     "values": [[1000, "50.0"], [1005, "60.0"], [1010, "40.0"]]
                 }]
             }
-        }'''
+        }"""
         mock_response.__enter__ = Mock(return_value=mock_response)
         mock_response.__exit__ = Mock(return_value=False)
         mock_urlopen.return_value = mock_response
@@ -610,7 +589,7 @@ class TestMetricQueryMethods:
         """Should calculate avg/max/min from memory data."""
         mock_response = MagicMock()
         # Values are in bytes, query divides by 1024*1024 to get MB
-        mock_response.read.return_value = b'''{
+        mock_response.read.return_value = b"""{
             "status": "success",
             "data": {
                 "resultType": "matrix",
@@ -619,7 +598,7 @@ class TestMetricQueryMethods:
                     "values": [[1000, "100.0"], [1005, "200.0"], [1010, "150.0"]]
                 }]
             }
-        }'''
+        }"""
         mock_response.__enter__ = Mock(return_value=mock_response)
         mock_response.__exit__ = Mock(return_value=False)
         mock_urlopen.return_value = mock_response
@@ -635,7 +614,7 @@ class TestMetricQueryMethods:
     def test_network_io_calculates_rates(self, mock_urlopen: Mock) -> None:
         """Should calculate average rates from network data."""
         mock_response = MagicMock()
-        mock_response.read.return_value = b'''{
+        mock_response.read.return_value = b"""{
             "status": "success",
             "data": {
                 "resultType": "matrix",
@@ -644,7 +623,7 @@ class TestMetricQueryMethods:
                     "values": [[1000, "1000.0"], [1005, "2000.0"]]
                 }]
             }
-        }'''
+        }"""
         mock_response.__enter__ = Mock(return_value=mock_response)
         mock_response.__exit__ = Mock(return_value=False)
         mock_urlopen.return_value = mock_response

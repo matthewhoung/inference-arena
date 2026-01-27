@@ -214,9 +214,7 @@ class TestIsCOCODownloadedExtended:
 class TestCOCOAnnotationStructure:
     """Tests for COCO annotation structure validation using synthetic fixture."""
 
-    def test_annotation_has_required_fields(
-        self, synthetic_coco_annotations: dict
-    ) -> None:
+    def test_annotation_has_required_fields(self, synthetic_coco_annotations: dict) -> None:
         """Each annotation should have required COCO fields."""
         required_fields = {"id", "image_id", "category_id", "bbox", "area", "iscrowd"}
 
@@ -249,9 +247,7 @@ class TestCOCOAnnotationStructure:
             assert width > 0, f"bbox width should be positive, got {width}"
             assert height > 0, f"bbox height should be positive, got {height}"
 
-    def test_image_dimensions_are_positive(
-        self, synthetic_coco_annotations: dict
-    ) -> None:
+    def test_image_dimensions_are_positive(self, synthetic_coco_annotations: dict) -> None:
         """All image dimensions should be positive integers."""
         for image in synthetic_coco_annotations["images"]:
             assert "width" in image, "image missing width"
@@ -288,18 +284,14 @@ class TestCOCOAnnotationStructure:
                 image_id in valid_image_ids
             ), f"Invalid image_id {image_id}, valid: {valid_image_ids}"
 
-    def test_area_matches_bbox_dimensions(
-        self, synthetic_coco_annotations: dict
-    ) -> None:
+    def test_area_matches_bbox_dimensions(self, synthetic_coco_annotations: dict) -> None:
         """Area should equal bbox width * height."""
         for annotation in synthetic_coco_annotations["annotations"]:
             bbox = annotation["bbox"]
             expected_area = bbox[2] * bbox[3]  # width * height
             actual_area = annotation["area"]
 
-            assert (
-                actual_area == expected_area
-            ), f"Area {actual_area} != bbox area {expected_area}"
+            assert actual_area == expected_area, f"Area {actual_area} != bbox area {expected_area}"
 
     def test_annotation_ids_unique(self, synthetic_coco_annotations: dict) -> None:
         """All annotation IDs should be unique."""
@@ -311,9 +303,7 @@ class TestCOCOAnnotationStructure:
         ids = [img["id"] for img in synthetic_coco_annotations["images"]]
         assert len(ids) == len(set(ids)), "Duplicate image IDs found"
 
-    def test_categories_have_required_fields(
-        self, synthetic_coco_annotations: dict
-    ) -> None:
+    def test_categories_have_required_fields(self, synthetic_coco_annotations: dict) -> None:
         """Each category should have id, name, supercategory."""
         required_fields = {"id", "name", "supercategory"}
 
