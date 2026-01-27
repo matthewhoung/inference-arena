@@ -147,9 +147,7 @@ def test_retry_exponential_backoff_timing() -> None:
         assert len(request_times) >= 4, f"Expected at least 4 requests, got {len(request_times)}"
 
         # Calculate intervals between requests
-        intervals = [
-            request_times[i + 1] - request_times[i] for i in range(len(request_times) - 1)
-        ]
+        intervals = [request_times[i + 1] - request_times[i] for i in range(len(request_times) - 1)]
 
         # Verify exponential backoff: each interval should be roughly 2x the previous
         # Allow 50% tolerance for timing variations
@@ -189,9 +187,9 @@ def test_retry_succeeds_after_transient_failures() -> None:
         )
 
         # Verify server received expected number of requests (2 failures + 1 success)
-        assert server.request_count >= 3, (
-            f"Expected at least 3 requests, got {server.request_count}"
-        )
+        assert (
+            server.request_count >= 3
+        ), f"Expected at least 3 requests, got {server.request_count}"
 
 
 @pytest.mark.integration

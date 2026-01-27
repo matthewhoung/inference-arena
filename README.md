@@ -180,7 +180,8 @@ inference-arena/
 │
 ├── experiments/             # Load testing framework
 │   ├── locustfile.py        # Locust user behavior
-│   └── runner.py            # Experiment orchestration
+│   ├── runner.py            # Experiment orchestration
+│   └── metrics/             # Static metrics collection scripts
 │
 ├── scripts/                 # Setup and utility scripts
 │   ├── setup/               # Environment and data setup
@@ -214,6 +215,13 @@ inference-arena/
 | `make test-arch ARCH=mono` | Test one architecture with all load levels |
 | `make test-matrix` | Full experiment matrix (63 tests) |
 | `make test-web` | Start Locust web UI |
+
+### Metrics Collection
+
+| Command | Description |
+|---------|-------------|
+| `make metrics-static` | Generate static code metrics (LOC, files, endpoints) |
+| `make metrics-all` | Complete metrics collection (includes deployment times) |
 
 For complete testing documentation, see [docs/SETUP.md](docs/SETUP.md#testing).
 

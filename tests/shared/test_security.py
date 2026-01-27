@@ -84,9 +84,7 @@ class TestIsWarningSuppressed:
 
     def test_handles_whitespace(self):
         """Handles whitespace in suppression list."""
-        with patch.dict(
-            os.environ, {"INFERENCE_ARENA_SUPPRESS_WARNINGS": "W001, W003 "}
-        ):
+        with patch.dict(os.environ, {"INFERENCE_ARENA_SUPPRESS_WARNINGS": "W001, W003 "}):
             assert _is_warning_suppressed("W003") is True
 
     def test_not_suppressed_when_different_code(self):

@@ -24,6 +24,7 @@
         restart-grafana \
         test-quick test-arch test-matrix test-dry-run test-web \
         verify-accuracy \
+        metrics-loc metrics-files metrics-endpoints metrics-deploy metrics-deploy-all metrics-summary metrics-static metrics-all \
         t tf tl mono micro tri stop up down
 
 # Default target
@@ -103,6 +104,13 @@ help: ## Show this help message
 	@echo "  $(BLUE)make lint$(NC)         Run linters (ruff + mypy)"
 	@echo "  $(BLUE)make format$(NC)       Format code (black + ruff)"
 	@echo "  $(BLUE)make validate$(NC)     Validate infrastructure configuration"
+	@echo ""
+	@echo "$(YELLOW)📊 Metrics Collection:$(NC)"
+	@echo "  $(BLUE)make metrics-static$(NC)       Generate LOC, files, endpoints (fast)"
+	@echo "  $(BLUE)make metrics-deploy$(NC)       Measure deployment time (ARCH=mono|micro|triton)"
+	@echo "  $(BLUE)make metrics-deploy-all$(NC)   Measure all architectures (~40 min)"
+	@echo "  $(BLUE)make metrics-summary$(NC)      Generate summary CSV and LaTeX"
+	@echo "  $(BLUE)make metrics-all$(NC)          Complete metrics data collection"
 	@echo ""
 	@echo "$(YELLOW)⚡ Shortcuts:$(NC)"
 	@echo "  $(BLUE)make t$(NC)            Alias for test"
@@ -419,6 +427,71 @@ verify-accuracy: ## Verify classification accuracy across architectures (require
 	@echo "  Requires: make start-infra && make start-mono && make start-micro && make start-triton"
 	@echo ""
 	$(VENV)/python scripts/utils/verify_classification_accuracy.py
+
+# =============================================================================
+# 📊 Metrics Collection
+# =============================================================================
+
+metrics-loc: ## Generate LOC counts
+	@echo "$(YELLOW)Generating LOC counts...$(NC)"
+	$(VENV)/python experiments/metrics/count_loc.py
+	@echo "$(GREEN)✓ LOC counts saved to results/metrics/loc_counts.csv$(NC)"
+
+metrics-files: ## Generate file counts
+	@echo "$(YELLOW)Generating file counts...$(NC)"
+	$(VENV)/python experiments/metrics/count_files.py
+	@echo "$(GREEN)✓ File counts saved to results/metrics/file_counts.csv$(NC)"
+
+metrics-endpoints: ## Generate API endpoint counts
+	@echo "$(YELLOW)Generating API endpoint counts...$(NC)"
+	$(VENV)/python experiments/metrics/count_api_endpoints.py
+	@echo "$(GREEN)✓ API endpoints saved to results/metrics/api_endpoints.csv$(NC)"
+
+metrics-deploy: ## Measure deployment time (ARCH=mono|micro|triton, RUNS=3)
+	@echo "$(YELLOW)Measuring deployment time: $(ARCH_FULL) ($(RUNS) runs)$(NC)"
+	@echo "$(RED)Warning: This will prune Docker images and take significant time$(NC)"
+	@echo "  - Monolithic: ~1 min/run"
+	@echo "  - Microservices: ~1.5 min/run"
+	@echo "  - Triton: ~10 min/run (downloads 8GB base image)"
+	@echo ""
+	bash experiments/metrics/measure_deployment.sh $(ARCH_FULL) $(RUNS)
+
+metrics-deploy-all: ## Measure deployment time for ALL architectures (3 runs each, ~40 min total)
+	@echo "$(YELLOW)═══════════════════════════════════════════════════════════════$(NC)"
+	@echo "$(YELLOW)  Measuring deployment times for all architectures$(NC)"
+	@echo "$(YELLOW)═══════════════════════════════════════════════════════════════$(NC)"
+	@echo ""
+	@echo "$(RED)Warning: This will take ~40 minutes and prune Docker images$(NC)"
+	@echo ""
+	bash experiments/metrics/measure_deployment.sh monolithic 3
+	bash experiments/metrics/measure_deployment.sh microservices 3
+	bash experiments/metrics/measure_deployment.sh triton 3
+	@echo ""
+	@echo "$(GREEN)✓ All deployment measurements complete$(NC)"
+	@echo "$(GREEN)  Results: results/metrics/deployment_times.csv$(NC)"
+
+metrics-summary: ## Generate metrics summary (requires all data files)
+	@echo "$(YELLOW)Generating metrics summary...$(NC)"
+	$(VENV)/python experiments/metrics/aggregate_metrics.py
+	@echo "$(GREEN)✓ Summary saved to results/metrics/metrics_summary.csv$(NC)"
+
+metrics-static: metrics-loc metrics-files metrics-endpoints ## Generate all static metrics data (no Docker needed)
+	@echo "$(GREEN)✓ All static metrics data generated$(NC)"
+
+metrics-all: metrics-static metrics-deploy-all metrics-summary ## Generate ALL metrics data (includes deployment measurements)
+	@echo ""
+	@echo "$(GREEN)═══════════════════════════════════════════════════════════════$(NC)"
+	@echo "$(GREEN)  Metrics data collection complete!$(NC)"
+	@echo "$(GREEN)═══════════════════════════════════════════════════════════════$(NC)"
+	@echo ""
+	@echo "  Generated files:"
+	@echo "    - results/metrics/loc_counts.csv"
+	@echo "    - results/metrics/file_counts.csv"
+	@echo "    - results/metrics/api_endpoints.csv"
+	@echo "    - results/metrics/deployment_times.csv"
+	@echo "    - results/metrics/metrics_summary.csv"
+	@echo "    - analysis/tables/rq3_summary.tex"
+	@echo ""
 
 # =============================================================================
 # ⚡ Shortcuts

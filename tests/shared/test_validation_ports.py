@@ -46,12 +46,14 @@ class TestParseComposePortsFormats:
 
     def test_parse_compose_ports_string_format(self, compose_file) -> None:
         """Handles 'host:container' string format."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               web:
                 ports:
                   - "8100:8100"
-        """)
+        """
+        )
 
         result = parse_compose_ports(path)
 
@@ -59,12 +61,14 @@ class TestParseComposePortsFormats:
 
     def test_parse_compose_ports_short_string(self, compose_file) -> None:
         """Handles short string format (container port only)."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               web:
                 ports:
                   - "8100"
-        """)
+        """
+        )
 
         result = parse_compose_ports(path)
 
@@ -72,12 +76,14 @@ class TestParseComposePortsFormats:
 
     def test_parse_compose_ports_integer(self, compose_file) -> None:
         """Handles bare integer port format."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               web:
                 ports:
                   - 8100
-        """)
+        """
+        )
 
         result = parse_compose_ports(path)
 
@@ -85,13 +91,15 @@ class TestParseComposePortsFormats:
 
     def test_parse_compose_ports_long_syntax(self, compose_file) -> None:
         """Handles long syntax dict format with published/target."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               web:
                 ports:
                   - published: 8100
                     target: 80
-        """)
+        """
+        )
 
         result = parse_compose_ports(path)
 
@@ -99,12 +107,14 @@ class TestParseComposePortsFormats:
 
     def test_parse_compose_ports_long_syntax_target_only(self, compose_file) -> None:
         """Handles long syntax dict format with target only."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               web:
                 ports:
                   - target: 8100
-        """)
+        """
+        )
 
         result = parse_compose_ports(path)
 
@@ -112,12 +122,14 @@ class TestParseComposePortsFormats:
 
     def test_parse_compose_ports_env_var_with_default(self, compose_file) -> None:
         """Handles environment variable syntax with default value."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               minio:
                 ports:
                   - "${MINIO_PORT:-9000}:9000"
-        """)
+        """
+        )
 
         result = parse_compose_ports(path)
 
@@ -125,7 +137,8 @@ class TestParseComposePortsFormats:
 
     def test_parse_compose_ports_mixed(self, compose_file) -> None:
         """Handles file with multiple port formats."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               web:
                 ports:
@@ -138,7 +151,8 @@ class TestParseComposePortsFormats:
               cache:
                 ports:
                   - "${REDIS_PORT:-6379}:6379"
-        """)
+        """
+        )
 
         result = parse_compose_ports(path)
 
@@ -150,14 +164,16 @@ class TestParseComposePortsFormats:
 
     def test_parse_compose_ports_no_ports_section(self, compose_file) -> None:
         """Services with no ports section are excluded from result."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               web:
                 image: nginx
               db:
                 ports:
                   - "5432:5432"
-        """)
+        """
+        )
 
         result = parse_compose_ports(path)
 
@@ -166,14 +182,16 @@ class TestParseComposePortsFormats:
 
     def test_parse_compose_ports_empty_ports(self, compose_file) -> None:
         """Services with empty ports list are excluded from result."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               web:
                 ports: []
               db:
                 ports:
                   - "5432:5432"
-        """)
+        """
+        )
 
         result = parse_compose_ports(path)
 
@@ -182,9 +200,11 @@ class TestParseComposePortsFormats:
 
     def test_parse_compose_ports_empty_services(self, compose_file) -> None:
         """Empty services section returns empty dict."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services: {}
-        """)
+        """
+        )
 
         result = parse_compose_ports(path)
 
@@ -192,9 +212,11 @@ class TestParseComposePortsFormats:
 
     def test_parse_compose_ports_no_services_key(self, compose_file) -> None:
         """Compose file without services key returns empty dict."""
-        path = compose_file("""
+        path = compose_file(
+            """
             version: "3.8"
-        """)
+        """
+        )
 
         result = parse_compose_ports(path)
 
@@ -202,12 +224,14 @@ class TestParseComposePortsFormats:
 
     def test_parse_compose_ports_different_host_container(self, compose_file) -> None:
         """Extracts host port when different from container port."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               web:
                 ports:
                   - "80:8080"
-        """)
+        """
+        )
 
         result = parse_compose_ports(path)
 
@@ -225,7 +249,8 @@ class TestValidatePortsSuccess:
 
     def test_validate_ports_all_match(self, compose_file) -> None:
         """All expected ports found should pass validation."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               minio:
                 ports:
@@ -234,27 +259,31 @@ class TestValidatePortsSuccess:
               prometheus:
                 ports:
                   - "9090:9090"
-        """)
+        """
+        )
 
         # Should not raise
         validate_ports(path, {"minio": 9000, "prometheus": 9090})
 
     def test_validate_ports_extra_compose_ports_ok(self, compose_file) -> None:
         """Extra ports in compose (not in expected) should be OK."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               minio:
                 ports:
                   - "9000:9000"
                   - "9001:9001"
-        """)
+        """
+        )
 
         # Only checking 9000, not 9001 - should pass
         validate_ports(path, {"minio": 9000})
 
     def test_validate_ports_multiple_services(self, compose_file) -> None:
         """Validates multiple services correctly."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               minio:
                 ports:
@@ -265,13 +294,11 @@ class TestValidatePortsSuccess:
               grafana:
                 ports:
                   - "3000:3000"
-        """)
+        """
+        )
 
         # Should not raise
-        validate_ports(
-            path,
-            {"minio": 9000, "prometheus": 9090, "grafana": 3000}
-        )
+        validate_ports(path, {"minio": 9000, "prometheus": 9090, "grafana": 3000})
 
 
 class TestValidatePortsMismatch:
@@ -279,12 +306,14 @@ class TestValidatePortsMismatch:
 
     def test_validate_ports_mismatch(self, compose_file) -> None:
         """Port mismatch raises ConfigError."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               prometheus:
                 ports:
                   - "9091:9090"
-        """)
+        """
+        )
 
         with pytest.raises(ConfigError) as exc_info:
             validate_ports(path, {"prometheus": 9090})
@@ -296,12 +325,14 @@ class TestValidatePortsMismatch:
 
     def test_validate_ports_missing_service(self, compose_file) -> None:
         """Service not in compose raises error."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               web:
                 ports:
                   - "8080:80"
-        """)
+        """
+        )
 
         with pytest.raises(ConfigError) as exc_info:
             validate_ports(path, {"missing-service": 9090})
@@ -312,11 +343,13 @@ class TestValidatePortsMismatch:
 
     def test_validate_ports_service_exists_no_ports(self, compose_file) -> None:
         """Service exists but has no ports section raises error."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               web:
                 image: nginx
-        """)
+        """
+        )
 
         with pytest.raises(ConfigError) as exc_info:
             validate_ports(path, {"web": 8080})
@@ -331,7 +364,8 @@ class TestValidatePortsMultipleMismatches:
 
     def test_validate_ports_multiple_mismatches(self, compose_file) -> None:
         """Error lists ALL mismatches, not just first."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               minio:
                 ports:
@@ -339,13 +373,11 @@ class TestValidatePortsMultipleMismatches:
               prometheus:
                 ports:
                   - "8888:9090"
-        """)
+        """
+        )
 
         with pytest.raises(ConfigError) as exc_info:
-            validate_ports(
-                path,
-                {"minio": 9000, "prometheus": 9090, "grafana": 3000}
-            )
+            validate_ports(path, {"minio": 9000, "prometheus": 9090, "grafana": 3000})
 
         error_msg = str(exc_info.value)
         # All three mismatches should be listed
@@ -357,7 +389,8 @@ class TestValidatePortsMultipleMismatches:
 
     def test_validate_ports_partial_match(self, compose_file) -> None:
         """Mix of matching and mismatching should fail with only mismatches."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               minio:
                 ports:
@@ -368,13 +401,11 @@ class TestValidatePortsMultipleMismatches:
               grafana:
                 ports:
                   - "3000:3000"
-        """)
+        """
+        )
 
         with pytest.raises(ConfigError) as exc_info:
-            validate_ports(
-                path,
-                {"minio": 9000, "prometheus": 9090, "grafana": 3000}
-            )
+            validate_ports(path, {"minio": 9000, "prometheus": 9090, "grafana": 3000})
 
         error_msg = str(exc_info.value)
         # Only prometheus should be in error
@@ -389,12 +420,14 @@ class TestValidatePortsErrorFormat:
 
     def test_error_includes_compose_path(self, compose_file) -> None:
         """Error message includes compose file path."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               web:
                 ports:
                   - "9999:8080"
-        """)
+        """
+        )
 
         with pytest.raises(ConfigError) as exc_info:
             validate_ports(path, {"web": 8080})
@@ -404,13 +437,15 @@ class TestValidatePortsErrorFormat:
 
     def test_error_shows_found_ports(self, compose_file) -> None:
         """Error message shows what ports were found."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               web:
                 ports:
                   - "8080:80"
                   - "443:443"
-        """)
+        """
+        )
 
         with pytest.raises(ConfigError) as exc_info:
             validate_ports(path, {"web": 9000})
@@ -439,24 +474,28 @@ class TestParseComposePortsEdgeCases:
         """Invalid YAML raises YAMLError."""
         import yaml
 
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               web:
                 ports: [
-        """)
+        """
+        )
 
         with pytest.raises(yaml.YAMLError):
             parse_compose_ports(path)
 
     def test_env_var_no_default(self, compose_file) -> None:
         """Environment variable without default returns None for that port."""
-        path = compose_file("""
+        path = compose_file(
+            """
             services:
               web:
                 ports:
                   - "${PORT}:8080"
                   - "9000:9000"
-        """)
+        """
+        )
 
         result = parse_compose_ports(path)
 

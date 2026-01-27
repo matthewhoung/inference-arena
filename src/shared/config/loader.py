@@ -40,7 +40,8 @@ import yaml
 # =============================================================================
 
 _POSSIBLE_PATHS = [
-    Path(__file__).parent.parent.parent / "experiment.yaml",
+    Path(__file__).parent.parent.parent.parent / "experiment.yaml",  # project root
+    Path(__file__).parent.parent.parent / "experiment.yaml",  # src/ (legacy)
     Path.cwd() / "experiment.yaml",
 ]
 

@@ -37,7 +37,7 @@ services:
     container_name: inference-arena-microservices-init
     command: >
       sh -c "
-        pip install --no-cache-dir minio &&
+        pip install --no-cache-dir minio tqdm &&
         python /scripts/init_microservices_models.py
       "
     volumes:

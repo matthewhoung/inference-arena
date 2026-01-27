@@ -77,9 +77,7 @@ def _is_warning_suppressed(code: str) -> bool:
     return code in suppressed_codes
 
 
-def check_credentials(
-    access_key: str, secret_key: str, service_name: str = "MinIO"
-) -> None:
+def check_credentials(access_key: str, secret_key: str, service_name: str = "MinIO") -> None:
     """Check for insecure default credentials.
 
     Validates that credentials are not using known default values. Behavior
@@ -115,10 +113,7 @@ def check_credentials(
     if access_key not in DEFAULT_CREDENTIALS or secret_key not in DEFAULT_CREDENTIALS:
         return
 
-    message = (
-        f"{service_name} using default credentials ({access_key}). "
-        "See docs/ENVIRONMENT.md"
-    )
+    message = f"{service_name} using default credentials ({access_key}). " "See docs/ENVIRONMENT.md"
 
     if is_production():
         if _is_warning_suppressed(SUPPRESS_WARNING_CODE):

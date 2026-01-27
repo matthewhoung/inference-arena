@@ -59,10 +59,7 @@ def create_test_crops(n: int) -> list[np.ndarray]:
         List of RGB uint8 numpy arrays with shape [224, 224, 3]
     """
     rng = np.random.default_rng(42)
-    return [
-        rng.integers(0, 256, (CROP_SIZE, CROP_SIZE, 3), dtype=np.uint8)
-        for _ in range(n)
-    ]
+    return [rng.integers(0, 256, (CROP_SIZE, CROP_SIZE, 3), dtype=np.uint8) for _ in range(n)]
 
 
 def create_test_boxes(n: int) -> list[dict[str, Any]]:
@@ -185,16 +182,14 @@ class TestGRPCFanout:
         responses = await client.classify_parallel(request_id, test_crops, test_boxes)
 
         # Verify all results returned
-        assert len(responses) == NUM_CROPS, (
-            f"Expected {NUM_CROPS} responses, got {len(responses)}"
-        )
+        assert len(responses) == NUM_CROPS, f"Expected {NUM_CROPS} responses, got {len(responses)}"
 
         # Verify each result has valid class_id (ImageNet has 1000 classes)
         for i, response in enumerate(responses):
             assert hasattr(response, "class_id"), f"Response {i} missing class_id"
-            assert 0 <= response.class_id < 1000, (
-                f"Response {i} has invalid class_id: {response.class_id}"
-            )
+            assert (
+                0 <= response.class_id < 1000
+            ), f"Response {i} has invalid class_id: {response.class_id}"
             logger.info(
                 f"Crop {i}: class_id={response.class_id}, "
                 f"confidence={getattr(response, 'confidence', 'N/A')}"
@@ -286,8 +281,7 @@ class TestGRPCFanout:
 
             # Verify all results returned
             assert len(responses) == NUM_CROPS, (
-                f"Iteration {iteration}: expected {NUM_CROPS} responses, "
-                f"got {len(responses)}"
+                f"Iteration {iteration}: expected {NUM_CROPS} responses, " f"got {len(responses)}"
             )
 
             iteration_time_ms = (t_end - t_start) * 1000

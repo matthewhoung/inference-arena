@@ -1,0 +1,4 @@
+architecture,endpoint_count,endpoint_details
+monolithic,2,"[""POST /predict"", ""GET /health""]"
+microservices,6,"[""POST /predict"", ""GET /health"", ""RPC Classify"", ""RPC ClassifyBatch"", ""RPC Infer"", ""RPC Check""]"
+triton,2,"[""POST /predict"", ""GET /health""]"

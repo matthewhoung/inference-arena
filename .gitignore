@@ -78,8 +78,13 @@ results/experiment/
 results/tmp/
 results/keyfindings
 
-# Analysis notebooks and outputs (exclude before publication)
-analysis/
+# Analysis - ignore generated data, track plots and pricing
+analysis/__pycache__/
+analysis/tables/*.tex
+analysis/plots/rq*
+analysis/scripts/__pycache__/
+analysis/resources/*.csv
+!analysis/resources/*_pricing.csv
 
 # Local Triton model repository (models copied here for local testing)
 architectures/triton/model_repository/*/1/model.onnx

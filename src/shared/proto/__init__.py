@@ -38,7 +38,14 @@ except ImportError:
     # Generated files not yet created - keep None values
     pass
 
-__all__ = ["inference_pb2", "inference_pb2_grpc", "get_proto_path", "is_generated", "get_messages", "get_services"]
+__all__ = [
+    "inference_pb2",
+    "inference_pb2_grpc",
+    "get_proto_path",
+    "is_generated",
+    "get_messages",
+    "get_services",
+]
 
 
 def get_proto_path() -> Path:
