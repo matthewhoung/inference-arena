@@ -1,0 +1,28 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#e3f2fd', 'primaryTextColor': '#1565c0', 'primaryBorderColor': '#1565c0', 'lineColor': '#424242', 'secondaryColor': '#fff3e0', 'tertiaryColor': '#f3e5f5'}}}%%
+flowchart LR
+    subgraph Client["Client"]
+        REQ[HTTP POST<br/>/predict]
+    end
+
+    subgraph Monolithic["Monolithic Container<br/><i>2 vCPU, 4 GB</i>"]
+        subgraph FastAPI["FastAPI (port 8100)"]
+            EP["/predict<br/>endpoint"]
+        end
+        subgraph Pipeline["Inference Pipeline<br/><i>In-Memory</i>"]
+            DET["YOLOv5n<br/>Detection<br/><i>ONNX Runtime</i>"]
+            CLS["MobileNetV2<br/>Classification<br/><i>ONNX Runtime</i>"]
+        end
+    end
+
+    subgraph Response["Response"]
+        RES["JSON<br/>predictions"]
+    end
+
+    REQ --> EP
+    EP --> DET
+    DET -->|"cropped<br/>regions"| CLS
+    CLS --> RES
+
+    style Monolithic fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    style Pipeline fill:#fff3e0,stroke:#ff8f00,stroke-width:1px
+    style FastAPI fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px

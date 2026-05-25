@@ -1,0 +1,48 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#e3f2fd', 'primaryTextColor': '#1565c0', 'primaryBorderColor': '#1565c0', 'lineColor': '#424242', 'secondaryColor': '#fff3e0', 'tertiaryColor': '#f3e5f5'}}}%%
+flowchart LR
+    subgraph Client["Client"]
+        REQ[HTTP POST<br/>/predict]
+    end
+
+    subgraph Gateway["Gateway Container<br/><i>2 vCPU, 4 GB</i>"]
+        subgraph GatewayAPI["FastAPI (port 8300)"]
+            GEP["/predict<br/>endpoint"]
+        end
+        TC["Triton<br/>gRPC Client"]
+        PP["Pre/Post<br/>Processing"]
+    end
+
+    subgraph TritonServer["Triton Inference Server<br/><i>2 vCPU, 4 GB</i>"]
+        subgraph GRPC["gRPC (port 8001)"]
+            INF["Inference<br/>API"]
+        end
+        subgraph Models["Model Repository"]
+            DET["yolov5n<br/><i>ONNX Backend</i>"]
+            CLS["mobilenetv2<br/><i>ONNX Backend</i>"]
+            ENS["ensemble<br/><i>Pipeline</i>"]
+        end
+    end
+
+    subgraph Response["Response"]
+        RES["JSON<br/>predictions"]
+    end
+
+    REQ --> GEP
+    GEP --> PP
+    PP --> TC
+    TC -->|"gRPC<br/>inference"| INF
+    INF --> ENS
+    ENS --> DET
+    DET --> ENS
+    ENS --> CLS
+    CLS --> ENS
+    ENS --> INF
+    INF -->|"gRPC<br/>results"| TC
+    TC --> PP
+    PP --> RES
+
+    style Gateway fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    style TritonServer fill:#76ff03,stroke:#33691e,stroke-width:2px,color:#000
+    style GatewayAPI fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
+    style GRPC fill:#fff3e0,stroke:#ff8f00,stroke-width:1px
+    style Models fill:#f3e5f5,stroke:#7b1fa2,stroke-width:1px

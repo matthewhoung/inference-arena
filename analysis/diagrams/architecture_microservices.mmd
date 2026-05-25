@@ -1,0 +1,38 @@
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#e3f2fd', 'primaryTextColor': '#1565c0', 'primaryBorderColor': '#1565c0', 'lineColor': '#424242', 'secondaryColor': '#fff3e0', 'tertiaryColor': '#f3e5f5'}}}%%
+flowchart LR
+    subgraph Client["Client"]
+        REQ[HTTP POST<br/>/predict]
+    end
+
+    subgraph Detection["Detection Container<br/><i>2 vCPU, 4 GB</i>"]
+        subgraph DetAPI["FastAPI (port 8200)"]
+            DEP["/predict<br/>endpoint"]
+        end
+        DET["YOLOv5n<br/>Detection<br/><i>ONNX Runtime</i>"]
+        GC["gRPC<br/>Client"]
+    end
+
+    subgraph Classification["Classification Container<br/><i>2 vCPU, 4 GB</i>"]
+        subgraph GRPCSrv["gRPC Server (port 8201)"]
+            GS["Classify<br/>service"]
+        end
+        CLS["MobileNetV2<br/>Classification<br/><i>ONNX Runtime</i>"]
+    end
+
+    subgraph Response["Response"]
+        RES["JSON<br/>predictions"]
+    end
+
+    REQ --> DEP
+    DEP --> DET
+    DET --> GC
+    GC -->|"gRPC<br/>cropped regions"| GS
+    GS --> CLS
+    CLS --> GS
+    GS -->|"gRPC<br/>labels"| GC
+    GC --> RES
+
+    style Detection fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    style Classification fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style DetAPI fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
+    style GRPCSrv fill:#fff3e0,stroke:#ff8f00,stroke-width:1px
